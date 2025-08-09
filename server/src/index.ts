@@ -5,6 +5,11 @@ import path from 'path'
 import oauthRouter from './routes/oauth'
 import linkedinRouter from './routes/linkedin'
 import socialRouter from './routes/social'
+import facebookRouter from './routes/facebook'
+import instagramRouter from './routes/instagram'
+import twitterRouter from './routes/twitter'
+import tiktokRouter from './routes/tiktok'
+import youtubeRouter from './routes/youtube'
 import aiRouter from './routes/ai'
 import companiesRouter from './routes/companies'
 import postsRouter from './routes/posts'
@@ -27,9 +32,16 @@ app.use(express.urlencoded({ extended: true }))
 
 // API routes
 app.use('/api/oauth', oauthRouter)
-app.use('/api/linkedin', linkedinRouter)
 app.use('/api/social', socialRouter)
 app.use('/api/ai', aiRouter)
+
+// Individual platform routes
+app.use('/api/linkedin', linkedinRouter)
+app.use('/api/facebook', facebookRouter)
+app.use('/api/instagram', instagramRouter)
+app.use('/api/twitter', twitterRouter)
+app.use('/api/tiktok', tiktokRouter)
+app.use('/api/youtube', youtubeRouter)
 
 // Data API routes (replacing direct Supabase calls)
 app.use('/api/companies', companiesRouter)

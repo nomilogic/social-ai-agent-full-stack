@@ -1,17 +1,20 @@
 import express, { Request, Response } from 'express'
 import linkedinRouter from './linkedin'
+import facebookRouter from './facebook'
+import instagramRouter from './instagram'
+import twitterRouter from './twitter'
+import tiktokRouter from './tiktok'
+import youtubeRouter from './youtube'
 
 const router = express.Router()
 
-// Mount LinkedIn routes
+// Mount platform routes
 router.use('/linkedin', linkedinRouter)
-
-// Future routes for other platforms
-// router.use('/twitter', twitterRouter)
-// router.use('/facebook', facebookRouter)
-// router.use('/instagram', instagramRouter)
-// router.use('/tiktok', tiktokRouter)
-// router.use('/youtube', youtubeRouter)
+router.use('/facebook', facebookRouter)
+router.use('/instagram', instagramRouter)
+router.use('/twitter', twitterRouter)
+router.use('/tiktok', tiktokRouter)
+router.use('/youtube', youtubeRouter)
 
 // Multi-platform posting endpoint
 router.post('/post-all', async (req: Request, res: Response) => {
