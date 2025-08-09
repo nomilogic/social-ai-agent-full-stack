@@ -15,6 +15,7 @@ import companiesRouter from './routes/companies'
 import postsRouter from './routes/posts'
 import mediaRouter from './routes/media'
 import scheduleRouter from './routes/schedule'
+import campaignsRouter from './routes/campaigns'
 
 dotenv.config()
 const app = express()
@@ -46,6 +47,7 @@ app.use('/api/youtube', youtubeRouter)
 
 // Data API routes (replacing direct Supabase calls)
 app.use('/api/companies', companiesRouter)
+app.use('/api/campaigns', campaignsRouter)
 app.use('/api/posts', postsRouter)
 app.use('/api/media', mediaRouter)
 app.use('/api', scheduleRouter)

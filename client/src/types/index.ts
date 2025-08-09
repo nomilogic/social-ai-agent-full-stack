@@ -29,11 +29,35 @@ export interface GeneratedPost {
 
 export type Platform = 'facebook' | 'instagram' | 'twitter' | 'linkedin' | 'tiktok' | 'youtube';
 
+export interface Campaign {
+  id?: string;
+  companyId: string;
+  name: string;
+  description?: string;
+  objective?: 'awareness' | 'engagement' | 'conversions' | 'leads' | 'sales' | 'brand_building';
+  startDate?: string;
+  endDate?: string;
+  targetAudience?: string;
+  platforms: Platform[];
+  budget?: number;
+  status: 'active' | 'paused' | 'completed' | 'draft';
+  brandVoice?: string;
+  keywords?: string[];
+  hashtags?: string[];
+  totalPosts?: number;
+  publishedPosts?: number;
+  scheduledPosts?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface StepData {
   company?: CompanyInfo;
+  companyId?: string;
+  campaign?: Campaign;
+  campaignId?: string;
   content?: PostContent;
   generatedPosts?: GeneratedPost[];
-  companyId?: string;
   contentId?: string;
   userId?: string;
 }
