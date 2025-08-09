@@ -8,6 +8,7 @@ interface CompanySelectorProps {
   onSelectCompany: (company: CompanyInfo & { id: string }) => void;
   onScheduleCompany?: (company: CompanyInfo & { id: string }) => void;
   onCampaignCompany?: (company: CompanyInfo & { id: string }) => void;
+  onEditCompany?: (company: CompanyInfo & { id: string }) => void;
   onCreateNew: () => void;
 }
 
@@ -16,6 +17,7 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
   onSelectCompany,
   onScheduleCompany,
   onCampaignCompany,
+  onEditCompany,
   onCreateNew
 }) => {
   const [companies, setCompanies] = useState<any[]>([]);
@@ -98,7 +100,18 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
               key={company.id}
               className="border border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:shadow-md transition-all duration-200 relative group"
             >
-              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
+                {onEditCompany && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditCompany(companyData);
+                    }}
+                    className="p-1 text-blue-500 hover:text-blue-700"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   onClick={(e) => handleDelete(company.id, e)}
                   className="p-1 text-red-500 hover:text-red-700"

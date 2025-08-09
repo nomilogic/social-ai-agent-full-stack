@@ -156,10 +156,32 @@ function App() {
   const handleCampaignCompany = (company: any) => {
     setSelectedCompany(company);
     setStepData(prev => ({ ...prev, company, companyId: company.id }));
+    setCurrentStep('campaign-select');
+  };
+
+  const handleCreateNewCampaign = () => {
     setCurrentStep('campaign-setup');
   };
 
+  const handleEditCampaign = (campaign: any) => {
+    // Store the campaign data for editing
+    setStepData(prev => ({ ...prev, selectedCampaign: campaign }));
+    setCurrentStep('campaign-setup');
+  };
+
+  const handleSelectCampaign = (campaign: any) => {
+    // Handle campaign selection for viewing/managing
+    setStepData(prev => ({ ...prev, selectedCampaign: campaign }));
+    // Could navigate to campaign management dashboard in the future
+    console.log('Selected campaign:', campaign);
+  };
+
   const handleCreateNewCompany = () => {
+    setCurrentStep('company-setup');
+  };
+
+  const handleEditCompany = (company: any) => {
+    setSelectedCompany(company);
     setCurrentStep('company-setup');
   };
 
@@ -183,8 +205,11 @@ function App() {
       case 'schedule':
         setCurrentStep('company-select');
         break;
-      case 'campaign-setup':
+      case 'campaign-select':
         setCurrentStep('company-select');
+        break;
+      case 'campaign-setup':
+        setCurrentStep('campaign-select');
         break;
     }
   };
@@ -292,6 +317,7 @@ function App() {
               onSelectCompany={handleSelectCompany}
               onScheduleCompany={handleScheduleCompany}
               onCampaignCompany={handleCampaignCompany}
+              onEditCompany={handleEditCompany}
               onCreateNew={handleCreateNewCompany}
             />
           )}
@@ -354,11 +380,21 @@ function App() {
             />
           )}
 
+          {currentStep === 'campaign-select' && stepData.company && (
+            <CampaignSelector
+              companyId={stepData.companyId}
+              onSelectCampaign={handleSelectCampaign}
+              onCreateNew={handleCreateNewCampaign}
+              onEditCampaign={handleEditCampaign}
+            />
+          )}
+
           {currentStep === 'campaign-setup' && stepData.company && (
             <CampaignSetup
               companyId={stepData.companyId}
-              companyData={stepData.company}
+              onNext={() => setCurrentStep('campaign-select')}
               onBack={handleBack}
+              initialData={stepData.selectedCampaign}
             />
           )}
         </div>
