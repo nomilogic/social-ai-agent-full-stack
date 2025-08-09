@@ -6,6 +6,9 @@ import oauthRouter from './routes/oauth'
 import linkedinRouter from './routes/linkedin'
 import socialRouter from './routes/social'
 import aiRouter from './routes/ai'
+import companiesRouter from './routes/companies'
+import postsRouter from './routes/posts'
+import mediaRouter from './routes/media'
 
 dotenv.config()
 const app = express()
@@ -14,7 +17,7 @@ const PORT = process.env.PORT || 5000
 app.use(
   cors({
     origin: process.env.NODE_ENV === 'production' ? false : ["http://localhost:5173"],
-    methods: ["GET", "POST", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
@@ -27,6 +30,11 @@ app.use('/api/oauth', oauthRouter)
 app.use('/api/linkedin', linkedinRouter)
 app.use('/api/social', socialRouter)
 app.use('/api/ai', aiRouter)
+
+// Data API routes (replacing direct Supabase calls)
+app.use('/api/companies', companiesRouter)
+app.use('/api/posts', postsRouter)
+app.use('/api/media', mediaRouter)
 
 // Legacy routes for backwards compatibility
 app.use('/share', linkedinRouter)
