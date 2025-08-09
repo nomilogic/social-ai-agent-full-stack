@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Plus, Edit2, Trash2, Calendar, Sparkles } from 'lucide-react';
+import { Building2, Plus, Edit2, Trash2, Calendar, Sparkles, Target } from 'lucide-react';
 import { getCompanies, deleteCompany } from '../lib/database';
 import { CompanyInfo } from '../types';
 
@@ -7,6 +7,7 @@ interface CompanySelectorProps {
   userId: string;
   onSelectCompany: (company: CompanyInfo & { id: string }) => void;
   onScheduleCompany?: (company: CompanyInfo & { id: string }) => void;
+  onCampaignCompany?: (company: CompanyInfo & { id: string }) => void;
   onCreateNew: () => void;
 }
 
@@ -14,6 +15,7 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
   userId,
   onSelectCompany,
   onScheduleCompany,
+  onCampaignCompany,
   onCreateNew
 }) => {
   const [companies, setCompanies] = useState<any[]>([]);
@@ -160,6 +162,16 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
                   >
                     <Calendar className="w-4 h-4" />
                     Schedule Posts
+                  </button>
+                )}
+                
+                {onCampaignCompany && (
+                  <button
+                    onClick={() => onCampaignCompany(companyData)}
+                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-4 rounded-lg font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center gap-2"
+                  >
+                    <Target className="w-4 h-4" />
+                    Manage Campaigns
                   </button>
                 )}
               </div>

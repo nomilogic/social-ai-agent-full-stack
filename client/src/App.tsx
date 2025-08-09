@@ -12,9 +12,11 @@ import { PostPreview } from './components/PostPreview';
 import { PublishPosts } from './components/PublishPosts'; // Import PublishPosts
 import { OAuthCallback } from './components/OAuthCallback'; // Import OAuthCallback
 import { PostScheduleDashboard } from './components/PostScheduleDashboard';
+import { CampaignSetup } from './components/CampaignSetup';
+import { CampaignSelector } from './components/CampaignSelector';
 import { StepData } from './types';
 
-type Step = 'auth' | 'company-select' | 'company-setup' | 'content' | 'generate' | 'preview' | 'publish' | 'schedule';
+type Step = 'auth' | 'company-select' | 'company-setup' | 'content' | 'generate' | 'preview' | 'publish' | 'schedule' | 'campaign-setup' | 'campaign-select';
 
 function App() {
   const [currentStep, setCurrentStep] = useState<Step>('auth');
@@ -151,6 +153,12 @@ function App() {
     setCurrentStep('schedule');
   };
 
+  const handleCampaignCompany = (company: any) => {
+    setSelectedCompany(company);
+    setStepData(prev => ({ ...prev, company, companyId: company.id }));
+    setCurrentStep('campaign-setup');
+  };
+
   const handleCreateNewCompany = () => {
     setCurrentStep('company-setup');
   };
@@ -173,6 +181,9 @@ function App() {
         setCurrentStep('preview');
         break;
       case 'schedule':
+        setCurrentStep('company-select');
+        break;
+      case 'campaign-setup':
         setCurrentStep('company-select');
         break;
     }
@@ -280,6 +291,7 @@ function App() {
               userId={user.id}
               onSelectCompany={handleSelectCompany}
               onScheduleCompany={handleScheduleCompany}
+              onCampaignCompany={handleCampaignCompany}
               onCreateNew={handleCreateNewCompany}
             />
           )}
@@ -339,6 +351,14 @@ function App() {
             <PostScheduleDashboard
               companyId={stepData.companyId}
               companyData={stepData.company}
+            />
+          )}
+
+          {currentStep === 'campaign-setup' && stepData.company && (
+            <CampaignSetup
+              companyId={stepData.companyId}
+              companyData={stepData.company}
+              onBack={handleBack}
             />
           )}
         </div>

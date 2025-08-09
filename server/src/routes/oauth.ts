@@ -3,15 +3,20 @@ import axios from 'axios'
 
 const router = express.Router()
 
-const CLIENT_ID = process.env.VITE_LINKEDIN_CLIENT_ID as string
-const CLIENT_SECRET = process.env.VITE_LINKEDIN_CLIENT_SECRET as string
-const REDIRECT_URI = process.env.NODE_ENV === 'production' 
-  ? `${process.env.FRONTEND_URL}/oauth/linkedin/callback`
-  : "http://localhost:5173/oauth/linkedin/callback"
+// Environment variables will be read inside route handlers to ensure dotenv has loaded them
 
 // GET /api/oauth/linkedin - Initiate LinkedIn OAuth flow
 router.get('/linkedin', (req: Request, res: Response) => {
   console.log("Received request for LinkedIn OAuth")
+  
+  const CLIENT_ID = process.env.LINKEDIN_CLIENT_ID as string
+  const CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET as string
+  const REDIRECT_URI = process.env.NODE_ENV === 'production' 
+    ? `${process.env.FRONTEND_URL}/oauth/linkedin/callback`
+    : "http://localhost:5173/oauth/linkedin/callback"
+  
+  console.log('LinkedIn OAuth env vars:', { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI })
+  
   const state = Math.random().toString(36).substring(2, 15)
   const scope = "r_liteprofile%20r_emailaddress%20w_member_social"
   const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(
@@ -24,6 +29,10 @@ router.get('/linkedin', (req: Request, res: Response) => {
 // POST /api/oauth/linkedin/callback - Handle OAuth callback
 router.post('/linkedin/callback', async (req: Request, res: Response) => {
   console.log("Received LinkedIn OAuth callback with body:", req.body)
+  
+  const CLIENT_ID = process.env.LINKEDIN_CLIENT_ID as string
+  const CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET as string
+  
   let body = req.body
   if (typeof body === 'string') {
     body = JSON.parse(body)
