@@ -101,10 +101,7 @@ router.post('/upload-init', async (req: Request, res: Response) => {
       }
     }
 
-    // If channelId is provided, add it to the metadata
-    if (channelId) {
-      metadata.snippet = { ...metadata.snippet, channelId }
-    }
+    // channelId is automatically associated with the authenticated user
 
     // Initialize resumable upload
     const initResponse = await axios.post(

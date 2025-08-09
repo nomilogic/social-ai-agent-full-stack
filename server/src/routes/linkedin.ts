@@ -27,7 +27,7 @@ router.get('/me', async (req: Request, res: Response) => {
   }
 })
 
-// POST /api/linkedin/post - Create LinkedIn post
+// POST /api/linkedin/post - Create LinkedIn post with proper image upload
 router.post('/post', async (req: Request, res: Response) => {
   const { accessToken, post } = req.body
 
@@ -36,25 +36,83 @@ router.post('/post', async (req: Request, res: Response) => {
   }
 
   try {
+    console.log('Creating LinkedIn post with data:', { caption: post.caption, hasImage: !!post.imageUrl })
+    
     // Step 1: Get personId from LinkedIn
     const meResponse = await axios.get(`https://api.linkedin.com/v2/userinfo`, {
       headers: { Authorization: `Bearer ${accessToken}` }
     })
 
     const personId = meResponse.data.sub
+    console.log('LinkedIn person ID:', personId)
 
-    // Step 2: Prepare post data
-    const url = 'https://api.linkedin.com/v2/ugcPosts'
-    const data = {
+    let mediaAsset = null
+
+    // Step 2: Upload image if provided
+    if (post.imageUrl) {
+      console.log('Uploading image to LinkedIn:', post.imageUrl)
+      
+      // Step 2a: Register upload with LinkedIn
+      const uploadResponse = await axios.post(
+        'https://api.linkedin.com/v2/assets?action=registerUpload',
+        {
+          registerUploadRequest: {
+            recipes: ['urn:li:digitalmediaRecipe:feedshare-image'],
+            owner: `urn:li:person:${personId}`,
+            serviceRelationships: [{
+              relationshipType: 'OWNER',
+              identifier: 'urn:li:userGeneratedContent'
+            }]
+          }
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            'X-Restli-Protocol-Version': '2.0.0'
+          }
+        }
+      )
+
+      const uploadUrl = uploadResponse.data.value.uploadMechanism['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'].uploadUrl
+      const asset = uploadResponse.data.value.asset
+      console.log('LinkedIn upload URL obtained:', uploadUrl)
+      console.log('LinkedIn asset ID:', asset)
+
+      // Step 2b: Download the image from the provided URL
+      const imageResponse = await axios.get(post.imageUrl, {
+        responseType: 'arraybuffer'
+      })
+
+      // Step 2c: Upload the image binary data to LinkedIn
+      await axios.put(uploadUrl, imageResponse.data, {
+        headers: {
+          'Content-Type': 'application/octet-stream'
+        }
+      })
+
+      console.log('Image uploaded successfully to LinkedIn')
+      mediaAsset = asset
+    }
+
+    // Step 3: Create the post
+    const postData = {
       author: `urn:li:person:${personId}`,
       lifecycleState: 'PUBLISHED',
       specificContent: {
         'com.linkedin.ugc.ShareContent': {
           shareCommentary: { text: post.caption },
-          shareMediaCategory: post.imageUrl ? 'IMAGE' : 'NONE',
-          media: post.imageUrl
-            ? [{ status: 'READY', originalUrl: post.imageUrl }]
-            : []
+          shareMediaCategory: mediaAsset ? 'IMAGE' : 'NONE',
+          media: mediaAsset ? [{
+            status: 'READY',
+            description: {
+              text: 'Shared image'
+            },
+            media: mediaAsset,
+            title: {
+              text: 'Social Media Post'
+            }
+          }] : []
         }
       },
       visibility: {
@@ -62,8 +120,9 @@ router.post('/post', async (req: Request, res: Response) => {
       }
     }
 
-    // Step 3: Send post request
-    const postResponse = await axios.post(url, data, {
+    console.log('Posting to LinkedIn with data:', JSON.stringify(postData, null, 2))
+
+    const postResponse = await axios.post('https://api.linkedin.com/v2/ugcPosts', postData, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         'X-Restli-Protocol-Version': '2.0.0',
@@ -71,11 +130,15 @@ router.post('/post', async (req: Request, res: Response) => {
       }
     })
 
+    console.log('LinkedIn post created successfully:', postResponse.data)
     res.json({ success: true, data: postResponse.data })
 
   } catch (error: any) {
-    console.error(error.response?.data || error.message)
-    res.status(500).json({ error: error.response?.data || error.message })
+    console.error('LinkedIn post error:', error.response?.data || error.message)
+    res.status(500).json({ 
+      error: error.response?.data || error.message,
+      details: error.response?.data
+    })
   }
 })
 

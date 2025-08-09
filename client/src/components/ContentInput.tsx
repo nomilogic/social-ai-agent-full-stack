@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { Upload, FileText, Tag, Camera, Wand2, Eye, Loader } from 'lucide-react';
+import { Upload, FileText, Tag, Camera, Wand2, Eye, Loader, Sparkles } from 'lucide-react';
 import { PostContent, Platform } from '../types';
 import { uploadMedia, getCurrentUser } from '../lib/database';
 import { analyzeImage } from '../lib/gemini';
+import { AIImageGenerator } from './AIImageGenerator';
 
 interface ContentInputProps {
   onNext: (data: PostContent) => void;
@@ -28,6 +29,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const [uploading, setUploading] = useState(false);
   const [analyzingImage, setAnalyzingImage] = useState(false);
   const [imageAnalysis, setImageAnalysis] = useState('');
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = (e: React.DragEvent) => {
@@ -135,6 +137,29 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     setImageAnalysis('');
   };
 
+  const handleAIImageGenerated = async (imageUrl: string) => {
+    try {
+      // Convert the AI generated image URL to a File object
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const file = new File([blob], 'ai-generated-image.png', { type: 'image/png' });
+      
+      // Upload the AI generated image to our storage
+      const user = await getCurrentUser();
+      if (user) {
+        const mediaUrl = await uploadMedia(file, user.id);
+        setFormData(prev => ({ ...prev, media: file, mediaUrl }));
+      } else {
+        // If no user, just use the direct URL
+        setFormData(prev => ({ ...prev, mediaUrl: imageUrl }));
+      }
+    } catch (error) {
+      console.error('Error handling AI generated image:', error);
+      // Fallback: just use the URL directly
+      setFormData(prev => ({ ...prev, mediaUrl: imageUrl }));
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-8">
       <div className="text-center mb-8">
@@ -215,14 +240,25 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                     <p className="text-lg font-medium text-gray-700">Drop your files here</p>
                     <p className="text-gray-500 mt-1">or click to browse</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                  >
-                    Choose Files
-                  </button>
-                  <p className="text-xs text-gray-400">Supports images and videos up to 50MB</p>
+                  <div className="flex gap-3 justify-center">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
+                    >
+                      <Upload className="w-4 h-4" />
+                      <span>Choose Files</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAIGenerator(true)}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 flex items-center space-x-2"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      <span>Generate with AI</span>
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400">Upload files up to 50MB or generate images with AI</p>
                 </div>
               )}
             </div>
@@ -362,6 +398,16 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           </button>
         </div>
       </form>
+
+      {/* AI Image Generator Modal */}
+      {showAIGenerator && (
+        <AIImageGenerator
+          onImageGenerated={handleAIImageGenerated}
+          contentText={formData.prompt}
+          selectedPlatforms={formData.selectedPlatforms}
+          onClose={() => setShowAIGenerator(false)}
+        />
+      )}
     </div>
   );
 };

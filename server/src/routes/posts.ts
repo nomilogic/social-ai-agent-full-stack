@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express'
-import { serverSupabase } from '../supabaseClient'
+import { serverSupabaseAnon as serverSupabase } from '../supabaseClient'
 import { validateRequestBody } from '../middleware/auth'
 
 const router = express.Router()

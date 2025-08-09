@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Plus, Edit2, Trash2 } from 'lucide-react';
+import { Building2, Plus, Edit2, Trash2, Calendar, Sparkles } from 'lucide-react';
 import { getCompanies, deleteCompany } from '../lib/database';
 import { CompanyInfo } from '../types';
 
 interface CompanySelectorProps {
   userId: string;
   onSelectCompany: (company: CompanyInfo & { id: string }) => void;
+  onScheduleCompany?: (company: CompanyInfo & { id: string }) => void;
   onCreateNew: () => void;
 }
 
 export const CompanySelector: React.FC<CompanySelectorProps> = ({
   userId,
   onSelectCompany,
+  onScheduleCompany,
   onCreateNew
 }) => {
   const [companies, setCompanies] = useState<any[]>([]);
@@ -77,69 +79,93 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
         </div>
 
         {/* Existing Companies */}
-        {companies.map((company) => (
-          <div
-            key={company.id}
-            onClick={() => onSelectCompany({
-              id: company.id,
-              name: company.name,
-              website: company.website,
-              industry: company.industry,
-              targetAudience: company.target_audience,
-              brandTone: company.brand_tone,
-              goals: company.goals,
-              platforms: company.platforms
-            })}
-            className="border border-gray-200 rounded-xl p-6 cursor-pointer hover:border-blue-500 hover:shadow-md transition-all duration-200 relative group"
-          >
-            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <button
-                onClick={(e) => handleDelete(company.id, e)}
-                className="p-1 text-red-500 hover:text-red-700"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-            
-            <div className="mb-4">
-              <h3 className="font-semibold text-gray-900 text-lg">{company.name}</h3>
-              {company.industry && (
-                <p className="text-sm text-gray-600">{company.industry}</p>
-              )}
-            </div>
-            
-            <div className="space-y-2 text-sm">
-              <div>
-                <span className="text-gray-500">Tone:</span>
-                <span className="ml-2 capitalize">{company.brand_tone}</span>
-              </div>
-              <div>
-                <span className="text-gray-500">Platforms:</span>
-                <span className="ml-2">{company.platforms?.length || 0}</span>
-              </div>
-              <div>
-                <span className="text-gray-500">Goals:</span>
-                <span className="ml-2">{company.goals?.length || 0}</span>
-              </div>
-            </div>
-            
-            <div className="mt-4 flex flex-wrap gap-1">
-              {company.platforms?.slice(0, 3).map((platform: string) => (
-                <span
-                  key={platform}
-                  className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full capitalize"
+        {companies.map((company) => {
+          const companyData = {
+            id: company.id,
+            name: company.name,
+            website: company.website,
+            industry: company.industry,
+            targetAudience: company.target_audience,
+            brandTone: company.brand_tone,
+            goals: company.goals,
+            platforms: company.platforms
+          };
+
+          return (
+            <div
+              key={company.id}
+              className="border border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:shadow-md transition-all duration-200 relative group"
+            >
+              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <button
+                  onClick={(e) => handleDelete(company.id, e)}
+                  className="p-1 text-red-500 hover:text-red-700"
                 >
-                  {platform}
-                </span>
-              ))}
-              {company.platforms?.length > 3 && (
-                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                  +{company.platforms.length - 3} more
-                </span>
-              )}
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-900 text-lg">{company.name}</h3>
+                {company.industry && (
+                  <p className="text-sm text-gray-600">{company.industry}</p>
+                )}
+              </div>
+              
+              <div className="space-y-2 text-sm">
+                <div>
+                  <span className="text-gray-500">Tone:</span>
+                  <span className="ml-2 capitalize">{company.brand_tone}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Platforms:</span>
+                  <span className="ml-2">{company.platforms?.length || 0}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Goals:</span>
+                  <span className="ml-2">{company.goals?.length || 0}</span>
+                </div>
+              </div>
+              
+              <div className="mt-4 flex flex-wrap gap-1">
+                {company.platforms?.slice(0, 3).map((platform: string) => (
+                  <span
+                    key={platform}
+                    className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full capitalize"
+                  >
+                    {platform}
+                  </span>
+                ))}
+                {company.platforms?.length > 3 && (
+                  <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                    +{company.platforms.length - 3} more
+                  </span>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-6 grid grid-cols-1 gap-3">
+                <button
+                  onClick={() => onSelectCompany(companyData)}
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Create New Post
+                </button>
+                
+                {onScheduleCompany && (
+                  <button
+                    onClick={() => onScheduleCompany(companyData)}
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-200 flex items-center justify-center gap-2"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    Schedule Posts
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

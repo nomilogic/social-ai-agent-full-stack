@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { GeneratedPost, Platform } from '../types';
 import { postToAllPlatforms } from '../lib/socialPoster';
-import { OAuthManager } from './OAuthManager';
-import { oauthManager } from '../lib/oauth';
+import { SocialMediaManager } from './SocialMediaManager';
+import { socialMediaAPI } from '../lib/socialMediaApi';
 
 interface PublishProps {
   posts: GeneratedPost[];
@@ -28,9 +28,19 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
   const checkConnectedPlatforms = async () => {
     const connected: Platform[] = [];
     for (const post of posts) {
-      const hasCredentials = await oauthManager.hasValidCredentials(userId || '', post.platform);
-      if (hasCredentials) {
-        connected.push(post.platform);
+      // Check if we have a stored token
+      const tokenKey = `${post.platform}_access_token_${userId}`;
+      const accessToken = localStorage.getItem(tokenKey);
+      
+      if (accessToken) {
+        // Validate the token with the API
+        const isValid = await socialMediaAPI.validateToken(post.platform, accessToken);
+        if (isValid) {
+          connected.push(post.platform);
+        } else {
+          // Remove invalid token
+          localStorage.removeItem(tokenKey);
+        }
       }
     }
     setConnectedPlatforms(connected);
@@ -65,11 +75,10 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
     <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg p-8">
       <h2 className="text-2xl font-bold text-gray-900 mb-4">Publish Your Posts</h2>
       <p className="mb-6 text-gray-600">Select platforms and publish your AI-generated posts directly.</p>
-      {/* OAuth Management */}
+      {/* Social Media Connection Management */}
       <div className="mb-6">
-        <OAuthManager
+        <SocialMediaManager
           userId={userId || ''}
-          platforms={posts.map(p => p.platform)}
           onCredentialsUpdate={checkConnectedPlatforms}
         />
       </div>

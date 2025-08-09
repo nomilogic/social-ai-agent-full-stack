@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express'
 import multer from 'multer'
-import { serverSupabase } from '../supabaseClient'
+import { serverSupabaseAnon as serverSupabase } from '../supabaseClient'
 import { validateRequestBody } from '../middleware/auth'
 
 const router = express.Router()
@@ -92,7 +92,7 @@ router.get('/:userId', async (req: Request, res: Response) => {
     }
 
     // Get public URLs for all files
-    const filesWithUrls = data.map(file => {
+    const filesWithUrls = data.map((file: any) => {
       const { data: { publicUrl } } = serverSupabase.storage
         .from('media')
         .getPublicUrl(`${userId}/${file.name}`)

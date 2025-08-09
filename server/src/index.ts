@@ -14,6 +14,7 @@ import aiRouter from './routes/ai'
 import companiesRouter from './routes/companies'
 import postsRouter from './routes/posts'
 import mediaRouter from './routes/media'
+import scheduleRouter from './routes/schedule'
 
 dotenv.config()
 const app = express()
@@ -47,6 +48,7 @@ app.use('/api/youtube', youtubeRouter)
 app.use('/api/companies', companiesRouter)
 app.use('/api/posts', postsRouter)
 app.use('/api/media', mediaRouter)
+app.use('/api', scheduleRouter)
 
 // Legacy routes for backwards compatibility
 app.use('/share', linkedinRouter)

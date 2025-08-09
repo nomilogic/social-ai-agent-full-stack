@@ -11,9 +11,10 @@ import { AIGenerator } from './components/AIGenerator';
 import { PostPreview } from './components/PostPreview';
 import { PublishPosts } from './components/PublishPosts'; // Import PublishPosts
 import { OAuthCallback } from './components/OAuthCallback'; // Import OAuthCallback
+import { PostScheduleDashboard } from './components/PostScheduleDashboard';
 import { StepData } from './types';
 
-type Step = 'auth' | 'company-select' | 'company-setup' | 'content' | 'generate' | 'preview' | 'publish';
+type Step = 'auth' | 'company-select' | 'company-setup' | 'content' | 'generate' | 'preview' | 'publish' | 'schedule';
 
 function App() {
   const [currentStep, setCurrentStep] = useState<Step>('auth');
@@ -144,6 +145,12 @@ function App() {
     setCurrentStep('content');
   };
 
+  const handleScheduleCompany = (company: any) => {
+    setSelectedCompany(company);
+    setStepData(prev => ({ ...prev, company, companyId: company.id }));
+    setCurrentStep('schedule');
+  };
+
   const handleCreateNewCompany = () => {
     setCurrentStep('company-setup');
   };
@@ -164,6 +171,9 @@ function App() {
         break;
       case 'publish':
         setCurrentStep('preview');
+        break;
+      case 'schedule':
+        setCurrentStep('company-select');
         break;
     }
   };
@@ -269,6 +279,7 @@ function App() {
             <CompanySelector
               userId={user.id}
               onSelectCompany={handleSelectCompany}
+              onScheduleCompany={handleScheduleCompany}
               onCreateNew={handleCreateNewCompany}
             />
           )}
@@ -321,6 +332,13 @@ function App() {
               posts={stepData.generatedPosts || []}
               userId={user?.id || ''}
               onBack={() => setCurrentStep('preview')}
+            />
+          )}
+
+          {currentStep === 'schedule' && stepData.company && (
+            <PostScheduleDashboard
+              companyId={stepData.companyId}
+              companyData={stepData.company}
             />
           )}
         </div>
