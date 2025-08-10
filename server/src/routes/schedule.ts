@@ -68,7 +68,7 @@ async function generateAIText(prompt: string, model: string): Promise<string> {
         temperature: 0.7,
         max_tokens: 4000
       });
-      
+
       return completion.choices[0]?.message?.content || '';
     } else if (model.startsWith('gemini-')) {
       // Google Gemini models
@@ -89,7 +89,7 @@ async function generateAIText(prompt: string, model: string): Promise<string> {
           }
         ]
       });
-      
+
       // Extract text from Claude's response format
       if (message.content && Array.isArray(message.content)) {
         const textContent = message.content.find(c => c.type === 'text');
@@ -111,7 +111,7 @@ async function generateAIText(prompt: string, model: string): Promise<string> {
 function generateFallbackSchedule(request: ScheduleRequest): any[] {
   const currentDate = new Date();
   const schedule = [];
-  
+
   // Default templates based on category
   const contentTemplates = {
     'Technology': [
@@ -130,25 +130,31 @@ function generateFallbackSchedule(request: ScheduleRequest): any[] {
       'Innovation happens when we embrace change and think differently. #Innovation #Growth'
     ]
   };
-  
+
   const templates = contentTemplates[request.category as keyof typeof contentTemplates] || contentTemplates['General'];
   const timePrefs = {
     'morning': ['09:00', '10:00', '11:00'],
-    'afternoon': ['13:00', '14:00', '15:00'], 
+    'afternoon': ['13:00', '14:00', '15:00'],
     'evening': ['17:00', '18:00', '19:00']
   };
-  
-  const times = request.customTime ? [request.customTime] : (timePrefs[request.timePreference || 'morning'] || timePrefs.morning);
-  
+
+  //const times = request.customTime ? [request.customTime] : timePrefs[request.timePreference || 'morning'];
+
+  const times = request.customTime
+    ? [request.customTime]
+    : (request.timePreference && request.timePreference !== 'custom'
+      ? timePrefs[request.timePreference]
+      : timePrefs.morning
+    );
   // Generate 3-5 posts over the next week
   const numberOfPosts = Math.min(parseInt(request.prompt.match(/\d+/)?.[0] || '3'), 5);
-  
+
   for (let i = 0; i < numberOfPosts; i++) {
     const postDate = new Date(currentDate);
     postDate.setDate(currentDate.getDate() + i * 2); // Every other day
-    
+
     const template = templates[i % templates.length];
-    
+
     schedule.push({
       id: `fallback_${Date.now()}_${i}`,
       date: postDate.toISOString().split('T')[0],
@@ -161,7 +167,7 @@ function generateFallbackSchedule(request: ScheduleRequest): any[] {
       reasoning: 'Fallback content generated due to AI parsing error'
     });
   }
-  
+
   return schedule;
 }
 
@@ -171,7 +177,7 @@ function generateFallbackSchedule(request: ScheduleRequest): any[] {
 router.post('/ai/generate-schedule', async (req: Request, res: Response) => {
   try {
     const request: ScheduleRequest & { preferredModel?: string } = req.body;
-    
+
     if (!request.prompt || !request.platforms || request.platforms.length === 0 || !request.companyId) {
       return res.status(400).json({ error: 'Missing required fields: prompt, platforms, and companyId are required' });
     }
@@ -190,7 +196,7 @@ router.post('/ai/generate-schedule', async (req: Request, res: Response) => {
     // Get current date for better context
     const currentDate = new Date();
     const currentDateStr = currentDate.toISOString().split('T')[0];
-    
+
     // Determine optimal posting times based on platforms and preferences
     const getOptimalTimes = () => {
       const times = {
@@ -198,9 +204,15 @@ router.post('/ai/generate-schedule', async (req: Request, res: Response) => {
         afternoon: ['13:00', '14:00', '15:00'],
         evening: ['17:00', '18:00', '19:00']
       };
-      
+
       if (request.customTime) return [request.customTime];
-      return times[request.timePreference || 'morning'] || times.morning;
+
+      // Handle the case where timePreference might be 'custom' or undefined
+      const timeKey = (request.timePreference === 'custom' || !request.timePreference)
+        ? 'morning'
+        : request.timePreference;
+
+      return times[timeKey];
     };
 
     // Create enhanced AI prompt for schedule generation
@@ -280,10 +292,10 @@ Generate ${Math.min(parseInt(request.prompt.match(/\d+/)?.[0] || '5'), 20)} post
     let scheduleData: any[];
     try {
       console.log('Raw AI Response:', text);
-      
+
       // Clean the response - remove any markdown formatting
       let cleanedText = text.replace(/```json\s*/g, '').replace(/```\s*/g, '');
-      
+
       // Extract JSON from the response (AI might include additional text)
       const jsonMatch = cleanedText.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
@@ -291,20 +303,20 @@ Generate ${Math.min(parseInt(request.prompt.match(/\d+/)?.[0] || '5'), 20)} post
       } else {
         throw new Error('No valid JSON found in AI response');
       }
-      
+
       // Validate the parsed data
       if (!Array.isArray(scheduleData)) {
         throw new Error('Schedule data is not an array');
       }
-      
+
       if (scheduleData.length === 0) {
         throw new Error('Schedule data is empty');
       }
-      
+
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError);
       console.error('Original text:', text);
-      
+
       // Generate fallback schedule
       scheduleData = generateFallbackSchedule(request);
       console.log('Using fallback schedule:', scheduleData);
@@ -566,7 +578,7 @@ router.get('/schedule/analytics', async (req: Request, res: Response) => {
     // Calculate date range based on period
     const now = new Date();
     let startDate = new Date();
-    
+
     switch (period) {
       case 'week':
         startDate.setDate(now.getDate() - 7);
@@ -613,7 +625,7 @@ router.get('/schedule/analytics', async (req: Request, res: Response) => {
     // Upcoming posts (next 7 days)
     const nextWeek = new Date();
     nextWeek.setDate(now.getDate() + 7);
-    
+
     const upcomingPosts = allPosts?.filter(post => {
       const postDate = new Date(post.date);
       return postDate >= now && postDate <= nextWeek && post.status === 'scheduled';
@@ -723,7 +735,7 @@ Generate 1-3 pieces of content as a JSON array with this structure:
     // Determine which AI model to use for live content
     const selectedModel = preferredModel || process.env.DEFAULT_SCHEDULING_MODEL || 'gpt-4-turbo';
     console.log('Using AI model for live content:', selectedModel);
-    
+
     // Generate using the selected AI model
     const text = await generateAIText(aiPrompt, selectedModel);
 
