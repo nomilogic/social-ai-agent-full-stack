@@ -14,9 +14,11 @@ import { OAuthCallback } from './components/OAuthCallback'; // Import OAuthCallb
 import { PostScheduleDashboard } from './components/PostScheduleDashboard';
 import { CampaignSetup } from './components/CampaignSetup';
 import { CampaignSelector } from './components/CampaignSelector';
+import { CompanyDashboard } from './components/CompanyDashboard';
+import { CampaignDashboard } from './components/CampaignDashboard';
 import { StepData } from './types';
 
-type Step = 'auth' | 'company-select' | 'company-setup' | 'content' | 'generate' | 'preview' | 'publish' | 'schedule' | 'campaign-setup' | 'campaign-select';
+type Step = 'auth' | 'company-select' | 'company-setup' | 'content' | 'generate' | 'preview' | 'publish' | 'schedule' | 'campaign-setup' | 'campaign-select' | 'company-dashboard' | 'campaign-dashboard';
 
 function App() {
   const [currentStep, setCurrentStep] = useState<Step>('auth');
@@ -170,10 +172,51 @@ function App() {
   };
 
   const handleSelectCampaign = (campaign: any) => {
-    // Handle campaign selection for viewing/managing
+    // Handle campaign selection for viewing/managing dashboard
     setStepData(prev => ({ ...prev, selectedCampaign: campaign }));
-    // Could navigate to campaign management dashboard in the future
-    console.log('Selected campaign:', campaign);
+    setCurrentStep('campaign-dashboard');
+  };
+
+  // New dashboard handlers
+  const handleDashboardCompany = (company: any) => {
+    setSelectedCompany(company);
+    setStepData(prev => ({ ...prev, company, companyId: company.id }));
+    setCurrentStep('company-dashboard');
+  };
+
+  const handleDashboardCreatePost = () => {
+    setCurrentStep('content');
+  };
+
+  const handleDashboardViewPosts = () => {
+    // Navigate to posts view - could be a separate component or filtered view
+    console.log('View posts for company:', selectedCompany);
+  };
+
+  const handleDashboardManageCampaigns = () => {
+    setCurrentStep('campaign-select');
+  };
+
+  const handleDashboardSchedulePosts = () => {
+    setCurrentStep('schedule');
+  };
+
+  const handleDashboardEditCompany = () => {
+    setCurrentStep('company-setup');
+  };
+
+  const handleCampaignDashboardCreatePost = () => {
+    // Set campaign context and create post
+    setCurrentStep('content');
+  };
+
+  const handleCampaignDashboardViewPosts = () => {
+    // Navigate to campaign-specific posts view
+    console.log('View posts for campaign:', stepData.selectedCampaign);
+  };
+
+  const handleCampaignDashboardEditCampaign = () => {
+    setCurrentStep('campaign-setup');
   };
 
   const handleCreateNewCompany = () => {
@@ -209,6 +252,12 @@ function App() {
         setCurrentStep('company-select');
         break;
       case 'campaign-setup':
+        setCurrentStep('campaign-select');
+        break;
+      case 'company-dashboard':
+        setCurrentStep('company-select');
+        break;
+      case 'campaign-dashboard':
         setCurrentStep('campaign-select');
         break;
     }
