@@ -24,7 +24,7 @@ const PORT = process.env.PORT || 5000
 
 app.use(
   cors({
-    origin: process.env.NODE_ENV === 'production' ? false : ["http://localhost:5173"],
+    origin: process.env.NODE_ENV === 'production' ? false : ["http://localhost:5173", "http://localhost:5000"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -58,14 +58,18 @@ app.use('/api', scheduleRouter)
 app.use('/share', linkedinRouter)
 app.use('/api/v2', linkedinRouter)
 
-// Serve client in production (after building)
-if (process.env.NODE_ENV === 'production') {
-  const clientDist = path.join(__dirname, '../client')
-  app.use(express.static(clientDist))
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(clientDist, 'index.html'))
-  })
-}
+// Serve static files from client build directory
+const clientDistPath = path.join(__dirname, '../../dist/client')
+app.use(express.static(clientDistPath))
+
+// Handle client-side routing - serve index.html for all non-API routes
+app.get('*', (req, res, next) => {
+  // Skip API routes
+  if (req.path.startsWith('/api/') || req.path.startsWith('/oauth/') || req.path.startsWith('/share/')) {
+    return next()
+  }
+  res.sendFile(path.join(clientDistPath, 'index.html'))
+})
 
 app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`)
