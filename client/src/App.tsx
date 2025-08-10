@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, ArrowLeft, LogOut } from 'lucide-react';
+import { Sparkles, ArrowLeft, LogOut, Bell } from 'lucide-react';
 import { getCurrentUser, saveCompany, savePost, updateCompany } from './lib/database';
 import { supabase } from './lib/supabase';
 import { AuthForm } from './components/AuthForm';
@@ -16,6 +16,7 @@ import { CampaignSetup } from './components/CampaignSetup';
 import { CampaignSelector } from './components/CampaignSelector';
 import { CompanyDashboard } from './components/CompanyDashboard';
 import { CampaignDashboard } from './components/CampaignDashboard';
+import { NotificationCenter } from './components/NotificationCenter';
 import { StepData } from './types';
 
 type Step = 'auth' | 'company-select' | 'company-setup' | 'content' | 'generate' | 'preview' | 'publish' | 'schedule' | 'campaign-setup' | 'campaign-select' | 'company-dashboard' | 'campaign-dashboard';
@@ -27,6 +28,7 @@ function App() {
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showPublishModal, setShowPublishModal] = useState(false); // State to control the publish modal
+  const [showNotificationCenter, setShowNotificationCenter] = useState(false); // State to control notification center
 
   React.useEffect(() => {
     initializeAuth();
@@ -327,6 +329,15 @@ function App() {
                   Welcome, {user.user_metadata?.name || user.email}
                 </span>
               )}
+              <button
+                onClick={() => setShowNotificationCenter(true)}
+                className="relative p-2 text-gray-600 hover:text-gray-800 transition-colors duration-200 hover:bg-gray-100 rounded-lg"
+                title="Notifications"
+              >
+                <Bell className="w-5 h-5" />
+                {/* Notification badge - could be dynamic based on unread count */}
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">3</span>
+              </button>
               {currentStep !== 'company-select' && (
                 <button
                   onClick={resetToStart}
@@ -344,7 +355,6 @@ function App() {
                 <span className="text-sm font-medium">Sign Out</span>
               </button>
             </div>
-            )
           </div>
         </div>
       </header>
@@ -366,6 +376,7 @@ function App() {
               onSelectCompany={handleSelectCompany}
               onScheduleCompany={handleScheduleCompany}
               onCampaignCompany={handleCampaignCompany}
+              onDashboardCompany={handleDashboardCompany}
               onEditCompany={handleEditCompany}
               onCreateNew={handleCreateNewCompany}
             />
@@ -446,6 +457,29 @@ function App() {
               initialData={stepData.selectedCampaign}
             />
           )}
+
+          {currentStep === 'company-dashboard' && stepData.company && (
+            <CompanyDashboard
+              companyData={stepData.company}
+              onCreatePost={handleDashboardCreatePost}
+              onViewPosts={handleDashboardViewPosts}
+              onManageCampaigns={handleDashboardManageCampaigns}
+              onSchedulePosts={handleDashboardSchedulePosts}
+              onEditCompany={handleDashboardEditCompany}
+              onBack={handleBack}
+            />
+          )}
+
+          {currentStep === 'campaign-dashboard' && stepData.selectedCampaign && (
+            <CampaignDashboard
+              campaignData={stepData.selectedCampaign}
+              companyData={stepData.company}
+              onCreatePost={handleCampaignDashboardCreatePost}
+              onViewPosts={handleCampaignDashboardViewPosts}
+              onEditCampaign={handleCampaignDashboardEditCampaign}
+              onBack={handleBack}
+            />
+          )}
         </div>
       </main>
 
@@ -461,6 +495,13 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* Notification Center */}
+      <NotificationCenter
+        isOpen={showNotificationCenter}
+        onClose={() => setShowNotificationCenter(false)}
+        userId={user?.id}
+      />
 
       {/* Footer */}
       <footer className="bg-white border-t border-gray-100 mt-16">

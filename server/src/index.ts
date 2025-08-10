@@ -16,6 +16,7 @@ import postsRouter from './routes/posts'
 import mediaRouter from './routes/media'
 import scheduleRouter from './routes/schedule'
 import campaignsRouter from './routes/campaigns'
+import notificationsRouter from './routes/notifications'
 
 dotenv.config()
 const app = express()
@@ -50,6 +51,7 @@ app.use('/api/companies', companiesRouter)
 app.use('/api/campaigns', campaignsRouter)
 app.use('/api/posts', postsRouter)
 app.use('/api/media', mediaRouter)
+app.use('/api/notifications', notificationsRouter)
 app.use('/api', scheduleRouter)
 
 // Legacy routes for backwards compatibility

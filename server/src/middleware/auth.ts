@@ -32,11 +32,25 @@ export function validateRequestBody(requiredFields: string[]) {
   }
 }
 
-// Extend Express Request type to include accessToken
+// Simple user authentication middleware (follows existing pattern)
+export function authenticateUser(req: Request, res: Response, next: NextFunction) {
+  const userId = req.query.userId as string || req.body.userId as string
+  
+  if (!userId) {
+    return res.status(401).json({ error: 'User ID is required' })
+  }
+  
+  // Attach user info to request for use in route handlers
+  req.user = { id: userId }
+  next()
+}
+
+// Extend Express Request type to include accessToken and user
 declare global {
   namespace Express {
     interface Request {
       accessToken?: string
+      user?: { id: string }
     }
   }
 }
