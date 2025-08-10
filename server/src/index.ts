@@ -11,6 +11,12 @@ dotenv.config()
 const app = express()
 const PORT = process.env.PORT || 5000
 
+// Add request logging for debugging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`)
+  next()
+})
+
 app.use(
   cors({
     origin: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL : ["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -42,5 +48,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 app.listen(PORT, () => {
-  console.log(`Server listening on http://localhost:${PORT}`)
+  console.log(`🚀 Server running on http://localhost:${PORT}`)
+  console.log(`📱 Client should be running on http://localhost:5173`)
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`)
 })
