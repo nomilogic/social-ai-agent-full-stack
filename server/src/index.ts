@@ -38,12 +38,26 @@ app.use('/api/ai', aiRouter)
 app.use('/share', linkedinRouter)
 app.use('/api/v2', linkedinRouter)
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() })
+})
+
 // Serve client in production (after building)
 if (process.env.NODE_ENV === 'production') {
   const clientDist = path.join(__dirname, '../client')
   app.use(express.static(clientDist))
   app.get('*', (req, res) => {
     res.sendFile(path.join(clientDist, 'index.html'))
+  })
+} else {
+  // In development, don't serve client files - let Vite handle it
+  app.get('/', (req, res) => {
+    res.json({ 
+      message: 'API Server is running', 
+      clientUrl: 'http://localhost:5173',
+      environment: 'development'
+    })
   })
 }
 
