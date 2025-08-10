@@ -7,9 +7,57 @@ dotenv.config()
 
 const router = express.Router()
 
-// Initialize Gemini AI
+// Initialize AI Services
 const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY!)
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
+
+// AI Model Configuration
+interface AIModel {
+  id: string;
+  provider: 'openai' | 'google' | 'anthropic';
+  endpoint?: string;
+  maxTokens?: number;
+  temperature?: number;
+}
+
+const AI_MODELS: { [key: string]: AIModel } = {
+  'gpt-4o': {
+    id: 'gpt-4o',
+    provider: 'openai',
+    maxTokens: 4096
+  },
+  'gpt-4-turbo': {
+    id: 'gpt-4-turbo',
+    provider: 'openai',
+    maxTokens: 4096
+  },
+  'gpt-3.5-turbo': {
+    id: 'gpt-3.5-turbo',
+    provider: 'openai',
+    maxTokens: 4096
+  },
+  'gemini-pro': {
+    id: 'gemini-pro',
+    provider: 'google',
+    maxTokens: 8192
+  },
+  'gemini-1.5-pro': {
+    id: 'gemini-1.5-pro',
+    provider: 'google',
+    maxTokens: 8192
+  },
+  'claude-3-opus': {
+    id: 'claude-3-opus-20240229',
+    provider: 'anthropic',
+    maxTokens: 4096
+  },
+  'claude-3-sonnet': {
+    id: 'claude-3-sonnet-20240229',
+    provider: 'anthropic',
+    maxTokens: 4096
+  }
+};
 
 // POST /api/ai/generate - Generate social media content using AI
 router.post('/generate', async (req: Request, res: Response) => {
@@ -330,5 +378,304 @@ Return only 3 concise, creative image prompts that would complement the content.
     });
   }
 });
+
+// Unified text generation endpoint with multi-model support
+router.post('/generate-text', async (req: Request, res: Response) => {
+  try {
+    const { 
+      model = 'gpt-4o', 
+      prompt, 
+      systemPrompt,
+      maxTokens = 1000,
+      temperature = 0.7,
+      context 
+    } = req.body;
+
+    if (!prompt) {
+      return res.status(400).json({ error: 'Prompt is required' });
+    }
+
+    const modelConfig = AI_MODELS[model];
+    if (!modelConfig) {
+      return res.status(400).json({ error: `Unsupported model: ${model}` });
+    }
+
+    console.log(`Generating text with model: ${model}`);
+    console.log(`Prompt: ${prompt.substring(0, 100)}...`);
+
+    let response;
+    let usage;
+
+    switch (modelConfig.provider) {
+      case 'openai':
+        response = await generateWithOpenAI(modelConfig, prompt, systemPrompt, maxTokens, temperature);
+        break;
+      
+      case 'google':
+        response = await generateWithGemini(modelConfig, prompt, systemPrompt, maxTokens, temperature);
+        break;
+      
+      case 'anthropic':
+        response = await generateWithClaude(modelConfig, prompt, systemPrompt, maxTokens, temperature);
+        break;
+      
+      default:
+        return res.status(400).json({ error: `Unsupported provider: ${modelConfig.provider}` });
+    }
+
+    res.json({
+      content: response.content,
+      model: model,
+      usage: response.usage,
+      finishReason: response.finishReason
+    });
+
+  } catch (error: any) {
+    console.error('Error in text generation:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to generate text', 
+      details: error.message 
+    });
+  }
+});
+
+// OpenAI text generation
+async function generateWithOpenAI(
+  modelConfig: AIModel, 
+  prompt: string, 
+  systemPrompt?: string,
+  maxTokens: number = 1000,
+  temperature: number = 0.7
+) {
+  if (!OPENAI_API_KEY) {
+    throw new Error('OpenAI API key not configured');
+  }
+
+  const messages = [];
+  if (systemPrompt) {
+    messages.push({ role: 'system', content: systemPrompt });
+  }
+  messages.push({ role: 'user', content: prompt });
+
+  const response = await axios.post(
+    'https://api.openai.com/v1/chat/completions',
+    {
+      model: modelConfig.id,
+      messages: messages,
+      max_tokens: Math.min(maxTokens, modelConfig.maxTokens || 4096),
+      temperature: temperature,
+      stream: false
+    },
+    {
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    }
+  );
+
+  const choice = response.data.choices[0];
+  return {
+    content: choice.message.content,
+    usage: response.data.usage,
+    finishReason: choice.finish_reason
+  };
+}
+
+// Google Gemini text generation
+async function generateWithGemini(
+  modelConfig: AIModel, 
+  prompt: string, 
+  systemPrompt?: string,
+  maxTokens: number = 1000,
+  temperature: number = 0.7
+) {
+  const model = genAI.getGenerativeModel({ 
+    model: modelConfig.id,
+    generationConfig: {
+      maxOutputTokens: Math.min(maxTokens, modelConfig.maxTokens || 8192),
+      temperature: temperature
+    }
+  });
+
+  const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt;
+  
+  const result = await model.generateContent(fullPrompt);
+  const response = await result.response;
+  const content = response.text();
+
+  return {
+    content: content,
+    usage: {
+      // Gemini doesn't provide detailed usage stats in the free tier
+      inputTokens: Math.ceil(fullPrompt.length / 4),
+      outputTokens: Math.ceil(content.length / 4),
+      totalTokens: Math.ceil((fullPrompt.length + content.length) / 4)
+    },
+    finishReason: 'stop'
+  };
+}
+
+// Anthropic Claude text generation
+async function generateWithClaude(
+  modelConfig: AIModel, 
+  prompt: string, 
+  systemPrompt?: string,
+  maxTokens: number = 1000,
+  temperature: number = 0.7
+) {
+  if (!ANTHROPIC_API_KEY) {
+    throw new Error('Anthropic API key not configured');
+  }
+
+  const response = await axios.post(
+    'https://api.anthropic.com/v1/messages',
+    {
+      model: modelConfig.id,
+      max_tokens: Math.min(maxTokens, modelConfig.maxTokens || 4096),
+      temperature: temperature,
+      system: systemPrompt || '',
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ]
+    },
+    {
+      headers: {
+        'Authorization': `Bearer ${ANTHROPIC_API_KEY}`,
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01'
+      }
+    }
+  );
+
+  const content = response.data.content[0]?.text || '';
+  
+  return {
+    content: content,
+    usage: response.data.usage || {
+      inputTokens: Math.ceil(prompt.length / 4),
+      outputTokens: Math.ceil(content.length / 4),
+      totalTokens: Math.ceil((prompt.length + content.length) / 4)
+    },
+    finishReason: response.data.stop_reason || 'stop'
+  };
+}
+
+// Get available models
+router.get('/models', (req: Request, res: Response) => {
+  const availableModels = Object.keys(AI_MODELS).map(key => {
+    const model = AI_MODELS[key];
+    return {
+      id: key,
+      name: model.id,
+      provider: model.provider,
+      maxTokens: model.maxTokens,
+      isAvailable: true // You could add logic to check API key availability
+    };
+  });
+
+  res.json({
+    models: availableModels,
+    defaultModel: 'gpt-4o'
+  });
+});
+
+// Enhanced image generation with model selection
+router.post('/generate-image-enhanced', async (req: Request, res: Response) => {
+  try {
+    const { 
+      model = 'dall-e-3',
+      prompt, 
+      size = '1024x1024', 
+      quality = 'standard', 
+      style = 'vivid',
+      aspectRatio = '1:1'
+    } = req.body;
+
+    if (!prompt) {
+      return res.status(400).json({ error: 'Prompt is required' });
+    }
+
+    let actualSize = size;
+    
+    // Convert aspect ratio to size if needed
+    if (aspectRatio && model === 'dall-e-3') {
+      const sizeMap = {
+        '1:1': '1024x1024',
+        '16:9': '1792x1024', 
+        '9:16': '1024x1792'
+      };
+      actualSize = sizeMap[aspectRatio as keyof typeof sizeMap] || size;
+    }
+
+    // For now, only support DALL-E models
+    if (model === 'dall-e-3' || model === 'dall-e-2') {
+      const response = await generateImageWithDALLE(model, prompt, actualSize, quality, style);
+      res.json({
+        ...response,
+        model: model
+      });
+    } else {
+      res.status(400).json({ error: `Unsupported image model: ${model}` });
+    }
+
+  } catch (error: any) {
+    console.error('Error generating image:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to generate image', 
+      details: error.message 
+    });
+  }
+});
+
+// DALL-E image generation helper
+async function generateImageWithDALLE(
+  model: string,
+  prompt: string, 
+  size: string,
+  quality: string,
+  style: string
+) {
+  if (!OPENAI_API_KEY) {
+    throw new Error('OpenAI API key not configured');
+  }
+
+  const response = await axios.post(
+    'https://api.openai.com/v1/images/generations',
+    {
+      model: model,
+      prompt: prompt,
+      size: size,
+      quality: model === 'dall-e-3' ? quality : undefined, // DALL-E 2 doesn't support quality
+      style: model === 'dall-e-3' ? style : undefined, // DALL-E 2 doesn't support style
+      n: 1
+    },
+    {
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    }
+  );
+
+  if (!response.data || !response.data.data || !response.data.data[0]) {
+    throw new Error('Invalid response from OpenAI API');
+  }
+
+  const imageUrl = response.data.data[0].url;
+  const revisedPrompt = response.data.data[0].revised_prompt || prompt;
+
+  return {
+    imageUrl,
+    originalPrompt: prompt,
+    revisedPrompt,
+    style,
+    quality,
+    size
+  };
+}
 
 export default router

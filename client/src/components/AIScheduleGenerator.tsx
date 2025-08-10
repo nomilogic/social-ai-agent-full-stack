@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, Sparkles, Plus, RefreshCw, Send } from 'lucide-react';
+import { Calendar, Clock, Sparkles, Plus, RefreshCw, Send, Brain } from 'lucide-react';
+import { AIModelSelector } from './AIModelSelector';
+import { aiService } from '../lib/aiService';
 
 interface ScheduleRequest {
   prompt: string;
@@ -8,6 +10,7 @@ interface ScheduleRequest {
   timePreference?: 'morning' | 'afternoon' | 'evening' | 'custom';
   customTime?: string;
   keywords?: string[];
+  preferredModel?: string;
 }
 
 interface GeneratedSchedule {
@@ -56,6 +59,7 @@ export const AIScheduleGenerator: React.FC<AIScheduleGeneratorProps> = ({
   const [timePreference, setTimePreference] = useState<'morning' | 'afternoon' | 'evening' | 'custom'>('morning');
   const [customTime, setCustomTime] = useState('09:00');
   const [keywords, setKeywords] = useState('');
+  const [selectedModel, setSelectedModel] = useState('');
   const [generatedSchedule, setGeneratedSchedule] = useState<GeneratedSchedule[]>([]);
   const [showPreview, setShowPreview] = useState(false);
 
@@ -80,7 +84,8 @@ export const AIScheduleGenerator: React.FC<AIScheduleGeneratorProps> = ({
       platforms: selectedPlatforms,
       timePreference,
       customTime: timePreference === 'custom' ? customTime : undefined,
-      keywords: keywords.split(',').map(k => k.trim()).filter(Boolean)
+      keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
+      preferredModel: selectedModel || undefined
     };
 
     try {
@@ -256,6 +261,16 @@ export const AIScheduleGenerator: React.FC<AIScheduleGeneratorProps> = ({
               </button>
             ))}
           </div>
+        </div>
+
+        {/* AI Model Selection */}
+        <div className="mb-6">
+          <AIModelSelector
+            selectedModel={selectedModel}
+            onModelChange={setSelectedModel}
+            taskType="scheduling"
+            showIcon={true}
+          />
         </div>
 
         {/* Time Preference */}

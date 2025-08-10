@@ -1,15 +1,27 @@
 import { Router, Request, Response } from 'express';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createClient } from '@supabase/supabase-js';
+import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import Anthropic from '@anthropic-ai/sdk';
 
 const router = Router();
 
 // Initialize services
-const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY || '');
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL || '',
   process.env.VITE_SUPABASE_ANON_KEY || ''
 );
+
+// Initialize AI services
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY || '');
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY || '',
+});
 
 interface ScheduleRequest {
   prompt: string;
@@ -32,6 +44,65 @@ interface GeneratedSchedule {
   isLive?: boolean;
   reasoning?: string;
   companyId: string;
+}
+
+/**
+ * Generate text using the selected AI model
+ */
+async function generateAIText(prompt: string, model: string): Promise<string> {
+  try {
+    if (model.startsWith('gpt-')) {
+      // OpenAI models
+      const completion = await openai.chat.completions.create({
+        model: model,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert social media strategist and content creator. Follow instructions exactly and return only the requested format.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 4000
+      });
+      
+      return completion.choices[0]?.message?.content || '';
+    } else if (model.startsWith('gemini-')) {
+      // Google Gemini models
+      const geminiModel = genAI.getGenerativeModel({ model: 'gemini-pro' });
+      const result = await geminiModel.generateContent(prompt);
+      const response = await result.response;
+      return response.text();
+    } else if (model.startsWith('claude-')) {
+      // Anthropic Claude models
+      const message = await anthropic.messages.create({
+        model: model,
+        max_tokens: 4000,
+        temperature: 0.7,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ]
+      });
+      
+      // Extract text from Claude's response format
+      if (message.content && Array.isArray(message.content)) {
+        const textContent = message.content.find(c => c.type === 'text');
+        return textContent ? textContent.text : '';
+      }
+      return '';
+    } else {
+      throw new Error(`Unsupported model: ${model}`);
+    }
+  } catch (error) {
+    console.error(`Error generating text with ${model}:`, error);
+    throw error;
+  }
 }
 
 /**
@@ -99,7 +170,7 @@ function generateFallbackSchedule(request: ScheduleRequest): any[] {
  */
 router.post('/ai/generate-schedule', async (req: Request, res: Response) => {
   try {
-    const request: ScheduleRequest = req.body;
+    const request: ScheduleRequest & { preferredModel?: string } = req.body;
     
     if (!request.prompt || !request.platforms || request.platforms.length === 0 || !request.companyId) {
       return res.status(400).json({ error: 'Missing required fields: prompt, platforms, and companyId are required' });
@@ -111,6 +182,10 @@ router.post('/ai/generate-schedule', async (req: Request, res: Response) => {
       .select('*')
       .eq('id', request.companyId)
       .single();
+
+    // Determine which AI model to use
+    const selectedModel = request.preferredModel || process.env.DEFAULT_SCHEDULING_MODEL || 'gpt-4-turbo';
+    console.log('Using AI model for scheduling:', selectedModel);
 
     // Get current date for better context
     const currentDate = new Date();
@@ -198,10 +273,8 @@ JSON STRUCTURE (return exactly in this format):
 Generate ${Math.min(parseInt(request.prompt.match(/\d+/)?.[0] || '5'), 20)} posts maximum. Focus on quality over quantity.
     `;
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-    const result = await model.generateContent(aiPrompt);
-    const response = await result.response;
-    const text = response.text();
+    // Generate using the selected AI model
+    const text = await generateAIText(aiPrompt, selectedModel);
 
     // Parse the JSON response from AI with improved error handling
     let scheduleData: any[];
@@ -595,7 +668,7 @@ router.get('/schedule/analytics', async (req: Request, res: Response) => {
  */
 router.post('/ai/generate-live-content', async (req: Request, res: Response) => {
   try {
-    const { companyId, date, category } = req.body;
+    const { companyId, date, category, preferredModel } = req.body;
 
     if (!companyId || !date) {
       return res.status(400).json({ error: 'Company ID and date are required' });
@@ -647,10 +720,12 @@ Generate 1-3 pieces of content as a JSON array with this structure:
 ]
     `;
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-    const result = await model.generateContent(aiPrompt);
-    const response = await result.response;
-    const text = response.text();
+    // Determine which AI model to use for live content
+    const selectedModel = preferredModel || process.env.DEFAULT_SCHEDULING_MODEL || 'gpt-4-turbo';
+    console.log('Using AI model for live content:', selectedModel);
+    
+    // Generate using the selected AI model
+    const text = await generateAIText(aiPrompt, selectedModel);
 
     // Parse the JSON response
     let liveContent: any[];

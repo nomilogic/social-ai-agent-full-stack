@@ -6,6 +6,7 @@ interface ScheduleRequest {
   customTime?: string;
   keywords?: string[];
   companyId: string;
+  preferredModel?: string;
 }
 
 interface GeneratedSchedule {
