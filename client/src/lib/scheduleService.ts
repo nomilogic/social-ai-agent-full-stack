@@ -40,11 +40,13 @@ class ScheduleService {
   private baseUrl = '/api';
 
   /**
-   * Generate AI-powered posting schedule
+   * Generate AI-powered posting schedule with image generation
    */
   async generateSchedule(request: ScheduleRequest): Promise<GeneratedSchedule[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/ai/generate-schedule`, {
+      console.log('Generating AI schedule with request:', request);
+      
+      const response = await fetch(`${this.baseUrl}/schedule/ai/generate-schedule`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -54,10 +56,33 @@ class ScheduleService {
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('Schedule generation failed:', errorData);
         throw new Error(errorData.error || 'Failed to generate schedule');
       }
 
-      return await response.json();
+      const schedule = await response.json();
+      console.log('Generated schedule:', schedule);
+      
+      // Process schedule items and generate images for those with prompts
+      const enhancedSchedule = await Promise.all(
+        schedule.map(async (item: GeneratedSchedule, index: number) => {
+          try {
+            // Generate image if prompt is provided and platform supports images
+            if (item.imagePrompt && this.shouldGenerateImage(item.platform)) {
+              console.log(`Generating image for post ${index + 1}:`, item.imagePrompt);
+              
+              const imageUrl = await this.generateImageForPost(item.imagePrompt, item.platform);
+              return { ...item, imageUrl };
+            }
+            return item;
+          } catch (imageError) {
+            console.warn(`Failed to generate image for post ${index + 1}:`, imageError);
+            return item; // Return post without image if generation fails
+          }
+        })
+      );
+      
+      return enhancedSchedule;
     } catch (error) {
       console.error('Error generating schedule:', error);
       throw error;
@@ -302,6 +327,67 @@ class ScheduleService {
     } catch (error) {
       console.error('Error fetching analytics:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Check if image should be generated for given platforms
+   */
+  private shouldGenerateImage(platforms: string[]): boolean {
+    // Visual platforms that benefit from images
+    const visualPlatforms = ['instagram', 'facebook', 'linkedin', 'twitter'];
+    return platforms.some(platform => visualPlatforms.includes(platform.toLowerCase()));
+  }
+
+  /**
+   * Generate image for a post using AI
+   */
+  private async generateImageForPost(prompt: string, platforms: string[]): Promise<string> {
+    try {
+      // Determine optimal aspect ratio based on platforms
+      let aspectRatio = '1:1'; // Default square
+      if (platforms.includes('linkedin') || platforms.includes('twitter')) {
+        aspectRatio = '16:9'; // Landscape for professional platforms
+      } else if (platforms.includes('instagram')) {
+        aspectRatio = '1:1'; // Square for Instagram
+      }
+
+      const response = await fetch(`${this.baseUrl}/ai/generate-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt: prompt,
+          size: this.getSizeFromAspectRatio(aspectRatio),
+          quality: 'hd',
+          style: 'professional'
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate image');
+      }
+
+      const data = await response.json();
+      return data.imageUrl;
+    } catch (error) {
+      console.error('Error generating image:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Convert aspect ratio to DALL-E size format
+   */
+  private getSizeFromAspectRatio(aspectRatio: string): string {
+    switch (aspectRatio) {
+      case '1:1': return '1024x1024';
+      case '16:9': return '1792x1024';
+      case '9:16': return '1024x1792';
+      case '4:3': return '1152x896';
+      default: return '1024x1024';
     }
   }
 }

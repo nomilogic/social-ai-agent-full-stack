@@ -35,6 +35,66 @@ interface GeneratedSchedule {
 }
 
 /**
+ * Generate fallback schedule when AI parsing fails
+ */
+function generateFallbackSchedule(request: ScheduleRequest): any[] {
+  const currentDate = new Date();
+  const schedule = [];
+  
+  // Default templates based on category
+  const contentTemplates = {
+    'Technology': [
+      'Exploring the latest innovations in {industry}. What trends are you watching? #TechTrends #Innovation',
+      'Monday motivation: Every expert was once a beginner. Keep learning and growing! #MondayMotivation #Growth',
+      'Quick tip: {tip} What\'s your favorite productivity hack? #ProductivityTips #Efficiency'
+    ],
+    'Marketing': [
+      'Marketing insight: Understanding your audience is the foundation of successful campaigns. #MarketingTips #Strategy',
+      'Content is king, but engagement is queen. How do you engage your audience? #ContentMarketing #Engagement',
+      'The best marketing doesn\'t feel like marketing. Share value first. #MarketingWisdom #ValueFirst'
+    ],
+    'General': [
+      'Starting the week strong with new goals and fresh perspectives. What\'s your focus this week? #MondayMotivation',
+      'Teamwork makes the dream work. Celebrating collaboration and shared success. #Teamwork #Success',
+      'Innovation happens when we embrace change and think differently. #Innovation #Growth'
+    ]
+  };
+  
+  const templates = contentTemplates[request.category as keyof typeof contentTemplates] || contentTemplates['General'];
+  const timePrefs = {
+    'morning': ['09:00', '10:00', '11:00'],
+    'afternoon': ['13:00', '14:00', '15:00'], 
+    'evening': ['17:00', '18:00', '19:00']
+  };
+  
+  const times = request.customTime ? [request.customTime] : (timePrefs[request.timePreference || 'morning'] || timePrefs.morning);
+  
+  // Generate 3-5 posts over the next week
+  const numberOfPosts = Math.min(parseInt(request.prompt.match(/\d+/)?.[0] || '3'), 5);
+  
+  for (let i = 0; i < numberOfPosts; i++) {
+    const postDate = new Date(currentDate);
+    postDate.setDate(currentDate.getDate() + i * 2); // Every other day
+    
+    const template = templates[i % templates.length];
+    
+    schedule.push({
+      id: `fallback_${Date.now()}_${i}`,
+      date: postDate.toISOString().split('T')[0],
+      time: times[i % times.length],
+      content: template.replace('{industry}', request.category || 'technology').replace('{tip}', 'Focus on one task at a time for better results'),
+      imagePrompt: `Professional ${request.category || 'business'} themed image with modern design, clean composition, corporate colors`,
+      platform: request.platforms,
+      category: request.category || 'General',
+      isLive: false,
+      reasoning: 'Fallback content generated due to AI parsing error'
+    });
+  }
+  
+  return schedule;
+}
+
+/**
  * Generate AI-powered posting schedule
  */
 router.post('/ai/generate-schedule', async (req: Request, res: Response) => {
@@ -52,63 +112,90 @@ router.post('/ai/generate-schedule', async (req: Request, res: Response) => {
       .eq('id', request.companyId)
       .single();
 
-    // Create AI prompt for schedule generation
+    // Get current date for better context
+    const currentDate = new Date();
+    const currentDateStr = currentDate.toISOString().split('T')[0];
+    
+    // Determine optimal posting times based on platforms and preferences
+    const getOptimalTimes = () => {
+      const times = {
+        morning: ['09:00', '10:00', '11:00'],
+        afternoon: ['13:00', '14:00', '15:00'],
+        evening: ['17:00', '18:00', '19:00']
+      };
+      
+      if (request.customTime) return [request.customTime];
+      return times[request.timePreference || 'morning'] || times.morning;
+    };
+
+    // Create enhanced AI prompt for schedule generation
     const aiPrompt = `
-You are an expert social media strategist. Generate a detailed posting schedule based on the following request:
+You are an expert social media strategist and content creator. Generate a detailed, strategic posting schedule.
 
-Request: "${request.prompt}"
-Platforms: ${request.platforms.join(', ')}
-Category: ${request.category || 'General'}
-Keywords: ${request.keywords?.join(', ') || 'None specified'}
-Time Preference: ${request.timePreference || 'flexible'}
-${request.customTime ? `Custom Time: ${request.customTime}` : ''}
+CURRENT DATE: ${currentDateStr}
 
-Company Context:
+REQUEST ANALYSIS:
+- User Request: "${request.prompt}"
+- Target Platforms: ${request.platforms.join(', ')}
+- Content Category: ${request.category || 'General'}
+- Keywords: ${request.keywords?.join(', ') || 'None specified'}
+- Time Preference: ${request.timePreference || 'flexible'}
+- Suggested Times: ${getOptimalTimes().join(', ')}
+
+COMPANY PROFILE:
 ${companyData ? `
-Name: ${companyData.name}
-Industry: ${companyData.industry || 'Technology'}
-Description: ${companyData.description || ''}
-Target Audience: ${companyData.target_audience || 'Professionals'}
-` : 'No company data available'}
+- Company: ${companyData.name}
+- Industry: ${companyData.industry || 'Technology'}
+- Description: ${companyData.description || 'Professional services company'}
+- Target Audience: ${companyData.target_audience || 'Business professionals'}
+- Brand Voice: ${companyData.brand_voice || 'Professional and engaging'}
+` : '- Generic business profile'}
 
-Based on the request, generate a posting schedule with the following requirements:
+TASK: Analyze the request and create a strategic posting schedule following these steps:
 
-1. Parse the natural language request to determine:
-   - Frequency (daily, weekly, specific days)
-   - Duration (how long the schedule should run)
-   - Content themes and topics
+1. PARSE THE REQUEST:
+   - Identify frequency (daily/weekly/specific pattern)
+   - Determine duration (how many posts over what timeframe)
+   - Extract content themes and topics
+   - Note any specific timing requirements
 
-2. For each scheduled post, provide:
-   - Exact date (YYYY-MM-DD format)
-   - Time (HH:MM format, 24-hour)
-   - Engaging content (150-280 characters depending on platform)
-   - Image prompt for AI image generation (if applicable)
-   - Brief reasoning for the timing and content choice
-   - Whether it should be "live" content (generated on the day based on current events)
+2. OPTIMAL TIMING STRATEGY:
+   - LinkedIn: Best at 8-10 AM, 12-2 PM, 5-6 PM on weekdays
+   - Twitter: Best at 9 AM, 1-3 PM, 5-6 PM
+   - Instagram: Best at 11 AM-1 PM, 7-9 PM
+   - Facebook: Best at 1-3 PM, 7-9 PM
+   - Consider timezone: assume business hours in user's locale
 
-3. Guidelines:
-   - Vary content to avoid repetition
-   - Consider optimal posting times for each platform
-   - Include relevant hashtags and mentions where appropriate
-   - Make content engaging and platform-specific
-   - For "live" posts, focus on topics that would benefit from real-time context
+3. CONTENT STRATEGY:
+   - Vary post types: educational, inspirational, behind-the-scenes, industry news
+   - Platform-specific optimization (character limits, hashtag strategies)
+   - Include relevant hashtags (3-5 for LinkedIn, 1-2 for Twitter, 5-10 for Instagram)
+   - Make content actionable and engaging
+   - Use "live" flag for time-sensitive or trending topics
 
-4. Return the schedule as a JSON array with this exact structure:
+4. IMAGE STRATEGY:
+   - Include detailed image prompts for visual content
+   - Consider brand consistency and platform requirements
+   - Describe style, composition, colors, and key elements
+
+IMPORTANT: You MUST return ONLY valid JSON. No additional text before or after.
+
+JSON STRUCTURE (return exactly in this format):
 [
   {
-    "id": "unique-id-string",
+    "id": "schedule_YYYYMMDD_001",
     "date": "YYYY-MM-DD",
     "time": "HH:MM",
-    "content": "Post content here with hashtags and mentions",
-    "imagePrompt": "Detailed prompt for AI image generation (optional)",
-    "platform": ["platform1", "platform2"],
-    "category": "category-name",
+    "content": "Engaging post content with relevant #hashtags and @mentions. Keep within platform limits.",
+    "imagePrompt": "Detailed description for AI image generation: style, subject, composition, colors, mood (optional but recommended)",
+    "platform": ["linkedin"],
+    "category": "${request.category || 'General'}",
     "isLive": false,
-    "reasoning": "Brief explanation of timing and content choice"
+    "reasoning": "Strategic explanation for timing, content choice, and audience targeting"
   }
 ]
 
-Generate a comprehensive schedule that matches the user's request. Be creative but professional.
+Generate ${Math.min(parseInt(request.prompt.match(/\d+/)?.[0] || '5'), 20)} posts maximum. Focus on quality over quantity.
     `;
 
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
@@ -116,19 +203,38 @@ Generate a comprehensive schedule that matches the user's request. Be creative b
     const response = await result.response;
     const text = response.text();
 
-    // Parse the JSON response from AI
+    // Parse the JSON response from AI with improved error handling
     let scheduleData: any[];
     try {
+      console.log('Raw AI Response:', text);
+      
+      // Clean the response - remove any markdown formatting
+      let cleanedText = text.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+      
       // Extract JSON from the response (AI might include additional text)
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      const jsonMatch = cleanedText.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
         scheduleData = JSON.parse(jsonMatch[0]);
       } else {
         throw new Error('No valid JSON found in AI response');
       }
+      
+      // Validate the parsed data
+      if (!Array.isArray(scheduleData)) {
+        throw new Error('Schedule data is not an array');
+      }
+      
+      if (scheduleData.length === 0) {
+        throw new Error('Schedule data is empty');
+      }
+      
     } catch (parseError) {
-      console.error('Failed to parse AI response:', text);
-      return res.status(500).json({ error: 'Failed to parse AI-generated schedule' });
+      console.error('Failed to parse AI response:', parseError);
+      console.error('Original text:', text);
+      
+      // Generate fallback schedule
+      scheduleData = generateFallbackSchedule(request);
+      console.log('Using fallback schedule:', scheduleData);
     }
 
     // Validate and enhance the generated schedule
