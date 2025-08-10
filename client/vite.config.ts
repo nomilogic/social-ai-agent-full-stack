@@ -5,25 +5,25 @@ import path from 'path';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  root: path.resolve(__dirname),
+  root: '.',
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
   server: {
     port: 5173,
     host: true,
-    strictPort: true,
+    strictPort: false,
     proxy: {
       '/api': 'http://localhost:5000'
     }
   },
   build: {
-    outDir: path.resolve(__dirname, '../dist/client'),
+    outDir: '../dist/client',
     emptyOutDir: true
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(__dirname, 'src'),
     },
   },
 });
