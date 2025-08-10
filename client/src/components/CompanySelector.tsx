@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Plus, Edit2, Trash2, Calendar, Sparkles, Target } from 'lucide-react';
+import { Building2, Plus, Edit2, Trash2, Calendar, Sparkles, Target, BarChart3 } from 'lucide-react';
 import { getCompanies, deleteCompany } from '../lib/database';
 import { CompanyInfo } from '../types';
 
@@ -8,6 +8,7 @@ interface CompanySelectorProps {
   onSelectCompany: (company: CompanyInfo & { id: string }) => void;
   onScheduleCompany?: (company: CompanyInfo & { id: string }) => void;
   onCampaignCompany?: (company: CompanyInfo & { id: string }) => void;
+  onDashboardCompany?: (company: CompanyInfo & { id: string }) => void;
   onEditCompany?: (company: CompanyInfo & { id: string }) => void;
   onCreateNew: () => void;
 }
@@ -17,6 +18,7 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
   onSelectCompany,
   onScheduleCompany,
   onCampaignCompany,
+  onDashboardCompany,
   onEditCompany,
   onCreateNew
 }) => {
@@ -185,6 +187,16 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
                   >
                     <Target className="w-4 h-4" />
                     Manage Campaigns
+                  </button>
+                )}
+                
+                {onDashboardCompany && (
+                  <button
+                    onClick={() => onDashboardCompany(companyData)}
+                    className="w-full bg-gradient-to-r from-orange-600 to-yellow-600 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-700 hover:to-yellow-700 transition-all duration-200 flex items-center justify-center gap-2"
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    View Dashboard
                   </button>
                 )}
               </div>
