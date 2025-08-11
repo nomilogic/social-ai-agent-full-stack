@@ -13,7 +13,7 @@ export const DashboardPage: React.FC = () => {
       description: 'Generate AI-powered social media posts',
       icon: Plus,
       color: 'bg-blue-600',
-      action: () => navigate('/content/create'),
+      action: () => navigate('/content'),
     },
     {
       title: 'Manage Companies',

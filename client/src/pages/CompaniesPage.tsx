@@ -82,7 +82,7 @@ export const CompaniesPage: React.FC = () => {
         element={
           <CompanyDashboard
             company={state.selectedCompany}
-            onCreatePost={() => navigate('/content/create')}
+            onCreatePost={() => navigate('/content')}
             onViewPosts={() => navigate('/content')}
             onManageCampaigns={() => navigate(`/companies/${state.selectedCompany?.id}/campaigns`)}
             onSchedulePosts={() => navigate('/schedule')}
