@@ -7,6 +7,7 @@ import { db } from '../db'
 import { media } from '../../shared/schema'
 import { eq } from 'drizzle-orm'
 import crypto from 'crypto'
+import { serverSupabaseAnon as serverSupabase } from '../supabaseClient'
 
 const router = express.Router()
 
@@ -30,7 +31,7 @@ const upload = multer({
 // POST /api/media/upload - Upload media file
 router.post('/upload', upload.single('file'), async (req: Request, res: Response) => {
   const userId = req.body.userId
-  
+
   if (!userId) {
     return res.status(400).json({ error: 'User ID is required' })
   }
@@ -125,7 +126,7 @@ router.delete('/:userId/:fileName', async (req: Request, res: Response) => {
   try {
     // Find the media record in the database
     const mediaRecord = await db.select().from(media).where(eq(media.fileName, fileName)).limit(1)
-    
+
     if (mediaRecord.length === 0) {
       return res.status(404).json({ error: 'File not found' })
     }
