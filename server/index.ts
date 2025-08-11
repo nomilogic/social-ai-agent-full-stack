@@ -3,13 +3,13 @@
 
 import express, { Request, Response, NextFunction } from 'express'
 import cors from 'cors'
-import dotenv from 'dotenv'
+// import dotenv from 'dotenv'
 import path from 'path'
 import { registerRoutes } from './routes.ts'
 import { log } from 'console'
 import { serveStatic, setupVite } from './vite.ts'
 
-dotenv.config()
+// dotenv.config() // Environment variables are handled by Replit
 const app = express()
 const PORT = process.env.PORT || 5000
 

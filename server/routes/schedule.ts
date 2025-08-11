@@ -1,27 +1,23 @@
 import { Router, Request, Response } from 'express';
-import { createClient } from '@supabase/supabase-js';
+import { db } from '../db';
+import { scheduled_posts, companies, campaigns } from '../../shared/schema';
+import { eq, and, desc } from 'drizzle-orm';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import Anthropic from '@anthropic-ai/sdk';
 
 const router = Router();
 
-// Initialize services
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || '',
-  process.env.VITE_SUPABASE_ANON_KEY || ''
-);
-
-// Initialize AI services
-const openai = new OpenAI({
+// Initialize AI services conditionally based on available API keys
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-});
+}) : null;
 
-const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY || '');
+const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY!);
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || '',
-});
+const anthropic = process.env.ANTHROPIC_API_KEY ? new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+}) : null;
 
 interface ScheduleRequest {
   prompt: string;

@@ -1,5 +1,7 @@
 import express, { Request, Response } from 'express'
-import { serverSupabaseAnon as serverSupabase } from '../supabaseClient'
+import { db } from '../db'
+import { companies } from '../../shared/schema'
+import { eq, and, desc } from 'drizzle-orm'
 import { validateRequestBody } from '../middleware/auth'
 
 const router = express.Router()
@@ -13,16 +15,11 @@ router.get('/', async (req: Request, res: Response) => {
   }
 
   try {
-    const { data, error } = await serverSupabase
-      .from('companies')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      console.error('Error fetching companies:', error)
-      return res.status(500).json({ error: error.message })
-    }
+    const data = await db
+      .select()
+      .from(companies)
+      .where(eq(companies.user_id, userId))
+      .orderBy(desc(companies.created_at))
 
     res.json({ success: true, data })
   } catch (err: any) {
@@ -45,25 +42,19 @@ router.post('/', validateRequestBody(['name', 'userId']), async (req: Request, r
   } = req.body
 
   try {
-    const { data, error } = await serverSupabase
-      .from('companies')
-      .insert({
+    const [data] = await db
+      .insert(companies)
+      .values({
         name,
         website: website || null,
         industry: industry || null,
         target_audience: targetAudience || null,
-        brand_tone: brandTone || 'Professional',
+        brand_tone: brandTone || 'professional',
         goals: goals || [],
         platforms: platforms || [],
         user_id: userId
       })
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error creating company:', error)
-      return res.status(500).json({ error: error.message })
-    }
+      .returning()
 
     res.status(201).json({ success: true, data })
   } catch (err: any) {
@@ -87,9 +78,9 @@ router.put('/:id', validateRequestBody(['userId']), async (req: Request, res: Re
   } = req.body
 
   try {
-    const { data, error } = await serverSupabase
-      .from('companies')
-      .update({
+    const [data] = await db
+      .update(companies)
+      .set({
         name,
         website,
         industry,
@@ -97,17 +88,10 @@ router.put('/:id', validateRequestBody(['userId']), async (req: Request, res: Re
         brand_tone: brandTone,
         goals,
         platforms,
-        updated_at: new Date().toISOString()
+        updated_at: new Date()
       })
-      .eq('id', companyId)
-      .eq('user_id', userId) // Ensure user owns this company
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error updating company:', error)
-      return res.status(500).json({ error: error.message })
-    }
+      .where(and(eq(companies.id, companyId), eq(companies.user_id, userId)))
+      .returning()
 
     if (!data) {
       return res.status(404).json({ error: 'Company not found or unauthorized' })
@@ -130,15 +114,13 @@ router.delete('/:id', async (req: Request, res: Response) => {
   }
 
   try {
-    const { error } = await serverSupabase
-      .from('companies')
-      .delete()
-      .eq('id', companyId)
-      .eq('user_id', userId) // Ensure user owns this company
+    const result = await db
+      .delete(companies)
+      .where(and(eq(companies.id, companyId), eq(companies.user_id, userId)))
+      .returning({ id: companies.id })
 
-    if (error) {
-      console.error('Error deleting company:', error)
-      return res.status(500).json({ error: error.message })
+    if (result.length === 0) {
+      return res.status(404).json({ error: 'Company not found or unauthorized' })
     }
 
     res.json({ success: true, message: 'Company deleted successfully' })
