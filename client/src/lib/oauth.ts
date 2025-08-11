@@ -22,7 +22,7 @@ const getBaseUrl = (): string => {
     return window.location.origin;
   }
   // Fallback for server-side rendering or when window is not available
-  return import.meta.env.VITE_APP_URL || "http://localhost:5173";
+  return import.meta.env.VITE_APP_URL || "http://localhost:5000";
 };
 
 // OAuth configurations for each platform
