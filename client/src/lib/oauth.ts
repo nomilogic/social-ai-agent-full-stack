@@ -1,3 +1,4 @@
+import { env } from "process";
 import { supabase } from "./supabase";
 
 export interface OAuthCredentials {
@@ -50,10 +51,10 @@ export const oauthConfigs: Record<string, PlatformOAuthConfig> = {
   linkedin: {
     clientId: import.meta.env.VITE_LINKEDIN_CLIENT_ID || "",
     clientSecret: import.meta.env.VITE_LINKEDIN_CLIENT_SECRET || "",
-    redirectUri: `${getBaseUrl()}/oauth/linkedin/callback`,
+    redirectUri: `${import.meta.env.VITE_APP_URL}/oauth/linkedin/callback`,
     scopes: ["w_member_social", "openid", "email", "profile"],
     authUrl: "https://www.linkedin.com/oauth/v2/authorization",
-    tokenUrl: `${getBaseUrl()}/api/oauth/linkedin/callback`,
+    tokenUrl: `${import.meta.env.VITE_APP_URL}/api/oauth/linkedin/callback`,
   },
   twitter: {
     clientId: import.meta.env.VITE_TWITTER_CLIENT_ID || "",
@@ -126,7 +127,7 @@ export class OAuthManager {
   async handleCallback(
     platform: string,
     code: string,
-    state: string = ""
+    state: string = "",
   ): Promise<OAuthCredentials> {
     // const userId = this.pendingAuths.get(state);
     // if (!userId) {
@@ -141,7 +142,7 @@ export class OAuthManager {
       const tokenResponse = await this.exchangeCodeForToken(
         platform,
         code,
-        config
+        config,
       );
       console.log(`Token response for ${platform}:`, tokenResponse, config);
       if (!tokenResponse || !tokenResponse.access_token) {
@@ -149,14 +150,14 @@ export class OAuthManager {
       }
       const credentials = await this.processTokenResponse(
         tokenResponse,
-        platform
+        platform,
       );
 
       console.log(`Processed credentials for ${platform}:`, credentials);
       // Store credentials securely
       console.log(
         `Storing credentials for user ${userId} and platform ${platform}`,
-        credentials
+        credentials,
       );
       await this.storeCredentials(userId ?? "", platform, credentials);
 
@@ -171,7 +172,7 @@ export class OAuthManager {
   private async exchangeCodeForToken(
     platform: string,
     code: string,
-    config: PlatformOAuthConfig
+    config: PlatformOAuthConfig,
   ) {
     const tokenData = {
       code: code,
@@ -180,7 +181,7 @@ export class OAuthManager {
     };
 
     console.log(
-      `Exchanging code for token for platform: ${JSON.stringify(tokenData)}`
+      `Exchanging code for token for platform: ${JSON.stringify(tokenData)}`,
     );
     const response = await fetch(config.tokenUrl, {
       method: "POST",
@@ -204,7 +205,7 @@ export class OAuthManager {
   // Process token response based on platform
   private async processTokenResponse(
     response: any,
-    platform: string
+    platform: string,
   ): Promise<OAuthCredentials> {
     const credentials: OAuthCredentials = {
       accessToken: response.access_token,
@@ -226,7 +227,7 @@ export class OAuthManager {
         if (response.access_token) {
           const longLivedToken = await this.exchangeForLongLivedToken(
             platform,
-            response.access_token
+            response.access_token,
           );
           if (longLivedToken) {
             credentials.accessToken = longLivedToken.access_token;
@@ -243,7 +244,7 @@ export class OAuthManager {
   // Exchange short-lived token for long-lived token (Facebook/Instagram)
   private async exchangeForLongLivedToken(
     platform: string,
-    shortToken: string
+    shortToken: string,
   ) {
     const config = oauthConfigs[platform];
     const params = new URLSearchParams({
@@ -266,7 +267,7 @@ export class OAuthManager {
   private async storeCredentials(
     userId: string,
     platform: string,
-    credentials: OAuthCredentials
+    credentials: OAuthCredentials,
   ) {
     const existingRecord = await supabase
       .from("oauth_tokens")
@@ -276,7 +277,7 @@ export class OAuthManager {
     console.log(
       `Storing credentials for user ${userId} and platform ${platform}`,
       credentials,
-      existingRecord
+      existingRecord,
     );
 
     if (existingRecord) {
@@ -299,7 +300,7 @@ export class OAuthManager {
   // Get stored credentials for user and platform
   async getCredentials(
     userId: string,
-    platform: string
+    platform: string,
   ): Promise<OAuthCredentials | null> {
     const { data, error } = await supabase
       .from("oauth_tokens")
@@ -327,7 +328,7 @@ export class OAuthManager {
       const refreshedCredentials = await this.refreshToken(
         userId,
         platform,
-        credentials
+        credentials,
       );
       return refreshedCredentials || credentials;
     }
@@ -339,7 +340,7 @@ export class OAuthManager {
   async refreshToken(
     userId: string,
     platform: string,
-    credentials: OAuthCredentials
+    credentials: OAuthCredentials,
   ): Promise<OAuthCredentials | null> {
     if (!credentials.refreshToken) {
       return null;
@@ -370,7 +371,7 @@ export class OAuthManager {
       const tokenData = await response.json();
       const newCredentials = await this.processTokenResponse(
         tokenData,
-        platform
+        platform,
       );
 
       // Preserve refresh token if not provided in response
@@ -403,7 +404,7 @@ export class OAuthManager {
   private generateState(platform: string, userId: string): string {
     const randomBytes = crypto.getRandomValues(new Uint8Array(16));
     const randomString = Array.from(randomBytes, (byte) =>
-      byte.toString(16).padStart(2, "0")
+      byte.toString(16).padStart(2, "0"),
     ).join("");
     return `${platform}_${userId}_${randomString}`;
   }
@@ -411,7 +412,7 @@ export class OAuthManager {
   // Check if user has valid credentials for platform
   async hasValidCredentials(
     userId: string,
-    platform: string
+    platform: string,
   ): Promise<boolean> {
     const credentials = await this.getCredentials(userId, platform);
     return credentials !== null;
