@@ -47,10 +47,17 @@ export const CompanyDashboard: React.FC<CompanyDashboardProps> = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadCompanyStats();
-  }, [company.id]);
+    if (company && company.id) {
+      loadCompanyStats();
+    }
+  }, [company?.id]);
 
   const loadCompanyStats = async () => {
+    if (!company || !company.id) {
+      setLoading(false);
+      return;
+    }
+    
     try {
       setLoading(true);
       // Load actual stats from API

@@ -26,7 +26,7 @@ interface ContentInputProps {
   onNext: (data: PostContent) => void;
   onBack: () => void;
   initialData?: Partial<PostContent>;
-  selectedPlatforms: Platform[];
+  selectedPlatforms?: Platform[];
   editMode?: boolean;
 }
 
@@ -41,7 +41,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     prompt: initialData?.prompt || '',
     tags: initialData?.tags || [],
     campaignId: initialData?.campaignId || '',
-    selectedPlatforms: initialData?.selectedPlatforms || selectedPlatforms,
+    selectedPlatforms: initialData?.selectedPlatforms || selectedPlatforms || ['linkedin'],
     media: initialData?.media || undefined,
     mediaUrl: initialData?.mediaUrl || undefined,
   });

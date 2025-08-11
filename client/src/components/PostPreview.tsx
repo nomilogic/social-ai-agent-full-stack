@@ -13,15 +13,15 @@ import {
 import { GeneratedPost, Platform } from "../types";
 
 interface PostPreviewProps {
-  posts: GeneratedPost[];
+  posts: any[];
   onBack: () => void;
-  onRegenerate: () => void;
+  onEdit: () => void;
 }
 
 export const PostPreview: React.FC<PostPreviewProps> = ({
   posts: generatedPosts, // Renamed to avoid conflict with selectedPlatform initialization
   onBack,
-  onRegenerate,
+  onEdit,
 }) => {
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>(
     generatedPosts[0]?.platform || "facebook",
@@ -508,10 +508,10 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
           Back to Edit
         </button>
         <button
-          onClick={onRegenerate}
+          onClick={onEdit}
           className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-8 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
         >
-          Regenerate Posts
+          Edit & Regenerate
         </button>
       </div>
 

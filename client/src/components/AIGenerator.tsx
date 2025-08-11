@@ -4,23 +4,25 @@ import { CompanyInfo, PostContent, GeneratedPost, Platform } from '../types';
 import { generateAllPosts } from '../lib/gemini';
 
 interface AIGeneratorProps {
-  companyInfo: CompanyInfo;
-  contentData: PostContent;
-  onComplete: (posts: GeneratedPost[]) => void;
+  contentData: any;
+  onComplete: (posts: any[]) => void;
+  onBack?: () => void;
 }
 
 export const AIGenerator: React.FC<AIGeneratorProps> = ({
-  companyInfo,
   contentData,
   onComplete,
+  onBack,
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentPlatform, setCurrentPlatform] = useState<Platform | null>(null);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    generatePosts();
-  }, [companyInfo, contentData]);
+    if (contentData) {
+      generatePosts();
+    }
+  }, [contentData]);
 
   const generatePosts = async () => {
     setIsGenerating(true);
@@ -28,12 +30,21 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
     setCurrentPlatform(null);
 
     try {
-      // Use selected platforms from content data instead of company platforms
-      const targetPlatforms = contentData.selectedPlatforms || companyInfo.platforms;
-      const modifiedCompanyInfo = { ...companyInfo, platforms: targetPlatforms };
+      // Use selected platforms from content data or default to LinkedIn
+      const targetPlatforms = contentData.selectedPlatforms || contentData.platforms || ['linkedin'];
+      
+      // Create a minimal company info for generation
+      const companyInfo = {
+        name: contentData.companyName || 'Default Company',
+        industry: contentData.industry || 'Technology',
+        tone: contentData.tone || 'professional',
+        platforms: targetPlatforms,
+        targetAudience: contentData.targetAudience || 'Professionals',
+        description: contentData.description || 'A technology company'
+      };
 
       const posts = await generateAllPosts(
-        modifiedCompanyInfo,
+        companyInfo,
         contentData,
         (platform, progress) => {
           setCurrentPlatform(platform);
@@ -72,13 +83,17 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
 
       setIsGenerating(false);
       setCurrentPlatform(null);
-      onComplete(posts);
+      
+      if (posts && posts.length > 0) {
+        onComplete(posts);
+      } else {
+        console.error('No posts generated');
+        onComplete([]);
+      }
     } catch (error) {
       console.error('Error generating posts:', error);
       setIsGenerating(false);
       setCurrentPlatform(null);
-
-      // Show error or fallback
       onComplete([]);
     }
   };
