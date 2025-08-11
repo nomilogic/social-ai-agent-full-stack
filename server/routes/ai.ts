@@ -66,7 +66,7 @@ const AI_MODELS: { [key: string]: AIModel } = {
   }
 };
 
-// POST /api/ai/analyze-image - Analyze image content
+// POST /api/ai/analyze-image - Analyze image content with Gemini
 router.post('/analyze-image', async (req: Request, res: Response) => {
   try {
     const { image, mimeType } = req.body;
@@ -78,18 +78,24 @@ router.post('/analyze-image', async (req: Request, res: Response) => {
       });
     }
 
+    if (!process.env.VITE_GEMINI_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        error: 'Gemini API key not configured'
+      });
+    }
+
     // Initialize Gemini model for vision
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = `Analyze this image and provide a detailed description of what you see. Focus on:
-    - Main subjects or objects
-    - Setting/background
-    - Colors and mood
-    - Any text visible
-    - Actions or activities
-    - Style or artistic elements
+    const prompt = `Analyze this image and provide a detailed description that would be useful for social media content creation. Include:
+1. What's in the image (objects, people, setting)
+2. The mood/atmosphere
+3. Colors and visual elements
+4. Potential marketing angles or messages
+5. Suggested content themes
 
-    Keep the description clear and suitable for social media content creation.`;
+Keep the description concise but informative for social media marketing purposes.`;
 
     // Clean the base64 data if it has data URL prefix
     const cleanBase64 = image.replace(/^data:image\/[a-z]+;base64,/, '');
@@ -101,27 +107,30 @@ router.post('/analyze-image', async (req: Request, res: Response) => {
       }
     };
 
-    console.log('Attempting to analyze image with Gemini...');
+    console.log('Analyzing image with Gemini API...');
     const result = await model.generateContent([prompt, imagePart]);
     const response = await result.response;
     const analysis = response.text();
 
-    console.log('Image analysis completed successfully');
+    console.log('Gemini image analysis completed successfully');
 
     res.json({
       success: true,
-      analysis: analysis || 'Image uploaded successfully. The AI was able to process your image.'
+      analysis: analysis || 'Image uploaded successfully. The AI was able to process your image.',
+      provider: 'gemini'
     });
 
   } catch (error: any) {
-    console.error('Error analyzing image:', error);
+    console.error('Error analyzing image with Gemini:', error);
     
     // Provide more specific error messages
     let errorMessage = 'Failed to analyze image';
-    if (error.message?.includes('API_KEY')) {
-      errorMessage = 'AI service not properly configured';
+    if (error.message?.includes('API_KEY') || error.message?.includes('PERMISSION_DENIED')) {
+      errorMessage = 'Gemini API key not properly configured';
     } else if (error.message?.includes('quota') || error.message?.includes('limit')) {
-      errorMessage = 'AI service quota exceeded';
+      errorMessage = 'Gemini API quota exceeded';
+    } else if (error.message?.includes('INVALID_ARGUMENT')) {
+      errorMessage = 'Invalid image format for Gemini';
     }
     
     res.status(500).json({
@@ -321,68 +330,7 @@ router.post('/generate-image', async (req: Request, res: Response) => {
   }
 });
 
-// Analyze image using GPT-4 Vision (for uploaded images)
-router.post('/analyze-image', upload.single('image'), async (req: Request, res: Response) => {
-  try {
-    const { imageUrl, prompt = "Analyze this image and describe what would make good social media content based on it." } = req.body;
 
-    // Handle both URL and file upload
-    if (!imageUrl && !req.file) {
-      return res.status(400).json({ error: 'Image URL or file is required' });
-    }
-
-    if (!OPENAI_API_KEY) {
-      return res.status(500).json({ error: 'OpenAI API key not configured' });
-    }
-
-    console.log('Analyzing image:', imageUrl);
-
-    const response = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: 'gpt-4-vision-preview',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: prompt
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: imageUrl
-                }
-              }
-            ]
-          }
-        ],
-        max_tokens: 300
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-
-    const analysis = response.data.choices[0]?.message?.content || 'Unable to analyze image';
-
-    res.json({
-      analysis,
-      imageUrl
-    });
-
-  } catch (error: any) {
-    console.error('Error analyzing image:', error.response?.data || error.message);
-    res.status(500).json({ 
-      error: 'Failed to analyze image', 
-      details: error.message 
-    });
-  }
-});
 
 // Generate image prompt suggestions based on content
 router.post('/suggest-image-prompts', async (req: Request, res: Response) => {
@@ -778,27 +726,7 @@ router.post('/generate-image', async (req: Request, res: Response) => {
   }
 })
 
-// POST /api/ai/analyze-image - Analyze image content
-router.post('/analyze-image', async (req: Request, res: Response) => {
-  try {
-    const { imageUrl } = req.body
 
-    if (!imageUrl) {
-      return res.status(400).json({ error: 'Image URL is required' })
-    }
-
-    // For now, return a mock analysis
-    const analysis = 'This is a professional image suitable for social media posting. The composition is well-balanced and engaging.'
-
-    res.json({
-      success: true,
-      analysis
-    })
-  } catch (error: any) {
-    console.error('Image analysis error:', error)
-    res.status(500).json({ error: 'Failed to analyze image' })
-  }
-})
 
 // POST /api/ai/suggest-image-prompts - Suggest image prompts based on content
 router.post('/suggest-image-prompts', async (req: Request, res: Response) => {
