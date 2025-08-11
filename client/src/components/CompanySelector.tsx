@@ -91,6 +91,7 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
             name: company.name,
             website: company.website,
             industry: company.industry,
+            description: company.description,
             targetAudience: company.target_audience,
             brandTone: company.brand_tone,
             goals: company.goals,

@@ -2,6 +2,7 @@ export interface CompanyInfo {
   name: string;
   website: string;
   industry: string;
+  description: string;
   targetAudience: string;
   brandTone: 'professional' | 'playful' | 'motivational' | 'casual' | 'authoritative';
   goals: string[];
