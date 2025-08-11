@@ -4162,7 +4162,7 @@ File edits completed:
 @@ -13,7 +13,7 @@
    const CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET as string
    const REDIRECT_URI = process.env.NODE_ENV === 'production' 
-     ? `${process.env.FRONTEND_URL}/oauth/linkedin/callback`
+     ? `${process.env.APP}/oauth/linkedin/callback`
 -    : "http://localhost:5000/oauth/linkedin/callback"
 +    : "http://localhost:3000/oauth/linkedin/callback"
    

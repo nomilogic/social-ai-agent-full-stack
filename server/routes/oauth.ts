@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express'
 import axios from 'axios'
+import { log } from 'console'
 
 const router = express.Router()
 
@@ -11,6 +12,7 @@ router.get('/linkedin', (req: Request, res: Response) => {
   
   const CLIENT_ID = process.env.LINKEDIN_CLIENT_ID as string
   const CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET as string
+  console.log("LinkedIn OAuth credentials:", { CLIENT_ID, CLIENT_SECRET })
   const REDIRECT_URI = process.env.VITE_APP_URL 
     ? `${process.env.VITE_APP_URL}/oauth/linkedin/callback`
     : `${req.protocol}://${req.get('host')}/oauth/linkedin/callback`
