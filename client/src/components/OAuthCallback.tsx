@@ -1,26 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { oauthManager } from '../lib/oauth';
 import { CheckCircle, XCircle, Loader } from 'lucide-react';
 
 export const OAuthCallback: React.FC = () => {
+  const { platform } = useParams<{ platform: string }>();
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
-const called = React.useRef(false);
+  const called = React.useRef(false);
+  
   useEffect(() => {
     if (called.current) return;
-  called.current = true;
-  handleOAuthCallback();
+    called.current = true;
+    handleOAuthCallback();
     // eslint-disable-next-line
-  }, [searchParams]);
+  }, []);
 
   const handleOAuthCallback = async () => {
     try {
       const code = searchParams.get('code');
       const state = searchParams.get('state');
       const error = searchParams.get('error');
-      console.log('Handling OAuth callback for platform:', code, state);
+      console.log('Handling OAuth callback for platform:', platform, 'code:', code, 'state:', state);
 
       if (error) {
         throw new Error(`OAuth error: ${error}`);
@@ -30,10 +32,8 @@ const called = React.useRef(false);
         throw new Error('Missing required OAuth parameters');
       }
 
-      const platform = state.split('_')[0];
-      
       if (!platform) {
-        throw new Error('Invalid state parameter');
+        throw new Error('Invalid platform parameter');
       }
       await oauthManager.handleCallback(platform, code, state);
 
