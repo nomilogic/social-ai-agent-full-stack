@@ -11,9 +11,9 @@ router.get('/linkedin', (req: Request, res: Response) => {
   
   const CLIENT_ID = process.env.LINKEDIN_CLIENT_ID as string
   const CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET as string
-  const REDIRECT_URI = process.env.NODE_ENV === 'production' 
-    ? `${process.env.FRONTEND_URL}/oauth/linkedin/callback`
-    : `http://localhost:5000/oauth/linkedin/callback`
+  const REDIRECT_URI = process.env.REPLIT_DEPLOYMENT 
+    ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/oauth/linkedin/callback`
+    : `${req.protocol}://${req.get('host')}/oauth/linkedin/callback`
   
   console.log('LinkedIn OAuth env vars:', { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI })
   
