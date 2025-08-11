@@ -241,7 +241,9 @@ export async function generateAllPosts(
     const post = await generatePostForPlatform(platform, companyInfo, contentData);
     posts.push({
       platform,
-      ...post
+      ...post,
+      // Include the media URL if available
+      imageUrl: contentData.mediaUrl || post.imageUrl
     });
   }
 

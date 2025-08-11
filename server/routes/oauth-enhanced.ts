@@ -13,10 +13,10 @@ interface OAuthConfig {
 }
 
 // OAuth configurations for all platforms
-const getOAuthConfig = (platform: string): OAuthConfig => {
+const getOAuthConfig = (platform: string, req?: Request): OAuthConfig => {
   const baseUrl = process.env.NODE_ENV === 'production' 
     ? process.env.FRONTEND_URL 
-    : 'http://localhost:5173'
+    : req ? `${req.protocol}://${req.get('host')}` : 'http://localhost:5173'
 
   const configs: Record<string, OAuthConfig> = {
     linkedin: {
@@ -80,7 +80,7 @@ router.get('/:platform', (req: Request, res: Response) => {
   console.log(`Initiating OAuth flow for ${platform}`)
 
   try {
-    const config = getOAuthConfig(platform)
+    const config = getOAuthConfig(platform, req)
     if (!config) {
       return res.status(400).json({ error: `Unsupported platform: ${platform}` })
     }
