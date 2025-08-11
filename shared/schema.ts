@@ -113,6 +113,19 @@ export const notifications = pgTable('notifications', {
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
+// Media table
+export const media = pgTable('media', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull(),
+  fileName: text('file_name').notNull(),
+  originalName: text('original_name').notNull(),
+  filePath: text('file_path').notNull(),
+  mimeType: text('mime_type').notNull(),
+  size: integer('size').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
 // Type definitions for TypeScript
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -128,3 +141,5 @@ export type OAuthToken = typeof oauth_tokens.$inferSelect;
 export type NewOAuthToken = typeof oauth_tokens.$inferInsert;
 export type Notification = typeof notifications.$inferSelect;
 export type NewNotification = typeof notifications.$inferInsert;
+export type Media = typeof media.$inferSelect;
+export type NewMedia = typeof media.$inferInsert;
