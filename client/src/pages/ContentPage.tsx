@@ -67,7 +67,6 @@ export const ContentPage: React.FC = () => {
             <ContentInput
               onNext={handleContentNext}
               onBack={() => navigate('/dashboard')}
-              companyData={state.selectedCompany}
             />
           }
         />
@@ -77,7 +76,6 @@ export const ContentPage: React.FC = () => {
             state.contentData ? (
               <AIGenerator
                 contentData={state.contentData}
-                companyData={state.selectedCompany}
                 onComplete={handleGenerationComplete}
                 onBack={() => navigate('/content')}
               />
@@ -100,8 +98,7 @@ export const ContentPage: React.FC = () => {
             state.generatedPosts && state.generatedPosts.length > 0 ? (
               <PostPreview
                 posts={state.generatedPosts}
-                onPublish={handleGoToPublish}
-                onRegenerate={() => navigate('/content/generate')}
+                onEdit={() => navigate('/content/generate')}
                 onBack={() => navigate('/content/generate')}
               />
             ) : (

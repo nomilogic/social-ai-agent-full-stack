@@ -3,7 +3,7 @@ import { Building2, BarChart3, Calendar, Target, Settings, Plus, Edit2, Share2, 
 import { CompanyInfo } from '../types';
 
 interface CompanyDashboardProps {
-  company: CompanyInfo & { id: string };
+  company: any;
   onEditCompany: () => void;
   onCreatePost: () => void;
   onViewPosts: () => void;
@@ -53,55 +53,37 @@ export const CompanyDashboard: React.FC<CompanyDashboardProps> = ({
   const loadCompanyStats = async () => {
     try {
       setLoading(true);
-      // Mock data for now - replace with actual API calls
-      const mockStats: CompanyStats = {
-        totalPosts: 87,
-        publishedPosts: 65,
-        scheduledPosts: 22,
-        totalCampaigns: 8,
-        activeCampaigns: 3,
-        followers: {
-          linkedin: 2450,
-          twitter: 1820,
-          facebook: 3200,
-          instagram: 1950
-        },
-        engagement: {
-          linkedin: 4.2,
-          twitter: 3.8,
-          facebook: 5.1,
-          instagram: 6.3
-        },
-        recentActivity: [
-          {
-            id: '1',
-            type: 'post_published',
-            message: 'New post published on LinkedIn',
-            timestamp: '2 hours ago',
-            platform: 'linkedin'
-          },
-          {
-            id: '2',
-            type: 'engagement_spike',
-            message: 'High engagement on Twitter post',
-            timestamp: '5 hours ago',
-            platform: 'twitter'
-          },
-          {
-            id: '3',
-            type: 'campaign_created',
-            message: 'New "Product Launch" campaign created',
-            timestamp: '1 day ago'
-          },
-          {
-            id: '4',
-            type: 'post_scheduled',
-            message: 'Post scheduled for tomorrow 9 AM',
-            timestamp: '2 days ago'
-          }
-        ]
+      // Load actual stats from API
+      const [postsResponse, campaignsResponse] = await Promise.all([
+        fetch(`/api/posts?companyId=${company.id}`),
+        fetch(`/api/campaigns?companyId=${company.id}`)
+      ]);
+      
+      let totalPosts = 0;
+      let totalCampaigns = 0;
+      
+      if (postsResponse.ok) {
+        const posts = await postsResponse.json();
+        totalPosts = posts.length;
+      }
+      
+      if (campaignsResponse.ok) {
+        const campaigns = await campaignsResponse.json();
+        totalCampaigns = campaigns.length;
+      }
+      
+      const actualStats: CompanyStats = {
+        totalPosts,
+        publishedPosts: 0,
+        scheduledPosts: 0,
+        totalCampaigns,
+        activeCampaigns: 0,
+        followers: {},
+        engagement: {},
+        recentActivity: []
       };
-      setStats(mockStats);
+      
+      setStats(actualStats);
     } catch (error) {
       console.error('Error loading company stats:', error);
     } finally {
