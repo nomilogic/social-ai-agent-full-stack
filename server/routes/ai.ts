@@ -144,7 +144,87 @@ Keep the description concise but informative for social media marketing purposes
   }
 });
 
-// POST /api/ai/generate - Generate social media posts
+// POST /api/ai/generate-posts - Generate social media posts (new endpoint)
+router.post('/generate-posts', async (req: Request, res: Response) => {
+  const { companyInfo, contentData, platforms } = req.body
+
+  if (!companyInfo || !contentData || !platforms) {
+    return res.status(400).json({ 
+      error: 'Missing required fields: companyInfo, contentData, and platforms are required' 
+    })
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
+
+    // Create platform-specific prompts
+    const generatedPosts = []
+
+    for (const platform of platforms) {
+      const prompt = createPlatformPrompt(companyInfo, contentData, platform)
+
+      try {
+        const result = await model.generateContent(prompt)
+        const response = await result.response
+        const text = response.text()
+
+        // Parse the generated content to extract caption and hashtags
+        const lines = text.split('\n').filter(line => line.trim())
+        let caption = text
+        let hashtags = []
+
+        // Try to extract hashtags from the content
+        const hashtagMatches = text.match(/#\w+/g)
+        if (hashtagMatches) {
+          hashtags = hashtagMatches.slice(0, 5) // Limit to 5 hashtags
+          // Remove hashtags from caption if they appear at the end
+          caption = text.replace(/\n\s*#\w+(\s+#\w+)*\s*$/, '').trim()
+        }
+
+        generatedPosts.push({
+          platform,
+          caption: caption || contentData.prompt,
+          hashtags: hashtags.length > 0 ? hashtags : [`#${companyInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`],
+          imageUrl: contentData.mediaUrl || null,
+          success: true
+        })
+      } catch (error: any) {
+        generatedPosts.push({
+          platform,
+          caption: contentData.prompt || 'Check out our latest updates!',
+          hashtags: [`#${companyInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`],
+          imageUrl: contentData.mediaUrl || null,
+          error: error.message,
+          success: false
+        })
+      }
+    }
+
+    res.json({
+      success: true,
+      posts: generatedPosts
+    })
+
+  } catch (error: any) {
+    console.error('AI generation error:', error)
+    
+    // Check for quota errors
+    if (error.status === 429 || error.message?.includes('quota')) {
+      return res.status(429).json({ 
+        error: 'AI API quota exceeded. Please try again later or upgrade your plan.',
+        details: 'Gemini API quota exceeded',
+        fallback: true
+      })
+    }
+    
+    res.status(500).json({ 
+      error: 'Failed to generate content',
+      details: error.message 
+    })
+  }
+})
+
+// POST /api/ai/generate - Generate social media posts (legacy endpoint)
 router.post('/generate', async (req: Request, res: Response) => {
   const { company, content, platforms } = req.body
 
