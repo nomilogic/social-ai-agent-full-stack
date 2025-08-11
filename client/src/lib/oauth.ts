@@ -54,7 +54,7 @@ export const oauthConfigs: Record<string, PlatformOAuthConfig> = {
     redirectUri: `${getBaseUrl()}/oauth/linkedin/callback`,
     scopes: ["w_member_social", "openid", "email", "profile"],
     authUrl: "https://www.linkedin.com/oauth/v2/authorization",
-    tokenUrl: `${getBaseUrl()}/api/oauth/linkedin/callback`,
+    tokenUrl: "https://www.linkedin.com/oauth/v2/accessToken",
   },
   twitter: {
     clientId: import.meta.env.VITE_TWITTER_CLIENT_ID || "",

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Sparkles, ArrowLeft, LogOut, Bell } from 'lucide-react';
 import { getCurrentUser, saveCompany, savePost, updateCompany } from './lib/database';
+import { supabase } from './lib/supabase';
 import { AuthForm } from './components/AuthForm';
 import { CompanySelector } from './components/CompanySelector';
 import { ProgressBar } from './components/ProgressBar';
@@ -8,8 +10,8 @@ import { CompanySetup } from './components/CompanySetup';
 import { ContentInput } from './components/ContentInput';
 import { AIGenerator } from './components/AIGenerator';
 import { PostPreview } from './components/PostPreview';
-import { PublishPosts } from './components/PublishPosts'; // Import PublishPosts
-import { OAuthCallback } from './components/OAuthCallback'; // Import OAuthCallback
+import { PublishPosts } from './components/PublishPosts';
+import { OAuthCallback } from './components/OAuthCallback';
 import { PostScheduleDashboard } from './components/PostScheduleDashboard';
 import { CampaignSetup } from './components/CampaignSetup';
 import { CampaignSelector } from './components/CampaignSelector';
@@ -21,13 +23,15 @@ import { StepData } from './types';
 type Step = 'auth' | 'company-select' | 'company-setup' | 'content' | 'generate' | 'preview' | 'publish' | 'schedule' | 'campaign-setup' | 'campaign-select' | 'company-dashboard' | 'campaign-dashboard';
 
 function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [currentStep, setCurrentStep] = useState<Step>('auth');
   const [stepData, setStepData] = useState<StepData>({});
   const [user, setUser] = useState<any>(null);
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [showPublishModal, setShowPublishModal] = useState(false); // State to control the publish modal
-  const [showNotificationCenter, setShowNotificationCenter] = useState(false); // State to control notification center
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showNotificationCenter, setShowNotificationCenter] = useState(false);
 
   React.useEffect(() => {
     initializeAuth();
@@ -296,18 +300,17 @@ function App() {
     );
   }
 
-  // Check if this is an OAuth callback
-  const path = window.location.pathname;
-  if (path.startsWith('/oauth/') && path.endsWith('/callback')) {
-    return <OAuthCallback />;
-  }
-
-  if (!user) {
-    return <AuthForm onAuthSuccess={handleAuthSuccess} />;
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <Routes>
+      {/* OAuth callback routes */}
+      <Route path="/oauth/:platform/callback" element={<OAuthCallback />} />
+      
+      {/* Main app routes */}
+      <Route path="/*" element={
+        !user ? (
+          <AuthForm onAuthSuccess={handleAuthSuccess} />
+        ) : (
+          <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -518,6 +521,9 @@ function App() {
         </div>
       </footer>
     </div>
+        )
+      } />
+    </Routes>
   );
 }
 
