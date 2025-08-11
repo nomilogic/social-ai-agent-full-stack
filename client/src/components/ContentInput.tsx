@@ -10,7 +10,14 @@ const fileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result!.split(',')[1]); // Get base64 part
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === 'string') {
+        resolve(result.split(',')[1]); // Get base64 part
+      } else {
+        reject(new Error('FileReader result is not a string'));
+      }
+    };
     reader.onerror = error => reject(error);
   });
 };
@@ -40,6 +47,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const [analyzingImage, setAnalyzingImage] = useState(false);
   const [imageAnalysis, setImageAnalysis] = useState('');
   const [showAIGenerator, setShowAIGenerator] = useState(false);
+  const [useForAIReference, setUseForAIReference] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = (e: React.DragEvent) => {
@@ -193,6 +201,16 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     setImageAnalysis('');
   };
 
+  const addAnalysisToDescription = () => {
+    if (imageAnalysis && useForAIReference) {
+      setFormData(prev => ({
+        ...prev,
+        prompt: prev.prompt + (prev.prompt ? '\n\n' : '') + `AI Analysis: ${imageAnalysis}`
+      }));
+      setImageAnalysis('');
+    }
+  };
+
   const handleAIImageGenerated = async (imageUrl: string) => {
     try {
       // Convert the AI generated image URL to a File object
@@ -268,9 +286,26 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                       controls
                     />
                   )}
-                  <div className="text-sm text-gray-600">
-                    <p className="font-medium">{formData.media.name}</p>
-                    <p>{(formData.media.size / 1024 / 1024).toFixed(2)} MB</p>
+                  <div className="text-sm text-gray-600 space-y-3">
+                    <div>
+                      <p className="font-medium">{formData.media.name}</p>
+                      <p>{(formData.media.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                    
+                    {/* AI Reference Checkbox */}
+                    <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                      <input
+                        type="checkbox"
+                        id="useForAI"
+                        checked={useForAIReference}
+                        onChange={(e) => setUseForAIReference(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                      />
+                      <label htmlFor="useForAI" className="text-sm text-gray-700 cursor-pointer">
+                        Use for AI reference
+                      </label>
+                    </div>
+
                     {analyzingImage && (
                       <div className="flex items-center justify-center mt-3 p-2 bg-blue-50 rounded-lg">
                         <Loader className="w-4 h-4 animate-spin mr-2 text-blue-600" />
@@ -290,6 +325,18 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           Image uploaded successfully! AI analysis will appear above.
                         </p>
                       </div>
+                    )}
+                    
+                    {/* AI Analysis Button - show when analysis is available */}
+                    {imageAnalysis && useForAIReference && (
+                      <button
+                        type="button"
+                        onClick={addAnalysisToDescription}
+                        className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>Add AI Analysis to Content</span>
+                      </button>
                     )}
                   </div>
                   <button
