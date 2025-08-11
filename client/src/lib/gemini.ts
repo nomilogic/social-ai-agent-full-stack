@@ -227,27 +227,63 @@ export async function generateAllPosts(
   companyInfo: CompanyInfo,
   contentData: PostContent,
   onProgress?: (platform: Platform, progress: number) => void
-) {
-  const posts = [];
-  const totalPlatforms = companyInfo.platforms.length;
+): Promise<GeneratedPost[]> {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate-posts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        companyInfo,
+        contentData,
+        platforms: companyInfo.platforms || ['linkedin']
+      })
+    });
 
-  for (let i = 0; i < totalPlatforms; i++) {
-    const platform = companyInfo.platforms[i];
-
-    if (onProgress) {
-      onProgress(platform, ((i + 1) / totalPlatforms) * 100);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
 
-    const post = await generatePostForPlatform(platform, companyInfo, contentData);
-    posts.push({
-      platform,
-      ...post,
-      // Include the media URL if available
-      imageUrl: contentData.mediaUrl || post.imageUrl
-    });
-  }
+    const data = await response.json();
 
-  return posts;
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to generate posts');
+    }
+
+    return data.posts || [];
+  } catch (error: any) {
+    console.error('Error in generateAllPosts:', error);
+
+    // Check for quota errors
+    if (error.message && (error.message.includes('quota') || error.message.includes('429'))) {
+      // Create fallback posts when quota is exceeded
+      const platforms = companyInfo.platforms || ['linkedin'];
+      return platforms.map(platform => ({
+        platform,
+        caption: contentData.prompt || `📈 Exciting updates from ${companyInfo.name}!\n\nWe're continuously working to bring you the best in ${companyInfo.industry}. Stay tuned for more updates!`,
+        hashtags: getDefaultHashtags(platform, companyInfo.industry),
+        imageUrl: null
+      }));
+    }
+
+    throw error;
+  }
+}
+
+function getDefaultHashtags(platform: Platform, industry: string): string[] {
+  const baseHashtags = ['#business', '#innovation'];
+  const industryHashtags = {
+    'Technology': ['#tech', '#innovation', '#digital'],
+    'Marketing': ['#marketing', '#branding', '#socialmedia'],
+    'Finance': ['#finance', '#business', '#investment'],
+    'Healthcare': ['#healthcare', '#wellness', '#medical'],
+    'Education': ['#education', '#learning', '#knowledge']
+  };
+
+  const specific = industryHashtags[industry as keyof typeof industryHashtags] || ['#updates'];
+  return [...baseHashtags, ...specific].slice(0, 5);
 }
 
 export async function analyzeImageWithGemini(imageFile: File): Promise<string> {

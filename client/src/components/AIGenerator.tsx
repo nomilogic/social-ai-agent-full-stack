@@ -31,16 +31,16 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
 
     try {
       // Use selected platforms from content data or default to LinkedIn
-      const targetPlatforms = contentData.selectedPlatforms || contentData.platforms || ['linkedin'];
+      const targetPlatforms = contentData?.selectedPlatforms || contentData?.platforms || ['linkedin'];
       
       // Create a minimal company info for generation
       const companyInfo = {
-        name: contentData.companyName || 'Default Company',
-        industry: contentData.industry || 'Technology',
-        tone: contentData.tone || 'professional',
+        name: contentData?.companyName || 'Default Company',
+        industry: contentData?.industry || 'Technology',
+        tone: contentData?.tone || 'professional',
         platforms: targetPlatforms,
-        targetAudience: contentData.targetAudience || 'Professionals',
-        description: contentData.description || 'A technology company'
+        targetAudience: contentData?.targetAudience || 'Professionals',
+        description: contentData?.description || 'A technology company'
       };
 
       const posts = await generateAllPosts(
@@ -88,13 +88,34 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
         onComplete(posts);
       } else {
         console.error('No posts generated');
-        onComplete([]);
+        // Create fallback posts if generation fails
+        const fallbackPosts = targetPlatforms.map(platform => ({
+          platform,
+          caption: contentData?.prompt || 'Check out our latest updates!',
+          hashtags: ['#business', '#updates'],
+          imageUrl: null
+        }));
+        onComplete(fallbackPosts);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating posts:', error);
       setIsGenerating(false);
       setCurrentPlatform(null);
-      onComplete([]);
+      
+      // Check if it's a quota error
+      if (error.message && error.message.includes('quota')) {
+        console.warn('API quota exceeded, creating fallback posts');
+        const targetPlatforms = contentData?.selectedPlatforms || contentData?.platforms || ['linkedin'];
+        const fallbackPosts = targetPlatforms.map(platform => ({
+          platform,
+          caption: contentData?.prompt || 'Check out our latest updates!',
+          hashtags: ['#business', '#updates'],
+          imageUrl: null
+        }));
+        onComplete(fallbackPosts);
+      } else {
+        onComplete([]);
+      }
     }
   };
 
