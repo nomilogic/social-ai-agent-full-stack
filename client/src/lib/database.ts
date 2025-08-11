@@ -1,6 +1,6 @@
 // Using API calls instead of Supabase client
 import { CompanyInfo, PostContent, GeneratedPost } from '../types';
-import { supabaseClient } from './supabase'; // Corrected import
+import { apiClient } from './supabase';
 import api from './api'; // Assuming 'api' is configured to use Axios or similar for API calls
 
 // Company operations
@@ -195,14 +195,9 @@ export async function getCurrentUser() {
 
 export async function signInAnonymously() {
   try {
-    const { data, error } = await supabaseClient.auth.signInAnonymously();
-
-    if (error) {
-      console.error('Error signing in anonymously:', error);
-      throw error;
-    }
-
-    return data;
+    // Import auth service for authentication operations
+    const { authService } = await import('./auth');
+    return await authService.signInAnonymously();
   } catch (error) {
     console.error('Error in signInAnonymously:', error);
     throw error;
