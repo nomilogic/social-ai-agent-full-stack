@@ -1,7 +1,12 @@
 import express, { Request, Response } from 'express'
 import multer from 'multer'
-import { serverSupabaseAnon as serverSupabase } from '../supabaseClient'
 import { validateRequestBody } from '../middleware/auth'
+import path from 'path'
+import fs from 'fs'
+import { db } from '../db'
+import { media } from '../../shared/schema'
+import { eq } from 'drizzle-orm'
+import crypto from 'crypto'
 
 const router = express.Router()
 
@@ -37,25 +42,33 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
   try {
     const file = req.file
     const fileExt = file.originalname.split('.').pop()
-    const fileName = `${userId}/${Date.now()}.${fileExt}`
+    const fileName = `${userId}_${Date.now()}.${fileExt}`
 
-    // Upload file to Supabase Storage
-    const { data, error } = await serverSupabase.storage
-      .from('media')
-      .upload(fileName, file.buffer, {
-        contentType: file.mimetype,
-        duplex: 'half'
-      })
-
-    if (error) {
-      console.error('Error uploading media:', error)
-      return res.status(500).json({ error: error.message })
+    // Create uploads directory if it doesn't exist
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true })
     }
 
-    // Get public URL
-    const { data: { publicUrl } } = serverSupabase.storage
-      .from('media')
-      .getPublicUrl(fileName)
+    // Save file to public/uploads directory
+    const filePath = path.join(uploadsDir, fileName)
+    fs.writeFileSync(filePath, file.buffer)
+
+    // Create public URL for the uploaded file
+    const publicUrl = `/uploads/${fileName}`
+
+    // Save media record to database
+    await db.insert(media).values({
+      id: crypto.randomUUID(),
+      userId,
+      fileName,
+      originalName: file.originalname,
+      filePath: publicUrl,
+      mimeType: file.mimetype,
+      size: file.size,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    })
 
     res.json({ 
       success: true, 
@@ -78,31 +91,17 @@ router.get('/:userId', async (req: Request, res: Response) => {
   const userId = req.params.userId
 
   try {
-    const { data, error } = await serverSupabase.storage
-      .from('media')
-      .list(userId, {
-        limit: 100,
-        offset: 0,
-        sortBy: { column: 'created_at', order: 'desc' }
-      })
+    const mediaFiles = await db.select().from(media).where(eq(media.userId, userId))
 
-    if (error) {
-      console.error('Error listing media:', error)
-      return res.status(500).json({ error: error.message })
-    }
-
-    // Get public URLs for all files
-    const filesWithUrls = data.map((file: any) => {
-      const { data: { publicUrl } } = serverSupabase.storage
-        .from('media')
-        .getPublicUrl(`${userId}/${file.name}`)
-
+    const filesWithUrls = mediaFiles.map((file) => {
       return {
-        name: file.name,
-        url: publicUrl,
-        size: file.metadata?.size,
-        lastModified: file.updated_at,
-        createdAt: file.created_at
+        name: file.fileName,
+        url: file.filePath,
+        size: file.size,
+        lastModified: file.updatedAt,
+        createdAt: file.createdAt,
+        originalName: file.originalName,
+        mimeType: file.mimeType
       }
     })
 
@@ -124,13 +123,20 @@ router.delete('/:userId/:fileName', async (req: Request, res: Response) => {
   }
 
   try {
-    const { error } = await serverSupabase.storage
-      .from('media')
-      .remove([`${userId}/${fileName}`])
+    // Find the media record in the database
+    const mediaRecord = await db.select().from(media).where(eq(media.fileName, fileName)).limit(1)
+    
+    if (mediaRecord.length === 0) {
+      return res.status(404).json({ error: 'File not found' })
+    }
 
-    if (error) {
-      console.error('Error deleting media:', error)
-      return res.status(500).json({ error: error.message })
+    // Delete from database
+    await db.delete(media).where(eq(media.fileName, fileName))
+
+    // Delete physical file
+    const filePath = path.join(process.cwd(), 'public', 'uploads', fileName)
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath)
     }
 
     res.json({ success: true, message: 'File deleted successfully' })

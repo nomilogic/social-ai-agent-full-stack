@@ -1,5 +1,7 @@
 import { createServer, type Server } from "http";
 import type { Express } from "express";
+import express from 'express';
+import path from 'path';
 import authRouter from './routes/auth'
 import oauthRouter from './routes/oauth'
 import linkedinRouter from './routes/linkedin'
@@ -13,6 +15,9 @@ import notificationsRouter from './routes/notifications'
 import mediaRouter from './routes/media'
 
 export async function registerRoutes(app: Express): Promise<Server> {
+    // Static file serving for uploaded media
+    app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')))
+    
     // API routes
 app.use('/api/auth', authRouter)
 app.use('/api/oauth', oauthRouter)
