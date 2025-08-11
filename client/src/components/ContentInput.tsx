@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Upload, FileText, Tag, Camera, Wand2, Eye, Loader, Sparkles } from 'lucide-react';
 import { PostContent, Platform } from '../types';
 import { uploadMedia, getCurrentUser } from '../lib/database';
@@ -27,19 +27,23 @@ interface ContentInputProps {
   onBack: () => void;
   initialData?: Partial<PostContent>;
   selectedPlatforms: Platform[];
+  editMode?: boolean;
 }
 
 export const ContentInput: React.FC<ContentInputProps> = ({
   onNext,
   onBack,
   initialData,
-  selectedPlatforms
+  selectedPlatforms,
+  editMode
 }) => {
   const [formData, setFormData] = useState<PostContent>({
     prompt: initialData?.prompt || '',
     tags: initialData?.tags || [],
     campaignId: initialData?.campaignId || '',
     selectedPlatforms: initialData?.selectedPlatforms || selectedPlatforms,
+    media: initialData?.media || undefined,
+    mediaUrl: initialData?.mediaUrl || undefined,
   });
   const [dragActive, setDragActive] = useState(false);
   const [tagInput, setTagInput] = useState('');
@@ -50,6 +54,24 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const [useForAIReference, setUseForAIReference] = useState(true);
   const [useInPost, setUseInPost] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Initialize with existing data when in edit mode
+  useEffect(() => {
+    if (initialData) {
+      setFormData(prev => ({
+        ...prev,
+        prompt: initialData.prompt || '',
+        tags: initialData.tags || [],
+        campaignId: initialData.campaignId || '',
+        selectedPlatforms: initialData.selectedPlatforms || selectedPlatforms,
+        media: initialData.media,
+        mediaUrl: initialData.mediaUrl,
+      }));
+      if (initialData.imageAnalysis) {
+        setImageAnalysis(initialData.imageAnalysis);
+      }
+    }
+  }, [initialData, selectedPlatforms]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -106,10 +128,10 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       const base64 = await fileToBase64(file);
 
       console.log('Analyzing image with Gemini API...');
-      
+
       // Call the Gemini analysis API with proper data URL format
       const dataUrl = `data:${file.type};base64,${base64}`;
-      
+
       const response = await fetch(`/api/ai/analyze-image`, {
         method: 'POST',
         headers: {
@@ -263,27 +285,29 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                 className="hidden"
               />
 
-              {formData.media ? (
+              {formData.media || formData.mediaUrl ? (
                 <div className="space-y-4">
-                  {formData.media.type.startsWith('image/') ? (
+                  {(formData.media?.type.startsWith('image/') || formData.mediaUrl?.startsWith('image/')) ? (
                     <img
-                      src={URL.createObjectURL(formData.media)}
+                      src={formData.media ? URL.createObjectURL(formData.media) : formData.mediaUrl!}
                       alt="Preview"
                       className="max-h-48 mx-auto rounded-lg shadow-md"
                     />
                   ) : (
                     <video
-                      src={URL.createObjectURL(formData.media)}
+                      src={formData.media ? URL.createObjectURL(formData.media) : formData.mediaUrl!}
                       className="max-h-48 mx-auto rounded-lg shadow-md"
                       controls
                     />
                   )}
                   <div className="text-sm text-gray-600 space-y-3">
                     <div>
-                      <p className="font-medium">{formData.media.name}</p>
-                      <p>{(formData.media.size / 1024 / 1024).toFixed(2)} MB</p>
+                      <p className="font-medium">{formData.media?.name || 'Uploaded Media'}</p>
+                      {formData.media && (
+                        <p>{(formData.media.size / 1024 / 1024).toFixed(2)} MB</p>
+                      )}
                     </div>
-                    
+
                     {/* Checkboxes */}
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
@@ -298,7 +322,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           Use for AI reference
                         </label>
                       </div>
-                      
+
                       <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
                         <input
                           type="checkbox"
@@ -325,17 +349,17 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                         <span className="text-gray-700">Uploading file...</span>
                       </div>
                     )}
-                    {!analyzingImage && !uploading && formData.media.type.startsWith('image/') && !imageAnalysis && (
+                    {!analyzingImage && !uploading && (formData.media || formData.mediaUrl) && !imageAnalysis && (
                       <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
                         <p className="text-green-700 text-xs flex items-center">
                           <Eye className="w-3 h-3 mr-1" />
-                          Image uploaded successfully! AI analysis will appear above.
+                          Media uploaded successfully! AI analysis will appear above.
                         </p>
                       </div>
                     )}
-                    
+
                     {/* AI Analysis Button */}
-                    {formData.media && formData.media.type.startsWith('image/') && !analyzingImage && (
+                    {(formData.media || formData.mediaUrl) && formData.media?.type.startsWith('image/') && !analyzingImage && (
                       <button
                         type="button"
                         onClick={performAIAnalysis}
@@ -349,7 +373,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                   </div>
                   <button
                     type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, media: undefined }))}
+                    onClick={() => setFormData(prev => ({ ...prev, media: undefined, mediaUrl: undefined }))}
                     className="text-red-600 hover:text-red-700 text-sm font-medium"
                   >
                     Remove
@@ -401,8 +425,8 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                     <span>Click "Add to Description" to use this analysis in your content</span>
                   </div>
                 </div>
-                <button 
-                  onClick={useImageAnalysis} 
+                <button
+                  onClick={useImageAnalysis}
                   className="ml-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center space-x-2"
                 >
                   <span>Add to Description</span>
