@@ -1,6 +1,6 @@
 // Using API calls instead of Supabase client
 import { CompanyInfo, PostContent, GeneratedPost } from '../types';
-import { supabase } from './supabase';
+import { supabaseClient } from './supabase'; // Corrected import
 
 // Company operations
 export async function saveCompany(companyInfo: CompanyInfo, userId: string) {
@@ -83,7 +83,7 @@ export async function savePost(
   generatedPosts: GeneratedPost[],
   userId: string
 ) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient // Corrected reference
     .from('posts')
     .insert({
       company_id: companyId,
@@ -105,7 +105,7 @@ export async function savePost(
 }
 
 export async function getPosts(userId: string, companyId?: string) {
-  let query = supabase
+  let query = supabaseClient // Corrected reference
     .from('posts')
     .select(`
       *,
@@ -131,7 +131,7 @@ export async function getPosts(userId: string, companyId?: string) {
 }
 
 export async function deletePost(postId: string, userId: string) {
-  const { error } = await supabase
+  const { error } = await supabaseClient // Corrected reference
     .from('posts')
     .delete()
     .eq('id', postId)
@@ -187,8 +187,8 @@ export async function getCurrentUser() {
   } catch (error) {
     console.error('Error initializing auth:', error);
     // Return a default user structure to prevent app crashes
-    return { 
-      user: null, 
+    return {
+      user: null,
       session: null,
       error: error instanceof Error ? error.message : 'Auth initialization failed'
     };
@@ -196,7 +196,7 @@ export async function getCurrentUser() {
 }
 
 export async function signInAnonymously() {
-  const { data, error } = await supabase.auth.signInAnonymously();
+  const { data, error } = await supabaseClient.auth.signInAnonymously(); // Corrected reference
 
   if (error) {
     console.error('Error signing in anonymously:', error);

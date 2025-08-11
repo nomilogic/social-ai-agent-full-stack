@@ -17,7 +17,7 @@ router.get('/', async (req: Request, res: Response) => {
 
   try {
     let whereCondition = eq(posts.user_id, userId)
-    
+
     if (companyId) {
       whereCondition = and(eq(posts.user_id, userId), eq(posts.company_id, companyId))
     }
