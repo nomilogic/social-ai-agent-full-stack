@@ -32,7 +32,7 @@ The project utilizes a client-server architecture. The frontend is a React Singl
 *   **UI/UX Decisions**: Professional and intuitive dashboards with multi-tab interfaces, grid and list view modes, responsive design with Tailwind CSS, and consistent iconography. Emphasis on real-time metrics, interactive elements, and clear feedback.
 
 ### External Dependencies
-*   **Database & Authentication**: Supabase
+*   **Database & Authentication**: PostgreSQL with Drizzle ORM (Migrated from Supabase in August 2025)
 *   **AI/ML Integration**:
     *   **Text Models**: OpenAI (GPT-3.5, 4, 4-Turbo, 4o), Google Gemini (Pro, 1.5 Pro), Anthropic Claude (3 Haiku, 3 Opus, 3.5 Sonnet), DeepSeek (Chat, Coder), Meta LLaMA (3.1 405B, 70B, 8B), Mistral (Large, Medium, Small), Cohere (Command R+, Command R), Perplexity (70B, 7B Online)
     *   **Image Generation**: DALL-E 2/3, Stable Diffusion variants

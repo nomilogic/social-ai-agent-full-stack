@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User, Sparkles } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+// Removed Supabase import - using API calls now
 
 interface AuthFormProps {
   onAuthSuccess: (user: any) => void;
@@ -23,31 +23,38 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
 
     try {
       if (isLogin) {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password,
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password
+          })
         });
 
-        if (error) throw error;
-        onAuthSuccess(data.user);
-      } else {
-        const { data, error } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: {
-              name: formData.name,
-            }
-          }
-        });
-
-        if (error) throw error;
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error);
         
-        if (data.user) {
-          onAuthSuccess(data.user);
-        } else {
-          setError('Please check your email to confirm your account');
-        }
+        // Store the JWT token
+        localStorage.setItem('auth_token', result.token);
+        onAuthSuccess(result.user);
+      } else {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+            name: formData.name
+          })
+        });
+
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error);
+        
+        // Store the JWT token  
+        localStorage.setItem('auth_token', result.token);
+        onAuthSuccess(result.user);
       }
     } catch (error: any) {
       setError(error.message);
