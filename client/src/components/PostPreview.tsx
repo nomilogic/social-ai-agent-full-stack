@@ -28,8 +28,11 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
   );
   const [copiedPost, setCopiedPost] = useState<string | null>(null);
 
-  // Find the currently selected post
-  const selectedPost = posts.find(post => post.platform === selectedPlatform);
+  // Find the currently selected post based on the selectedPlatform
+  const selectedPost = posts.find((post) => post.platform === selectedPlatform);
+
+  // Fallback to first post if selectedPost is not found
+  const currentPost = selectedPost || posts[0];
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -413,15 +416,12 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
             ))}
           </div>
 
-          {selectedPost && (
+          {currentPost && (
             <div className="mt-6 space-y-3">
               <button
-                onClick={() => copyToClipboard(getFullPostText(selectedPost))}
-                className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
-                  copiedPost === selectedPlatform
-                    ? "bg-green-100 text-green-700"
-                    : "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                }`}
+                onClick={() => copyToClipboard(getFullPostText(currentPost))}
+                disabled={!currentPost}
+                className="w-full bg-blue-600 text-white py-4 px-8 rounded-lg font-medium hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Copy className="w-4 h-4" />
                 <span>
@@ -432,11 +432,11 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
               <button
                 onClick={() => {
                   const element = document.createElement("a");
-                  const file = new Blob([getFullPostText(selectedPost)], {
+                  const file = new Blob([getFullPostText(currentPost)], {
                     type: "text/plain",
                   });
                   element.href = URL.createObjectURL(file);
-                  element.download = `${selectedPost.platform}-post.txt`;
+                  element.download = `${currentPost.platform}-post.txt`;
                   document.body.appendChild(element);
                   element.click();
                   document.body.removeChild(element);
@@ -454,43 +454,43 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
         <div className="lg:col-span-2">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Preview</h3>
           <div className="flex justify-center mb-6">
-            {selectedPost && renderPlatformPreview(selectedPost)}
+            {currentPost && renderPlatformPreview(currentPost)}
           </div>
 
-          {selectedPost && (
+          {currentPost && (
             <div className="mt-6 bg-gray-50 rounded-lg p-4">
               <h4 className="font-medium text-gray-900 mb-2">Post Details</h4>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-gray-600">Character Count:</span>
                   <span className="ml-2 font-medium">
-                    {selectedPost.characterCount}
+                    {currentPost.characterCount}
                   </span>
                 </div>
                 <div>
                   <span className="text-gray-600">Hashtags:</span>
                   <span className="ml-2 font-medium">
-                    {selectedPost.hashtags.length}
+                    {currentPost.hashtags.length}
                   </span>
                 </div>
                 <div>
                   <span className="text-gray-600">Engagement:</span>
                   <span
                     className={`ml-2 font-medium capitalize ${
-                      selectedPost.engagement === "high"
+                      currentPost.engagement === "high"
                         ? "text-green-600"
-                        : selectedPost.engagement === "medium"
+                        : currentPost.engagement === "medium"
                           ? "text-yellow-600"
                           : "text-red-600"
                     }`}
                   >
-                    {selectedPost.engagement}
+                    {currentPost.engagement}
                   </span>
                 </div>
                 <div>
                   <span className="text-gray-600">Platform:</span>
                   <span className="ml-2 font-medium capitalize">
-                    {selectedPost.platform}
+                    {currentPost.platform}
                   </span>
                 </div>
               </div>

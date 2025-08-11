@@ -66,7 +66,56 @@ const AI_MODELS: { [key: string]: AIModel } = {
   }
 };
 
-// POST /api/ai/generate - Generate social media content using AI
+// POST /api/ai/analyze-image - Analyze image content
+router.post('/analyze-image', async (req: Request, res: Response) => {
+  try {
+    const { image, mimeType } = req.body;
+
+    if (!image) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Image data is required' 
+      });
+    }
+
+    // Initialize Gemini model for vision
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const prompt = `Analyze this image and provide a detailed description of what you see. Focus on:
+    - Main subjects or objects
+    - Setting/background
+    - Colors and mood
+    - Any text visible
+    - Actions or activities
+    - Style or artistic elements
+
+    Keep the description clear and suitable for social media content creation.`;
+
+    const imagePart = {
+      inlineData: {
+        data: image.replace(/^data:image\/[a-z]+;base64,/, ''),
+        mimeType: mimeType || 'image/jpeg'
+      }
+    };
+
+    const result = await model.generateContent([prompt, imagePart]);
+    const analysis = result.response.text();
+
+    res.json({
+      success: true,
+      analysis: analysis
+    });
+
+  } catch (error) {
+    console.error('Error analyzing image:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to analyze image'
+    });
+  }
+});
+
+// POST /api/ai/generate - Generate social media posts
 router.post('/generate', async (req: Request, res: Response) => {
   const { company, content, platforms } = req.body
 
@@ -78,18 +127,18 @@ router.post('/generate', async (req: Request, res: Response) => {
 
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
-    
+
     // Create platform-specific prompts
     const generatedPosts = []
-    
+
     for (const platform of platforms) {
       const prompt = createPlatformPrompt(company, content, platform)
-      
+
       try {
         const result = await model.generateContent(prompt)
         const response = await result.response
         const text = response.text()
-        
+
         generatedPosts.push({
           platform,
           content: text,
@@ -235,19 +284,19 @@ router.post('/generate-image', async (req: Request, res: Response) => {
 
   } catch (error: any) {
     console.error('Error generating image:', error.response?.data || error.message);
-    
+
     if (error.response?.status === 400) {
       return res.status(400).json({ 
         error: error.response.data?.error?.message || 'Invalid request to image generation API' 
       });
     }
-    
+
     if (error.response?.status === 429) {
       return res.status(429).json({ 
         error: 'Too many requests. Please try again later.' 
       });
     }
-    
+
     res.status(500).json({ 
       error: 'Failed to generate image', 
       details: error.message 
@@ -365,7 +414,7 @@ Return only 3 concise, creative image prompts that would complement the content.
     );
 
     const suggestions = response.data.choices[0]?.message?.content || 'Unable to generate suggestions';
-    
+
     // Parse the response into individual prompts
     const prompts = suggestions
       .split('\n')
@@ -418,15 +467,15 @@ router.post('/generate-text', async (req: Request, res: Response) => {
       case 'openai':
         response = await generateWithOpenAI(modelConfig, prompt, systemPrompt, maxTokens, temperature);
         break;
-      
+
       case 'google':
         response = await generateWithGemini(modelConfig, prompt, systemPrompt, maxTokens, temperature);
         break;
-      
+
       case 'anthropic':
         response = await generateWithClaude(modelConfig, prompt, systemPrompt, maxTokens, temperature);
         break;
-      
+
       default:
         return res.status(400).json({ error: `Unsupported provider: ${modelConfig.provider}` });
     }
@@ -507,7 +556,7 @@ async function generateWithGemini(
   });
 
   const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt;
-  
+
   const result = await model.generateContent(fullPrompt);
   const response = await result.response;
   const content = response.text();
@@ -560,7 +609,7 @@ async function generateWithClaude(
   );
 
   const content = response.data.content[0]?.text || '';
-  
+
   return {
     content: content,
     usage: response.data.usage || {
@@ -608,7 +657,7 @@ router.post('/generate-image-enhanced', async (req: Request, res: Response) => {
     }
 
     let actualSize = size;
-    
+
     // Convert aspect ratio to size if needed
     if (aspectRatio && model === 'dall-e-3') {
       const sizeMap = {
@@ -698,7 +747,7 @@ router.post('/generate-image', async (req: Request, res: Response) => {
     // For now, return a placeholder image URL
     // In production, integrate with DALL-E or other image generation service
     const imageUrl = `https://picsum.photos/1024/1024?random=${Date.now()}`
-    
+
     res.json({
       success: true,
       imageUrl,
@@ -723,7 +772,7 @@ router.post('/analyze-image', async (req: Request, res: Response) => {
 
     // For now, return a mock analysis
     const analysis = 'This is a professional image suitable for social media posting. The composition is well-balanced and engaging.'
-    
+
     res.json({
       success: true,
       analysis
@@ -749,7 +798,7 @@ router.post('/suggest-image-prompts', async (req: Request, res: Response) => {
       `${brandTone || 'Professional'} style visual for social media about: ${contentText.substring(0, 80)}`,
       `Engaging ${platforms?.join(' and ') || 'social media'} image illustrating: ${contentText.substring(0, 90)}`
     ]
-    
+
     res.json({
       success: true,
       prompts
