@@ -104,7 +104,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     try {
       const base64 = await fileToBase64(file);
 
-      // Call the AI analysis API
+      console.log('Analyzing image with Gemini API...');
+      
+      // Call the Gemini analysis API
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/analyze-image`, {
         method: 'POST',
         headers: {
@@ -117,53 +119,23 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to analyze image');
+        const errorData = await response.json();
+        console.error('Analysis API error:', errorData);
+        throw new Error(errorData.error || 'Failed to analyze image');
       }
 
       const result = await response.json();
+      console.log('Analysis result:', result);
 
       if (result.success && result.analysis) {
         setImageAnalysis(result.analysis);
-        setFormData(prev => ({
-          ...prev,
-          prompt: prev.prompt + (prev.prompt ? '\n\n' : '') + `Image context: ${result.analysis}`
-        }));
+        console.log('Image analysis completed successfully');
       } else {
-        // Fallback to local analysis if API returns no analysis
-        try {
-          const analysis = await analyzeImageWithGemini(base64);
-          if (analysis && analysis !== 'Unable to analyze image. Please add a description manually.') {
-            setImageAnalysis(analysis);
-            setFormData(prev => ({
-              ...prev,
-              prompt: prev.prompt + (prev.prompt ? '\n\n' : '') + `Image context: ${analysis}`
-            }));
-          } else {
-            setImageAnalysis('Image uploaded successfully. Add a description for better content generation.');
-          }
-        } catch (fallbackError) {
-          console.error('Fallback image analysis also failed:', fallbackError);
-          setImageAnalysis('Image uploaded successfully. Add a description for better content generation.');
-        }
+        setImageAnalysis('Image uploaded successfully. Add a description for better content generation.');
       }
     } catch (error) {
       console.error('Error analyzing image:', error);
-      // Fallback to local analysis if API call fails
-      try {
-        const analysis = await analyzeImageWithGemini(base64);
-        if (analysis && analysis !== 'Unable to analyze image. Please add a description manually.') {
-          setImageAnalysis(analysis);
-          setFormData(prev => ({
-            ...prev,
-            prompt: prev.prompt + (prev.prompt ? '\n\n' : '') + `Image context: ${analysis}`
-          }));
-        } else {
-          setImageAnalysis('Image uploaded successfully. Add a description for better content generation.');
-        }
-      } catch (fallbackError) {
-        console.error('Fallback image analysis also failed:', fallbackError);
-        setImageAnalysis('Image uploaded successfully. Add a description for better content generation.');
-      }
+      setImageAnalysis(`Image uploaded successfully. ${error.message?.includes('quota') ? 'AI analysis quota exceeded.' : 'Add a description for better content generation.'}`);
     } finally {
       setAnalyzingImage(false);
     }
@@ -214,7 +186,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const useImageAnalysis = () => {
     setFormData(prev => ({
       ...prev,
-      prompt: prev.prompt + (prev.prompt ? '\n\n' : '') + imageAnalysis
+      prompt: prev.prompt + (prev.prompt ? '\n\n' : '') + `Image Analysis: ${imageAnalysis}`
     }));
     setImageAnalysis('');
   };
