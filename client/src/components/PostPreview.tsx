@@ -19,20 +19,14 @@ interface PostPreviewProps {
 }
 
 export const PostPreview: React.FC<PostPreviewProps> = ({
-  posts,
+  posts: generatedPosts, // Renamed to avoid conflict with selectedPlatform initialization
   onBack,
   onRegenerate,
 }) => {
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>(
-    posts[0]?.platform || "facebook",
+    generatedPosts[0]?.platform || "facebook",
   );
   const [copiedPost, setCopiedPost] = useState<string | null>(null);
-
-  // Find the currently selected post based on the selectedPlatform
-  const selectedPost = posts.find((post) => post.platform === selectedPlatform);
-
-  // Fallback to first post if selectedPost is not found
-  const currentPost = selectedPost || posts[0];
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -58,7 +52,6 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
   };
 
   const renderPlatformPreview = (post: GeneratedPost) => {
-    // ...existing code...
     const renderImage = () =>
       post.imageUrl ? (
         <div className="w-full flex justify-center my-3">
@@ -355,6 +348,11 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
     return `${post.caption}\n\n${post.hashtags.join(" ")}`;
   };
 
+  // Find the currently selected post based on the selectedPlatform
+  const selectedPost = generatedPosts.find(
+    (post) => post.platform === selectedPlatform,
+  );
+
   return (
     <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-lg p-8">
       <div className="text-center mb-8">
@@ -376,7 +374,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
             Select Platform
           </h3>
           <div className="space-y-3">
-            {posts.map((post) => (
+            {generatedPosts.map((post) => (
               <button
                 key={post.platform}
                 onClick={() => setSelectedPlatform(post.platform)}
@@ -416,12 +414,15 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
             ))}
           </div>
 
-          {currentPost && (
+          {selectedPost && (
             <div className="mt-6 space-y-3">
               <button
-                onClick={() => copyToClipboard(getFullPostText(currentPost))}
-                disabled={!currentPost}
-                className="w-full bg-blue-600 text-white py-4 px-8 rounded-lg font-medium hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => copyToClipboard(getFullPostText(selectedPost))}
+                className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+                  copiedPost === selectedPlatform
+                    ? "bg-green-100 text-green-700"
+                    : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                }`}
               >
                 <Copy className="w-4 h-4" />
                 <span>
@@ -432,11 +433,11 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
               <button
                 onClick={() => {
                   const element = document.createElement("a");
-                  const file = new Blob([getFullPostText(currentPost)], {
+                  const file = new Blob([getFullPostText(selectedPost)], {
                     type: "text/plain",
                   });
                   element.href = URL.createObjectURL(file);
-                  element.download = `${currentPost.platform}-post.txt`;
+                  element.download = `${selectedPost.platform}-post.txt`;
                   document.body.appendChild(element);
                   element.click();
                   document.body.removeChild(element);
@@ -454,43 +455,43 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
         <div className="lg:col-span-2">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Preview</h3>
           <div className="flex justify-center mb-6">
-            {currentPost && renderPlatformPreview(currentPost)}
+            {selectedPost && renderPlatformPreview(selectedPost)}
           </div>
 
-          {currentPost && (
+          {selectedPost && (
             <div className="mt-6 bg-gray-50 rounded-lg p-4">
               <h4 className="font-medium text-gray-900 mb-2">Post Details</h4>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-gray-600">Character Count:</span>
                   <span className="ml-2 font-medium">
-                    {currentPost.characterCount}
+                    {selectedPost.characterCount}
                   </span>
                 </div>
                 <div>
                   <span className="text-gray-600">Hashtags:</span>
                   <span className="ml-2 font-medium">
-                    {currentPost.hashtags.length}
+                    {selectedPost.hashtags.length}
                   </span>
                 </div>
                 <div>
                   <span className="text-gray-600">Engagement:</span>
                   <span
                     className={`ml-2 font-medium capitalize ${
-                      currentPost.engagement === "high"
+                      selectedPost.engagement === "high"
                         ? "text-green-600"
-                        : currentPost.engagement === "medium"
+                        : selectedPost.engagement === "medium"
                           ? "text-yellow-600"
                           : "text-red-600"
                     }`}
                   >
-                    {currentPost.engagement}
+                    {selectedPost.engagement}
                   </span>
                 </div>
                 <div>
                   <span className="text-gray-600">Platform:</span>
                   <span className="ml-2 font-medium capitalize">
-                    {currentPost.platform}
+                    {selectedPost.platform}
                   </span>
                 </div>
               </div>
@@ -518,7 +519,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
         <button
           onClick={() =>
             window.dispatchEvent(
-              new CustomEvent("showPublishModal", { detail: posts }),
+              new CustomEvent("showPublishModal", { detail: generatedPosts }),
             )
           }
           className="w-full bg-green-600 text-white py-4 px-8 rounded-lg font-medium hover:bg-green-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
