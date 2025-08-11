@@ -8,7 +8,7 @@ export async function saveCompany(companyInfo: CompanyInfo, userId: string) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       ...companyInfo,
-      user_id: userId
+      userId: userId
     })
   });
 
@@ -18,11 +18,12 @@ export async function saveCompany(companyInfo: CompanyInfo, userId: string) {
     throw new Error(error.message || 'Failed to save company');
   }
 
-  return response.json();
+  const result = await response.json();
+  return result.data;
 }
 
 export async function getCompanies(userId: string) {
-  const response = await fetch(`/api/companies?user_id=${userId}`);
+  const response = await fetch(`/api/companies?userId=${userId}`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -30,45 +31,39 @@ export async function getCompanies(userId: string) {
     throw new Error(error.message || 'Failed to fetch companies');
   }
 
-  return response.json();
+  const result = await response.json();
+  return result.data;
 }
 
 export async function updateCompany(companyId: string, updates: Partial<CompanyInfo>, userId: string) {
-  const { data, error } = await supabase
-    .from('companies')
-    .update({
-      name: updates.name,
-      website: updates.website,
-      industry: updates.industry,
-      target_audience: updates.targetAudience,
-      brand_tone: updates.brandTone,
-      goals: updates.goals,
-      platforms: updates.platforms,
-      updated_at: new Date().toISOString()
+  const response = await fetch(`/api/companies/${companyId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...updates,
+      userId: userId
     })
-    .eq('id', companyId)
-    .eq('user_id', userId)
-    .select()
-    .single();
+  });
 
-  if (error) {
+  if (!response.ok) {
+    const error = await response.json();
     console.error('Error updating company:', error);
-    throw error;
+    throw new Error(error.message || 'Failed to update company');
   }
 
-  return data;
+  const result = await response.json();
+  return result.data;
 }
 
 export async function deleteCompany(companyId: string, userId: string) {
-  const { error } = await supabase
-    .from('companies')
-    .delete()
-    .eq('id', companyId)
-    .eq('user_id', userId);
+  const response = await fetch(`/api/companies/${companyId}?userId=${userId}`, {
+    method: 'DELETE'
+  });
 
-  if (error) {
+  if (!response.ok) {
+    const error = await response.json();
     console.error('Error deleting company:', error);
-    throw error;
+    throw new Error(error.message || 'Failed to delete company');
   }
 }
 
