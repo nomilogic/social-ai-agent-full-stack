@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import axios from 'axios'
-import * as dotenv from 'dotenv'
+import dotenv from 'dotenv'
 
 dotenv.config()
 
