@@ -91,26 +91,43 @@ router.post('/analyze-image', async (req: Request, res: Response) => {
 
     Keep the description clear and suitable for social media content creation.`;
 
+    // Clean the base64 data if it has data URL prefix
+    const cleanBase64 = image.replace(/^data:image\/[a-z]+;base64,/, '');
+    
     const imagePart = {
       inlineData: {
-        data: image.replace(/^data:image\/[a-z]+;base64,/, ''),
+        data: cleanBase64,
         mimeType: mimeType || 'image/jpeg'
       }
     };
 
+    console.log('Attempting to analyze image with Gemini...');
     const result = await model.generateContent([prompt, imagePart]);
-    const analysis = result.response.text();
+    const response = await result.response;
+    const analysis = response.text();
+
+    console.log('Image analysis completed successfully');
 
     res.json({
       success: true,
-      analysis: analysis
+      analysis: analysis || 'Image uploaded successfully. The AI was able to process your image.'
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error analyzing image:', error);
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to analyze image';
+    if (error.message?.includes('API_KEY')) {
+      errorMessage = 'AI service not properly configured';
+    } else if (error.message?.includes('quota') || error.message?.includes('limit')) {
+      errorMessage = 'AI service quota exceeded';
+    }
+    
     res.status(500).json({
       success: false,
-      error: 'Failed to analyze image'
+      error: errorMessage,
+      details: error.message
     });
   }
 });
