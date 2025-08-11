@@ -80,9 +80,15 @@ router.post('/post', async (req: Request, res: Response) => {
       console.log('LinkedIn asset ID:', asset)
 
       // Step 2b: Download the image from the provided URL
+      console.log('Downloading image from URL:', post.imageUrl)
       const imageResponse = await axios.get(post.imageUrl, {
-        responseType: 'arraybuffer'
+        responseType: 'arraybuffer',
+        timeout: 30000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
       })
+      console.log('Image downloaded, size:', imageResponse.data.length)
 
       // Step 2c: Upload the image binary data to LinkedIn
       await axios.put(uploadUrl, imageResponse.data, {
