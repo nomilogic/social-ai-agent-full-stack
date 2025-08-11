@@ -1,13 +1,36 @@
-import { createClient } from '@supabase/supabase-js';
+// Migrated from Supabase to PostgreSQL with Drizzle
+// Database operations are now handled server-side via API calls
+// Example: Use fetch('/api/companies') instead of supabase.from('companies')
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+export const supabase = null; // Deprecated - use API calls instead
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Please check your .env file.');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Helper function for API calls to replace Supabase client
+export const apiClient = {
+  from: (table: string) => ({
+    select: (columns = '*') => ({
+      eq: (column: string, value: any) => 
+        fetch(`/api/${table}?${column}=${value}`).then(res => res.json()),
+    }),
+    insert: (data: any) =>
+      fetch(`/api/${table}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(res => res.json()),
+    update: (data: any) => ({
+      eq: (column: string, value: any) =>
+        fetch(`/api/${table}/${value}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        }).then(res => res.json())
+    }),
+    delete: () => ({
+      eq: (column: string, value: any) =>
+        fetch(`/api/${table}/${value}`, { method: 'DELETE' }).then(res => res.json())
+    })
+  })
+};
 
 // Database types
 export interface Database {

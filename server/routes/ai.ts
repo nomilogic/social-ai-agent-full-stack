@@ -1,16 +1,16 @@
 import express, { Request, Response } from 'express'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import axios from 'axios'
-import dotenv from 'dotenv'
+// import dotenv from 'dotenv'
 
-dotenv.config()
+// dotenv.config() // Environment variables are handled by Replit
 
 const router = express.Router()
 
 // Initialize AI Services
 const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY!)
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || null
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || null
 
 // AI Model Configuration
 interface AIModel {

@@ -4,6 +4,12 @@ import oauthRouter from './routes/oauth'
 import linkedinRouter from './routes/linkedin'
 import socialRouter from './routes/social'
 import aiRouter from './routes/ai'
+import companiesRouter from './routes/companies'
+import postsRouter from './routes/posts'
+import campaignsRouter from './routes/campaigns'
+import scheduleRouter from './routes/schedule'
+import notificationsRouter from './routes/notifications'
+import mediaRouter from './routes/media'
 
 export async function registerRoutes(app: Express): Promise<Server> {
     // API routes
@@ -11,6 +17,12 @@ app.use('/api/oauth', oauthRouter)
 app.use('/api/linkedin', linkedinRouter)
 app.use('/api/social', socialRouter)
 app.use('/api/ai', aiRouter)
+app.use('/api/companies', companiesRouter)
+app.use('/api/posts', postsRouter)
+app.use('/api/campaigns', campaignsRouter)
+app.use('/api/schedule', scheduleRouter)
+app.use('/api/notifications', notificationsRouter)
+app.use('/api/media', mediaRouter)
 
 // Legacy routes for backwards compatibility
 app.use('/share', linkedinRouter)

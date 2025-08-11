@@ -1,5 +1,7 @@
 import express, { Request, Response } from 'express'
-import { serverSupabaseAnon as serverSupabase } from '../supabaseClient'
+import { db } from '../db'
+import { posts, companies } from '../../shared/schema'
+import { eq, and, desc } from 'drizzle-orm'
 import { validateRequestBody } from '../middleware/auth'
 
 const router = express.Router()
@@ -14,27 +16,31 @@ router.get('/', async (req: Request, res: Response) => {
   }
 
   try {
-    let query = serverSupabase
-      .from('posts')
-      .select(`
-        *,
-        companies (
-          name,
-          brand_tone
-        )
-      `)
-      .eq('user_id', userId)
-
+    let whereCondition = eq(posts.user_id, userId)
+    
     if (companyId) {
-      query = query.eq('company_id', companyId)
+      whereCondition = and(eq(posts.user_id, userId), eq(posts.company_id, companyId))
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false })
-
-    if (error) {
-      console.error('Error fetching posts:', error)
-      return res.status(500).json({ error: error.message })
-    }
+    const data = await db
+      .select({
+        id: posts.id,
+        company_id: posts.company_id,
+        prompt: posts.prompt,
+        tags: posts.tags,
+        campaign_id: posts.campaign_id,
+        media_url: posts.media_url,
+        generated_content: posts.generated_content,
+        user_id: posts.user_id,
+        created_at: posts.created_at,
+        updated_at: posts.updated_at,
+        company_name: companies.name,
+        company_brand_tone: companies.brand_tone
+      })
+      .from(posts)
+      .leftJoin(companies, eq(posts.company_id, companies.id))
+      .where(whereCondition)
+      .orderBy(desc(posts.created_at))
 
     res.json({ success: true, data })
   } catch (err: any) {
@@ -55,23 +61,17 @@ router.post('/', validateRequestBody(['companyId', 'userId']), async (req: Reque
   } = req.body
 
   try {
-    const { data, error } = await serverSupabase
-      .from('posts')
-      .insert({
+    const [data] = await db
+      .insert(posts)
+      .values({
         company_id: companyId,
         prompt: prompt || '',
         tags: tags || [],
         campaign_id: campaignId || null,
-        generated_content: generatedContent || [],
+        generated_content: generatedContent || null,
         user_id: userId
       })
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error creating post:', error)
-      return res.status(500).json({ error: error.message })
-    }
+      .returning()
 
     res.status(201).json({ success: true, data })
   } catch (err: any) {
@@ -92,24 +92,17 @@ router.put('/:id', validateRequestBody(['userId']), async (req: Request, res: Re
   } = req.body
 
   try {
-    const { data, error } = await serverSupabase
-      .from('posts')
-      .update({
+    const [data] = await db
+      .update(posts)
+      .set({
         prompt,
         tags,
         campaign_id: campaignId,
         generated_content: generatedContent,
-        updated_at: new Date().toISOString()
+        updated_at: new Date()
       })
-      .eq('id', postId)
-      .eq('user_id', userId) // Ensure user owns this post
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error updating post:', error)
-      return res.status(500).json({ error: error.message })
-    }
+      .where(and(eq(posts.id, postId), eq(posts.user_id, userId)))
+      .returning()
 
     if (!data) {
       return res.status(404).json({ error: 'Post not found or unauthorized' })
@@ -132,15 +125,13 @@ router.delete('/:id', async (req: Request, res: Response) => {
   }
 
   try {
-    const { error } = await serverSupabase
-      .from('posts')
-      .delete()
-      .eq('id', postId)
-      .eq('user_id', userId) // Ensure user owns this post
+    const result = await db
+      .delete(posts)
+      .where(and(eq(posts.id, postId), eq(posts.user_id, userId)))
+      .returning({ id: posts.id })
 
-    if (error) {
-      console.error('Error deleting post:', error)
-      return res.status(500).json({ error: error.message })
+    if (result.length === 0) {
+      return res.status(404).json({ error: 'Post not found or unauthorized' })
     }
 
     res.json({ success: true, message: 'Post deleted successfully' })
