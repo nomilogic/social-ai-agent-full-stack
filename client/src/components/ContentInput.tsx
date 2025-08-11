@@ -48,6 +48,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const [imageAnalysis, setImageAnalysis] = useState('');
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [useForAIReference, setUseForAIReference] = useState(true);
+  const [useInPost, setUseInPost] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = (e: React.DragEvent) => {
@@ -211,6 +212,12 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     }
   };
 
+  const performAIAnalysis = async () => {
+    if (formData.media && formData.media.type.startsWith('image/')) {
+      await analyzeImage(formData.media);
+    }
+  };
+
   const handleAIImageGenerated = async (imageUrl: string) => {
     try {
       // Convert the AI generated image URL to a File object
@@ -292,18 +299,33 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                       <p>{(formData.media.size / 1024 / 1024).toFixed(2)} MB</p>
                     </div>
                     
-                    {/* AI Reference Checkbox */}
-                    <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
-                      <input
-                        type="checkbox"
-                        id="useForAI"
-                        checked={useForAIReference}
-                        onChange={(e) => setUseForAIReference(e.target.checked)}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                      />
-                      <label htmlFor="useForAI" className="text-sm text-gray-700 cursor-pointer">
-                        Use for AI reference
-                      </label>
+                    {/* Checkboxes */}
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                        <input
+                          type="checkbox"
+                          id="useForAI"
+                          checked={useForAIReference}
+                          onChange={(e) => setUseForAIReference(e.target.checked)}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                        />
+                        <label htmlFor="useForAI" className="text-sm text-gray-700 cursor-pointer">
+                          Use for AI reference
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                        <input
+                          type="checkbox"
+                          id="useInPost"
+                          checked={useInPost}
+                          onChange={(e) => setUseInPost(e.target.checked)}
+                          className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+                        />
+                        <label htmlFor="useInPost" className="text-sm text-gray-700 cursor-pointer">
+                          Use it in the post
+                        </label>
+                      </div>
                     </div>
 
                     {analyzingImage && (
@@ -327,17 +349,33 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                       </div>
                     )}
                     
-                    {/* AI Analysis Button - show when analysis is available */}
-                    {imageAnalysis && useForAIReference && (
-                      <button
-                        type="button"
-                        onClick={addAnalysisToDescription}
-                        className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                        <span>Add AI Analysis to Content</span>
-                      </button>
-                    )}
+                    {/* Action Buttons */}
+                    <div className="space-y-2">
+                      {/* AI Analysis Button - always show when image is uploaded */}
+                      {formData.media && formData.media.type.startsWith('image/') && !analyzingImage && (
+                        <button
+                          type="button"
+                          onClick={performAIAnalysis}
+                          disabled={analyzingImage}
+                          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-2 disabled:opacity-50"
+                        >
+                          <Eye className="w-4 h-4" />
+                          <span>AI Analysis</span>
+                        </button>
+                      )}
+                      
+                      {/* Add Analysis to Content Button - show when analysis is available */}
+                      {imageAnalysis && useForAIReference && (
+                        <button
+                          type="button"
+                          onClick={addAnalysisToDescription}
+                          className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          <span>Add AI Analysis to Content</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <button
                     type="button"

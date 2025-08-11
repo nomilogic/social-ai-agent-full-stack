@@ -4,7 +4,9 @@
 Social Agent AI Fullstack is a comprehensive social media management platform leveraging artificial intelligence to automate content creation, scheduling, and management across multiple platforms. The project's vision is to provide an enterprise-grade solution for AI-powered social media management, offering extensive feature coverage, robust architecture, and production-ready deployment capabilities. It aims to streamline social media operations, enhance content engagement, and provide advanced analytics for optimized performance across various social media channels.
 
 ### User Preferences
-No specific user preferences were provided in the original `replit.md` file.
+- Enhanced file upload interface with granular control options
+- Preference for separate checkboxes for AI reference and post usage controls
+- Dedicated AI analysis button functionality for manual triggering
 
 ### System Architecture
 The project utilizes a client-server architecture. The frontend is a React Single Page Application (SPA) served by an Express.js backend, which also handles all API requests. PostgreSQL is used for database persistence with Drizzle ORM for type-safe database operations. The system integrates with numerous external social media APIs and AI service providers.
