@@ -144,23 +144,27 @@ export async function deletePost(postId: string, userId: string) {
 
 // Media upload
 export async function uploadMedia(file: File, userId: string) {
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${userId}/${Date.now()}.${fileExt}`;
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('userId', userId);
 
-  const { data, error } = await supabase.storage
-    .from('media')
-    .upload(fileName, file);
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch('/api/media/upload', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
+    body: formData
+  });
 
-  if (error) {
+  if (!response.ok) {
+    const error = await response.json();
     console.error('Error uploading media:', error);
-    throw error;
+    throw new Error(error.error || 'Failed to upload media');
   }
 
-  const { data: { publicUrl } } = supabase.storage
-    .from('media')
-    .getPublicUrl(fileName);
-
-  return publicUrl;
+  const result = await response.json();
+  return result.data.url;
 }
 
 // Authentication helpers

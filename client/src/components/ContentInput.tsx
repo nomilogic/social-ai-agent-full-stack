@@ -110,7 +110,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       // Call the Gemini analysis API with proper data URL format
       const dataUrl = `data:${file.type};base64,${base64}`;
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/analyze-image`, {
+      const response = await fetch(`/api/ai/analyze-image`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
