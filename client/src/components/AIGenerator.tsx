@@ -194,7 +194,7 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
         </div>
 
         <div className="text-center text-sm text-gray-500">
-          <p>Processing {companyInfo.platforms.length} platform{companyInfo.platforms.length > 1 ? 's' : ''}...</p>
+          <p>Processing {contentData?.selectedPlatforms?.length || contentData?.platforms?.length || 1} platform{(contentData?.selectedPlatforms?.length || contentData?.platforms?.length || 1) > 1 ? 's' : ''}...</p>
         </div>
       </div>
     </div>

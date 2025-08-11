@@ -229,7 +229,8 @@ export async function generateAllPosts(
   onProgress?: (platform: Platform, progress: number) => void
 ): Promise<GeneratedPost[]> {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate-posts`, {
+    const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : 'http://localhost:5000');
+    const response = await fetch(`${apiUrl}/api/ai/generate-posts`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

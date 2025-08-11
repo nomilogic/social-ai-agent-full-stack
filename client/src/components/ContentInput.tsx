@@ -132,7 +132,8 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       // Call the Gemini analysis API with proper data URL format
       const dataUrl = `data:${file.type};base64,${base64}`;
 
-      const response = await fetch(`/api/ai/analyze-image`, {
+      const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : 'http://localhost:5000');
+      const response = await fetch(`${apiUrl}/api/ai/analyze-image`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -191,22 +192,30 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     if (formData.prompt.trim()) {
       // For now, passing an empty object for companyInfo and mediaAssets to simulate the structure
       // This should be replaced with actual data fetching or state management
-      const companyInfo = { name: '', industry: '', brand_tone: '', target_audience: '', description: '' };
-      const mediaAssets = [{ url: formData.mediaUrl || '', type: formData.media?.type || '' }];
+      const companyInfo = { 
+        name: 'Sample Company', 
+        industry: 'Technology', 
+        brand_tone: 'professional', 
+        target_audience: 'Professionals', 
+        description: 'A sample company for content generation' 
+      };
+      const mediaAssets = formData.mediaUrl ? [{ url: formData.mediaUrl, type: formData.media?.type || 'image' }] : [];
 
       // Navigate to generator with all the data
       onNext({
+        ...formData,
         prompt: formData.prompt,
         selectedPlatforms: formData.selectedPlatforms,
         platforms: formData.selectedPlatforms,
-        companyName: companyInfo?.name,
+        companyName: companyInfo.name,
         companyInfo,
         mediaAssets,
         analysisResults: imageAnalysis,
-        industry: companyInfo?.industry,
-        tone: companyInfo?.brand_tone || 'professional',
-        targetAudience: companyInfo?.target_audience || 'Professionals',
-        description: companyInfo?.description
+        industry: companyInfo.industry,
+        tone: companyInfo.brand_tone,
+        targetAudience: companyInfo.target_audience,
+        description: companyInfo.description,
+        imageAnalysis: imageAnalysis
       });
     }
   };
