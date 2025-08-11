@@ -29,11 +29,12 @@ import {
   MoreHorizontal
 } from 'lucide-react';
 
-import { postHistoryService, PostGalleryItem, ContentTemplate } from '../lib/postHistoryService';
+import { postHistoryService, PostGalleryItem, ContentTemplate, PostContent } from '../lib/postHistoryService';
 import { mediaAssetService, MediaAsset } from '../lib/mediaAssetService';
 import { AIModelSelector } from './AIModelSelector';
 import { MediaDetailModal } from './MediaDetailModal';
 import { VideoPlayerModal } from './VideoPlayerModal';
+import { ContentInput } from './ContentInput'; // Assuming ContentInput is in this path
 
 interface PostGalleryDashboardProps {
   companyId: string;
@@ -60,7 +61,8 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  
+  const [editingPost, setEditingPost] = useState<PostGalleryItem | null>(null); // State to manage editing
+
   // Filters
   const [filters, setFilters] = useState({
     platforms: [] as string[],
@@ -78,7 +80,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
   const [videoGenerating, setVideoGenerating] = useState(false);
   const [selectedAiModel, setSelectedAiModel] = useState('runway-gen-2');
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // Media detail modal
   const [selectedAsset, setSelectedAsset] = useState<MediaAsset | null>(null);
   const [showMediaDetail, setShowMediaDetail] = useState(false);
@@ -104,7 +106,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
           });
           setPosts(items);
           break;
-          
+
         case 'media':
           const { assets } = await mediaAssetService.getMediaAssets(companyId, {
             type: filters.mediaType === 'all' ? undefined : filters.mediaType,
@@ -112,7 +114,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
           });
           setMediaAssets(assets);
           break;
-          
+
         case 'templates':
           const templateList = await postHistoryService.getContentTemplates(companyId);
           setTemplates(templateList);
@@ -184,7 +186,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
         aspectRatio: '16:9',
         duration: 10
       });
-      
+
       // Refresh media assets
       if (viewMode === 'media') {
         loadContent();
@@ -205,9 +207,9 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
           altText: file.name
         })
       );
-      
+
       await Promise.all(uploadPromises);
-      
+
       if (viewMode === 'media') {
         loadContent();
       }
@@ -229,6 +231,40 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
 
   const handleAssetDelete = (assetId: string) => {
     setMediaAssets(prev => prev.filter(asset => asset.id !== assetId));
+  };
+
+  // Handler for editing a post
+  const handleEditPost = async (updatedData: PostContent) => {
+    if (!editingPost) return;
+
+    try {
+      // Ensure images are properly maintained
+      const updatedPost = {
+        ...editingPost,
+        content: updatedData.content,
+        platforms: updatedData.selectedPlatforms,
+        images: updatedData.images || editingPost.images || [],
+        imageAnalysis: updatedData.imageAnalysis || editingPost.imageAnalysis,
+        updatedAt: new Date().toISOString()
+      };
+
+      // Update the posts array
+      setPosts(posts.map(post => 
+        post.id === editingPost.id ? updatedPost : post
+      ));
+
+      // Also update in persistent storage if you have that implemented
+      // await postHistoryService.updatePost(editingPost.id, updatedPost);
+
+      setEditingPost(null);
+    } catch (error) {
+      console.error('Error updating post:', error);
+    }
+  };
+
+  // Function to open the edit modal for a post
+  const openEditModal = (post: PostGalleryItem) => {
+    setEditingPost(post);
   };
 
   const TabNavigation = () => (
@@ -444,7 +480,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
         <div
           key={post.id}
           className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow cursor-pointer group"
-          onClick={() => onSelectPost?.(post)}
+          onClick={() => openEditModal(post)} // Changed to open edit modal
         >
           <div className="relative aspect-video bg-gray-100">
             <img
@@ -495,11 +531,11 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
               )}
             </div>
           </div>
-          
+
           <div className="p-4">
             <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{post.title}</h3>
             <p className="text-sm text-gray-600 mb-3 line-clamp-2">{post.preview}</p>
-            
+
             <div className="flex flex-wrap gap-1 mb-3">
               {post.platforms.map(platform => (
                 <span key={platform} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
@@ -507,7 +543,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
                 </span>
               ))}
             </div>
-            
+
             <div className="flex items-center justify-between text-sm text-gray-500">
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1">
@@ -563,7 +599,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
                 className="w-full h-full object-cover"
               />
             )}
-            
+
             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all">
               <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button 
@@ -603,7 +639,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
                 </button>
               </div>
             </div>
-            
+
             <div className="absolute bottom-2 left-2">
               <div className="flex items-center gap-1">
                 {asset.type === 'video' && <Video className="w-4 h-4 text-white" />}
@@ -614,7 +650,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
               </div>
             </div>
           </div>
-          
+
           <div className="p-3">
             <h3 className="font-medium text-gray-900 text-sm mb-1 truncate" title={asset.filename}>
               {asset.filename}
@@ -638,7 +674,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
           </div>
         </div>
       ))}
-      
+
       {/* Add New Media Button */}
       <div className="bg-white rounded-lg shadow-sm border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors group cursor-pointer flex flex-col items-center justify-center aspect-square">
         <div className="text-center p-6">
@@ -680,7 +716,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6">
           <h3 className="text-xl font-bold text-gray-900 mb-4">Generate AI Video</h3>
-          
+
           <div className="space-y-4">
             <AIModelSelector
               selectedModel={selectedAiModel}
@@ -688,7 +724,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
               taskType="video-generation"
               showIcon={true}
             />
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Video Description
@@ -700,7 +736,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
                 placeholder="Describe the video you want to generate..."
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Source Image (optional)
@@ -733,7 +769,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
               </div>
             </div>
           </div>
-          
+
           <div className="flex gap-3 mt-6">
             <button
               onClick={() => {
@@ -774,7 +810,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
           <h1 className="text-2xl font-bold text-gray-900">Content Gallery</h1>
           <p className="text-gray-600">Manage, reuse, and organize your content assets</p>
         </div>
-        
+
         <div className="flex items-center gap-3">
           {selectedItems.size > 0 && (
             <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
@@ -790,14 +826,14 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
               </button>
             </div>
           )}
-          
+
           <button 
             onClick={loadContent}
             className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
           >
             <RefreshCw className="w-5 h-5" />
           </button>
-          
+
           <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors">
             <Plus className="w-4 h-4" />
             Create New
@@ -842,7 +878,34 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
       )}
 
       <VideoGeneratorModal />
-      
+
+      {/* Edit Post Modal */}
+      {editingPost && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Edit Post</h2>
+              <button
+                onClick={() => setEditingPost(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <ContentInput
+              onNext={handleEditPost}
+              editMode={true} // Pass editMode as true
+              initialData={{
+                content: editingPost.content,
+                selectedPlatforms: editingPost.platforms || [],
+                images: editingPost.images || [],
+                imageAnalysis: editingPost.imageAnalysis // Pass imageAnalysis
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Media Detail Modal */}
       <MediaDetailModal
         isOpen={showMediaDetail}

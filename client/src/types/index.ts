@@ -16,6 +16,7 @@ export interface PostContent {
   tags: string[];
   campaignId?: string;
   selectedPlatforms?: Platform[];
+  imageAnalysis?: string;
 }
 
 export interface GeneratedPost {
