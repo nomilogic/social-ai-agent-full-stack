@@ -298,13 +298,24 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                     <p className="font-medium">{formData.media.name}</p>
                     <p>{(formData.media.size / 1024 / 1024).toFixed(2)} MB</p>
                     {analyzingImage && (
-                      <div className="flex items-center justify-center mt-2">
-                        <Loader className="w-4 h-4 animate-spin mr-2" />
-                        <span className="text-blue-600">Analyzing image...</span>
+                      <div className="flex items-center justify-center mt-3 p-2 bg-blue-50 rounded-lg">
+                        <Loader className="w-4 h-4 animate-spin mr-2 text-blue-600" />
+                        <span className="text-blue-700 font-medium">🤖 AI is analyzing your image...</span>
                       </div>
                     )}
                     {uploading && (
-                      <p className="text-blue-600">Uploading...</p>
+                      <div className="flex items-center justify-center mt-2 p-2 bg-gray-50 rounded-lg">
+                        <Loader className="w-4 h-4 animate-spin mr-2" />
+                        <span className="text-gray-700">Uploading file...</span>
+                      </div>
+                    )}
+                    {!analyzingImage && !uploading && formData.media.type.startsWith('image/') && !imageAnalysis && (
+                      <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-green-700 text-xs flex items-center">
+                          <Eye className="w-3 h-3 mr-1" />
+                          Image uploaded successfully! AI analysis will appear above.
+                        </p>
+                      </div>
                     )}
                   </div>
                   <button
@@ -346,23 +357,33 @@ export const ContentInput: React.FC<ContentInputProps> = ({
             </div>
           </div>
 
-          {/* Content Details */}
+          {/* Image Analysis Results - Show prominently when available */}
           {imageAnalysis && (
-            <div className="lg:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="lg:col-span-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6 mb-6 shadow-sm">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h4 className="font-medium text-blue-900 mb-2 flex items-center">
-                    <Eye className="w-4 h-4 mr-2" />
-                    AI Image Analysis
+                  <h4 className="font-semibold text-blue-900 mb-3 flex items-center text-lg">
+                    <Eye className="w-5 h-5 mr-2" />
+                    🤖 AI Image Analysis Complete
                   </h4>
-                  <p className="text-blue-800 text-sm">{imageAnalysis}</p>
+                  <p className="text-blue-800 text-sm leading-relaxed mb-4">{imageAnalysis}</p>
+                  <div className="flex items-center text-xs text-blue-600">
+                    <Sparkles className="w-4 h-4 mr-1" />
+                    <span>Click "Add to Description" to use this analysis in your content</span>
+                  </div>
                 </div>
-                <button onClick={useImageAnalysis} className="ml-4 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
-                  Use This
+                <button 
+                  onClick={useImageAnalysis} 
+                  className="ml-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center space-x-2"
+                >
+                  <span>Add to Description</span>
+                  <span className="text-lg">✨</span>
                 </button>
               </div>
             </div>
           )}
+
+          {/* Content Details */}
           <div className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
