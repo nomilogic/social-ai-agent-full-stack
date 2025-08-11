@@ -7,7 +7,7 @@ import multer from 'multer'
 // dotenv.config() // Environment variables are handled by Replit
 
 // Configure multer for file uploads
-const upload = multer({ 
+const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
@@ -72,9 +72,9 @@ router.post('/analyze-image', async (req: Request, res: Response) => {
     const { image, mimeType } = req.body;
 
     if (!image) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Image data is required' 
+      return res.status(400).json({
+        success: false,
+        error: 'Image data is required'
       });
     }
 
@@ -102,7 +102,7 @@ Keep the description concise but informative for social media marketing purposes
     if (image.startsWith('data:')) {
       cleanBase64 = image.split(',')[1];
     }
-    
+
     const imagePart = {
       inlineData: {
         data: cleanBase64,
@@ -125,7 +125,7 @@ Keep the description concise but informative for social media marketing purposes
 
   } catch (error: any) {
     console.error('Error analyzing image with Gemini:', error);
-    
+
     // Provide more specific error messages
     let errorMessage = 'Failed to analyze image';
     if (error.message?.includes('API_KEY') || error.message?.includes('PERMISSION_DENIED')) {
@@ -135,7 +135,7 @@ Keep the description concise but informative for social media marketing purposes
     } else if (error.message?.includes('INVALID_ARGUMENT')) {
       errorMessage = 'Invalid image format for Gemini';
     }
-    
+
     res.status(500).json({
       success: false,
       error: errorMessage,
@@ -149,8 +149,8 @@ router.post('/generate-posts', async (req: Request, res: Response) => {
   const { companyInfo, contentData, platforms } = req.body
 
   if (!companyInfo || !contentData || !platforms) {
-    return res.status(400).json({ 
-      error: 'Missing required fields: companyInfo, contentData, and platforms are required' 
+    return res.status(400).json({
+      error: 'Missing required fields: companyInfo, contentData, and platforms are required'
     })
   }
 
@@ -207,19 +207,19 @@ router.post('/generate-posts', async (req: Request, res: Response) => {
 
   } catch (error: any) {
     console.error('AI generation error:', error)
-    
+
     // Check for quota errors
     if (error.status === 429 || error.message?.includes('quota')) {
-      return res.status(429).json({ 
+      return res.status(429).json({
         error: 'AI API quota exceeded. Please try again later or upgrade your plan.',
         details: 'Gemini API quota exceeded',
         fallback: true
       })
     }
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       error: 'Failed to generate content',
-      details: error.message 
+      details: error.message
     })
   }
 })
@@ -229,8 +229,8 @@ router.post('/generate', async (req: Request, res: Response) => {
   const { company, content, platforms } = req.body
 
   if (!company || !content || !platforms) {
-    return res.status(400).json({ 
-      error: 'Missing required fields: company, content, and platforms are required' 
+    return res.status(400).json({
+      error: 'Missing required fields: company, content, and platforms are required'
     })
   }
 
@@ -269,19 +269,19 @@ router.post('/generate', async (req: Request, res: Response) => {
 
   } catch (error: any) {
     console.error('AI generation error:', error)
-    
+
     // Check for quota errors
     if (error.status === 429 || error.message?.includes('quota')) {
-      return res.status(429).json({ 
+      return res.status(429).json({
         error: 'AI API quota exceeded. Please try again later or upgrade your plan.',
         details: 'Gemini API quota exceeded',
         fallback: true
       })
     }
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       error: 'Failed to generate content',
-      details: error.message 
+      details: error.message
     })
   }
 })
@@ -405,20 +405,20 @@ router.post('/generate-image', async (req: Request, res: Response) => {
     console.error('Error generating image:', error.response?.data || error.message);
 
     if (error.response?.status === 400) {
-      return res.status(400).json({ 
-        error: error.response.data?.error?.message || 'Invalid request to image generation API' 
+      return res.status(400).json({
+        error: error.response.data?.error?.message || 'Invalid request to image generation API'
       });
     }
 
     if (error.response?.status === 429) {
-      return res.status(429).json({ 
-        error: 'Too many requests. Please try again later.' 
+      return res.status(429).json({
+        error: 'Too many requests. Please try again later.'
       });
     }
 
-    res.status(500).json({ 
-      error: 'Failed to generate image', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to generate image',
+      details: error.message
     });
   }
 });
@@ -487,9 +487,9 @@ Return only 3 concise, creative image prompts that would complement the content.
 
   } catch (error: any) {
     console.error('Error generating image prompts:', error.response?.data || error.message);
-    res.status(500).json({ 
-      error: 'Failed to generate image prompts', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to generate image prompts',
+      details: error.message
     });
   }
 });
@@ -497,13 +497,13 @@ Return only 3 concise, creative image prompts that would complement the content.
 // Unified text generation endpoint with multi-model support
 router.post('/generate-text', async (req: Request, res: Response) => {
   try {
-    const { 
-      model = 'gpt-4o', 
-      prompt, 
+    const {
+      model = 'gpt-4o',
+      prompt,
       systemPrompt,
       maxTokens = 1000,
       temperature = 0.7,
-      context 
+      context
     } = req.body;
 
     if (!prompt) {
@@ -547,17 +547,17 @@ router.post('/generate-text', async (req: Request, res: Response) => {
 
   } catch (error: any) {
     console.error('Error in text generation:', error.message);
-    res.status(500).json({ 
-      error: 'Failed to generate text', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to generate text',
+      details: error.message
     });
   }
 });
 
 // OpenAI text generation
 async function generateWithOpenAI(
-  modelConfig: AIModel, 
-  prompt: string, 
+  modelConfig: AIModel,
+  prompt: string,
   systemPrompt?: string,
   maxTokens: number = 1000,
   temperature: number = 0.7
@@ -599,13 +599,13 @@ async function generateWithOpenAI(
 
 // Google Gemini text generation
 async function generateWithGemini(
-  modelConfig: AIModel, 
-  prompt: string, 
+  modelConfig: AIModel,
+  prompt: string,
   systemPrompt?: string,
   maxTokens: number = 1000,
   temperature: number = 0.7
 ) {
-  const model = genAI.getGenerativeModel({ 
+  const model = genAI.getGenerativeModel({
     model: modelConfig.id,
     generationConfig: {
       maxOutputTokens: Math.min(maxTokens, modelConfig.maxTokens || 8192),
@@ -633,8 +633,8 @@ async function generateWithGemini(
 
 // Anthropic Claude text generation
 async function generateWithClaude(
-  modelConfig: AIModel, 
-  prompt: string, 
+  modelConfig: AIModel,
+  prompt: string,
   systemPrompt?: string,
   maxTokens: number = 1000,
   temperature: number = 0.7
@@ -701,11 +701,11 @@ router.get('/models', (req: Request, res: Response) => {
 // Enhanced image generation with model selection
 router.post('/generate-image-enhanced', async (req: Request, res: Response) => {
   try {
-    const { 
+    const {
       model = 'dall-e-3',
-      prompt, 
-      size = '1024x1024', 
-      quality = 'standard', 
+      prompt,
+      size = '1024x1024',
+      quality = 'standard',
       style = 'vivid',
       aspectRatio = '1:1'
     } = req.body;
@@ -720,7 +720,7 @@ router.post('/generate-image-enhanced', async (req: Request, res: Response) => {
     if (aspectRatio && model === 'dall-e-3') {
       const sizeMap = {
         '1:1': '1024x1024',
-        '16:9': '1792x1024', 
+        '16:9': '1792x1024',
         '9:16': '1024x1792'
       };
       actualSize = sizeMap[aspectRatio as keyof typeof sizeMap] || size;
@@ -739,9 +739,9 @@ router.post('/generate-image-enhanced', async (req: Request, res: Response) => {
 
   } catch (error: any) {
     console.error('Error generating image:', error.message);
-    res.status(500).json({ 
-      error: 'Failed to generate image', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to generate image',
+      details: error.message
     });
   }
 });
@@ -749,7 +749,7 @@ router.post('/generate-image-enhanced', async (req: Request, res: Response) => {
 // DALL-E image generation helper
 async function generateImageWithDALLE(
   model: string,
-  prompt: string, 
+  prompt: string,
   size: string,
   quality: string,
   style: string

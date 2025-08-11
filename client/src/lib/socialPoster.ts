@@ -288,15 +288,11 @@ export class SocialPosterError extends Error {
 async function withRetry<T>(
   fn: () => Promise<T>,
   platform: string,
-  maxRetries: number =1
+  maxRetries: number = 2
 ): Promise<T> {
   let lastError: Error;
-
   
-  for (let attempt = 1; attempt <= maxRetries; attempt++) 
-    {
-      alert('Posting to ' + 122);
-
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
     } catch (error) {
@@ -341,7 +337,6 @@ export async function postToAllPlatforms(
       
       // Get OAuth credentials
       const credentials = await oauthManager.getCredentials(userId, platform);
-        alert('Posting to ' + 1);
 
       if (!credentials) {
         throw new SocialPosterError(
@@ -353,7 +348,6 @@ export async function postToAllPlatforms(
       }
       // Post with retry logic
       const result = await withRetry(async () => {
-      alert('Posting to ' + 2);
 
         switch (platform) {
           case 'facebook':

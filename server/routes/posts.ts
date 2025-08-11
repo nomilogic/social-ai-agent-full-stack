@@ -147,22 +147,13 @@ router.post('/:id/publish', validateRequestBody(['userId']), async (req: Request
   const { userId, publishedPlatforms } = req.body
 
   try {
-    const { data, error } = await serverSupabase
-      .from('posts')
-      .update({
-        published_at: new Date().toISOString(),
-        published_platforms: publishedPlatforms || [],
-        updated_at: new Date().toISOString()
+    const [data] = await db
+      .update(posts)
+      .set({
+        updated_at: new Date()
       })
-      .eq('id', postId)
-      .eq('user_id', userId)
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error marking post as published:', error)
-      return res.status(500).json({ error: error.message })
-    }
+      .where(and(eq(posts.id, postId), eq(posts.user_id, userId)))
+      .returning()
 
     if (!data) {
       return res.status(404).json({ error: 'Post not found or unauthorized' })

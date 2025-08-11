@@ -17,7 +17,7 @@ import mediaRouter from './routes/media'
 export async function registerRoutes(app: Express): Promise<Server> {
     // Static file serving for uploaded media
     app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')))
-    
+
     // API routes
 app.use('/api/auth', authRouter)
 app.use('/api/oauth', oauthRouter)
