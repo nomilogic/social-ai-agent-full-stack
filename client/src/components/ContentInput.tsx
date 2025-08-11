@@ -81,7 +81,6 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
   const handleFileUpload = async (file: File) => {
     setUploading(true);
-    setAnalyzingImage(true);
     try {
       const user = await getCurrentUser();
       if (!user) {
@@ -90,19 +89,12 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
       const mediaUrl = await uploadMedia(file, user.id);
       setFormData(prev => ({ ...prev, media: file, mediaUrl }));
-
-      // Analyze image if it's an image file
-      if (file.type.startsWith('image/')) {
-        // Call the updated analyzeImage function
-        await analyzeImage(file);
-      }
     } catch (error) {
       console.error('Error uploading file:', error);
       // Still set the file for preview, but without URL
       setFormData(prev => ({ ...prev, media: file }));
     } finally {
       setUploading(false);
-      setAnalyzingImage(false);
     }
   };
 
@@ -200,16 +192,6 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       prompt: prev.prompt + (prev.prompt ? '\n\n' : '') + `Image Analysis: ${imageAnalysis}`
     }));
     setImageAnalysis('');
-  };
-
-  const addAnalysisToDescription = () => {
-    if (imageAnalysis && useForAIReference) {
-      setFormData(prev => ({
-        ...prev,
-        prompt: prev.prompt + (prev.prompt ? '\n\n' : '') + `AI Analysis: ${imageAnalysis}`
-      }));
-      setImageAnalysis('');
-    }
   };
 
   const performAIAnalysis = async () => {
@@ -349,33 +331,18 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                       </div>
                     )}
                     
-                    {/* Action Buttons */}
-                    <div className="space-y-2">
-                      {/* AI Analysis Button - always show when image is uploaded */}
-                      {formData.media && formData.media.type.startsWith('image/') && !analyzingImage && (
-                        <button
-                          type="button"
-                          onClick={performAIAnalysis}
-                          disabled={analyzingImage}
-                          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-2 disabled:opacity-50"
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span>AI Analysis</span>
-                        </button>
-                      )}
-                      
-                      {/* Add Analysis to Content Button - show when analysis is available */}
-                      {imageAnalysis && useForAIReference && (
-                        <button
-                          type="button"
-                          onClick={addAnalysisToDescription}
-                          className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
-                        >
-                          <Sparkles className="w-4 h-4" />
-                          <span>Add AI Analysis to Content</span>
-                        </button>
-                      )}
-                    </div>
+                    {/* AI Analysis Button */}
+                    {formData.media && formData.media.type.startsWith('image/') && !analyzingImage && (
+                      <button
+                        type="button"
+                        onClick={performAIAnalysis}
+                        disabled={analyzingImage}
+                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-2 disabled:opacity-50"
+                      >
+                        <Eye className="w-4 h-4" />
+                        <span>AI Analysis</span>
+                      </button>
+                    )}
                   </div>
                   <button
                     type="button"
