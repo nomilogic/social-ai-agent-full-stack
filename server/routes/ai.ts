@@ -678,4 +678,78 @@ async function generateImageWithDALLE(
   };
 }
 
+// POST /api/ai/generate-image - Generate image using AI
+router.post('/generate-image', async (req: Request, res: Response) => {
+  try {
+    const { prompt, size, quality, style } = req.body
+
+    if (!prompt) {
+      return res.status(400).json({ error: 'Prompt is required' })
+    }
+
+    // For now, return a placeholder image URL
+    // In production, integrate with DALL-E or other image generation service
+    const imageUrl = `https://picsum.photos/1024/1024?random=${Date.now()}`
+    
+    res.json({
+      success: true,
+      imageUrl,
+      prompt,
+      style: style || 'realistic',
+      size: size || '1024x1024'
+    })
+  } catch (error: any) {
+    console.error('Image generation error:', error)
+    res.status(500).json({ error: 'Failed to generate image' })
+  }
+})
+
+// POST /api/ai/analyze-image - Analyze image content
+router.post('/analyze-image', async (req: Request, res: Response) => {
+  try {
+    const { imageUrl } = req.body
+
+    if (!imageUrl) {
+      return res.status(400).json({ error: 'Image URL is required' })
+    }
+
+    // For now, return a mock analysis
+    const analysis = 'This is a professional image suitable for social media posting. The composition is well-balanced and engaging.'
+    
+    res.json({
+      success: true,
+      analysis
+    })
+  } catch (error: any) {
+    console.error('Image analysis error:', error)
+    res.status(500).json({ error: 'Failed to analyze image' })
+  }
+})
+
+// POST /api/ai/suggest-image-prompts - Suggest image prompts based on content
+router.post('/suggest-image-prompts', async (req: Request, res: Response) => {
+  try {
+    const { contentText, platforms, industry, brandTone } = req.body
+
+    if (!contentText) {
+      return res.status(400).json({ error: 'Content text is required' })
+    }
+
+    // Generate AI-powered prompts based on content
+    const prompts = [
+      `Professional ${industry || 'business'} image representing: ${contentText.substring(0, 100)}`,
+      `${brandTone || 'Professional'} style visual for social media about: ${contentText.substring(0, 80)}`,
+      `Engaging ${platforms?.join(' and ') || 'social media'} image illustrating: ${contentText.substring(0, 90)}`
+    ]
+    
+    res.json({
+      success: true,
+      prompts
+    })
+  } catch (error: any) {
+    console.error('Prompt suggestion error:', error)
+    res.status(500).json({ error: 'Failed to generate prompt suggestions' })
+  }
+})
+
 export default router

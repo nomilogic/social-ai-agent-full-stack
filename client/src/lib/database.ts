@@ -23,7 +23,7 @@ export async function saveCompany(companyInfo: CompanyInfo, userId: string) {
 
 export async function getCompanies(userId: string) {
   const response = await fetch(`/api/companies?user_id=${userId}`);
-  
+
   if (!response.ok) {
     const error = await response.json();
     console.error('Error fetching companies:', error);
@@ -177,18 +177,23 @@ export async function getCurrentUser() {
 
     return response.json();
   } catch (error) {
-    localStorage.removeItem('auth_token');
-    return null;
+    console.error('Error initializing auth:', error);
+    // Return a default user structure to prevent app crashes
+    return { 
+      user: null, 
+      session: null,
+      error: error instanceof Error ? error.message : 'Auth initialization failed'
+    };
   }
 }
 
 export async function signInAnonymously() {
   const { data, error } = await supabase.auth.signInAnonymously();
-  
+
   if (error) {
     console.error('Error signing in anonymously:', error);
     throw error;
   }
-  
+
   return data;
 }

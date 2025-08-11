@@ -31,7 +31,7 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
       // Use selected platforms from content data instead of company platforms
       const targetPlatforms = contentData.selectedPlatforms || companyInfo.platforms;
       const modifiedCompanyInfo = { ...companyInfo, platforms: targetPlatforms };
-      
+
       const posts = await generateAllPosts(
         modifiedCompanyInfo,
         contentData,
@@ -41,6 +41,35 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
         }
       );
 
+      // Generate images for posts that need them
+      if (posts && posts.length > 0) {
+        for (let i = 0; i < posts.length; i++) {
+          const post = posts[i];
+          if (post.caption && !post.imageUrl) {
+            try {
+              // Generate an image based on the post content
+              const imagePrompt = `Professional ${post.platform} image for: ${post.caption.substring(0, 100)}`;
+              const imageResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate-image`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  prompt: imagePrompt,
+                  style: 'professional',
+                  size: post.platform === 'instagram' ? '1024x1024' : '1792x1024'
+                })
+              });
+
+              if (imageResponse.ok) {
+                const imageData = await imageResponse.json();
+                posts[i].imageUrl = imageData.imageUrl;
+              }
+            } catch (imageError) {
+              console.warn('Failed to generate image for post:', imageError);
+            }
+          }
+        }
+      }
+
       setIsGenerating(false);
       setCurrentPlatform(null);
       onComplete(posts);
@@ -48,7 +77,7 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
       console.error('Error generating posts:', error);
       setIsGenerating(false);
       setCurrentPlatform(null);
-      
+
       // Show error or fallback
       onComplete([]);
     }

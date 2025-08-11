@@ -54,7 +54,7 @@ export async function generateImage(request: ImageGenerationRequest): Promise<Ge
         enhancedPrompt += ', square format, social media optimized';
     }
 
-    const response = await axios.post('/api/ai/generate-image', {
+    const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate-image`, {
       prompt: enhancedPrompt,
       size: request.aspectRatio === '1:1' ? '1024x1024' : 
             request.aspectRatio === '16:9' ? '1792x1024' :
@@ -153,7 +153,7 @@ export function getPlatformImageSuggestions(platforms: string[]): ImageGeneratio
 // Analyze image content and suggest improvements
 export async function analyzeGeneratedImage(imageUrl: string): Promise<string> {
   try {
-    const response = await axios.post('/api/ai/analyze-image', {
+    const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/analyze-image`, {
       imageUrl
     });
     return response.data.analysis;

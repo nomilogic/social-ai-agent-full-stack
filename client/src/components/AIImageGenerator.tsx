@@ -67,7 +67,7 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
     
     setLoadingSuggestions(true);
     try {
-      const response = await fetch('/api/ai/suggest-image-prompts', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/suggest-image-prompts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
