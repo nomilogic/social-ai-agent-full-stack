@@ -1,9 +1,16 @@
 import express, { Request, Response } from 'express'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import axios from 'axios'
+import multer from 'multer'
 // import dotenv from 'dotenv'
 
 // dotenv.config() // Environment variables are handled by Replit
+
+// Configure multer for file uploads
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
 
 const router = express.Router()
 
@@ -249,12 +256,13 @@ router.post('/generate-image', async (req: Request, res: Response) => {
 });
 
 // Analyze image using GPT-4 Vision (for uploaded images)
-router.post('/analyze-image', async (req: Request, res: Response) => {
+router.post('/analyze-image', upload.single('image'), async (req: Request, res: Response) => {
   try {
     const { imageUrl, prompt = "Analyze this image and describe what would make good social media content based on it." } = req.body;
 
-    if (!imageUrl) {
-      return res.status(400).json({ error: 'Image URL is required' });
+    // Handle both URL and file upload
+    if (!imageUrl && !req.file) {
+      return res.status(400).json({ error: 'Image URL or file is required' });
     }
 
     if (!OPENAI_API_KEY) {

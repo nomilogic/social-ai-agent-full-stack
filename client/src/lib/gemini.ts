@@ -61,7 +61,7 @@ export async function analyzeImage(imageFile: File): Promise<string> {
   try {
     // Convert file to base64
     const imageData = await fileToGenerativePart(imageFile);
-    
+
     const prompt = `
 Analyze this image and provide a detailed description that would be useful for social media content creation. Include:
 1. What's in the image (objects, people, setting)
@@ -156,15 +156,15 @@ Make sure the JSON is valid and properly formatted.
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
-    
+
     // Try to extract JSON from the response
     let jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error('No JSON found in response');
     }
-    
+
     const jsonResponse = JSON.parse(jsonMatch[0]);
-    
+
     return {
       caption: jsonResponse.caption || contentData.prompt,
       hashtags: jsonResponse.hashtags || [`#${companyInfo.name.replace(/\s+/g, '').toLowerCase()}`],
@@ -174,7 +174,7 @@ Make sure the JSON is valid and properly formatted.
     };
   } catch (error) {
     console.error('Error generating content with Gemini:', error);
-    
+
     // Fallback content generation
     return generateFallbackContent(platform, companyInfo, contentData, config);
   }
@@ -196,7 +196,7 @@ function generateFallbackContent(
   };
 
   let caption = platformStyles[platform] || contentData.prompt;
-  
+
   // Truncate if too long
   if (caption.length > config.maxLength) {
     caption = caption.substring(0, config.maxLength - 3) + '...';
@@ -233,7 +233,7 @@ export async function generateAllPosts(
 
   for (let i = 0; i < totalPlatforms; i++) {
     const platform = companyInfo.platforms[i];
-    
+
     if (onProgress) {
       onProgress(platform, ((i + 1) / totalPlatforms) * 100);
     }
@@ -246,4 +246,51 @@ export async function generateAllPosts(
   }
 
   return posts;
+}
+
+export async function analyzeImageWithGemini(imageFile: File): Promise<string> {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+    console.warn('Gemini API key not found');
+    return 'Unable to analyze image. Please add a description manually.';
+  }
+
+  const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+
+  try {
+    // Convert file to base64
+    const imageData = await fileToGenerativePart(imageFile);
+
+    const prompt = `
+Analyze this image and provide a detailed description that would be useful for social media content creation. Include:
+1. What's in the image (objects, people, setting)
+2. The mood/atmosphere
+3. Colors and visual elements
+4. Potential marketing angles or messages
+5. Suggested content themes
+
+Keep the description concise but informative for social media marketing purposes.
+`;
+
+    const result = await model.generateContent([prompt, imageData]);
+    const response = await result.response;
+    const text = response.text();
+
+    if (text && text.trim()) {
+      return text;
+    } else {
+      throw new Error('Empty response from Gemini');
+    }
+  } catch (error) {
+    console.error('Error analyzing image with Gemini:', error);
+
+    // Provide a more helpful fallback message
+    if (error.message?.includes('API_KEY')) {
+      return 'Image analysis requires a valid Gemini API key. Please add a description manually.';
+    } else if (error.message?.includes('quota') || error.message?.includes('limit')) {
+      return 'Image analysis quota exceeded. Please add a description manually.';
+    } else {
+      return 'Unable to analyze image automatically. Please add a description manually.';
+    }
+  }
 }

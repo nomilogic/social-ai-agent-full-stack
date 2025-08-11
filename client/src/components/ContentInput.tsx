@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, FileText, Tag, Camera, Wand2, Eye, Loader, Sparkles } from 'lucide-react';
 import { PostContent, Platform } from '../types';
 import { uploadMedia, getCurrentUser } from '../lib/database';
-import { analyzeImage } from '../lib/gemini';
+import { analyzeImage as analyzeImageWithGemini } from '../lib/gemini'; // Renamed to avoid conflict
 import { AIImageGenerator } from './AIImageGenerator';
 
 interface ContentInputProps {
@@ -12,11 +12,11 @@ interface ContentInputProps {
   selectedPlatforms: Platform[];
 }
 
-export const ContentInput: React.FC<ContentInputProps> = ({ 
-  onNext, 
-  onBack, 
+export const ContentInput: React.FC<ContentInputProps> = ({
+  onNext,
+  onBack,
   initialData,
-  selectedPlatforms 
+  selectedPlatforms
 }) => {
   const [formData, setFormData] = useState<PostContent>({
     prompt: initialData?.prompt || '',
@@ -46,7 +46,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     const files = e.dataTransfer.files;
     if (files && files[0]) {
       handleFileUpload(files[0]);
@@ -71,11 +71,11 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
       const mediaUrl = await uploadMedia(file, user.id);
       setFormData(prev => ({ ...prev, media: file, mediaUrl }));
-      
+
       // Analyze image if it's an image file
       if (file.type.startsWith('image/')) {
-        const analysis = await analyzeImage(file);
-        setImageAnalysis(analysis);
+        // Call the updated analyzeImage function
+        await analyzeImage(file);
       }
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -83,6 +83,40 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       setFormData(prev => ({ ...prev, media: file }));
     } finally {
       setUploading(false);
+      setAnalyzingImage(false);
+    }
+  };
+
+  const analyzeImage = async (file: File) => {
+    if (!file.type.startsWith('image/')) return;
+
+    setAnalyzingImage(true);
+    try {
+      // First try with Gemini (local analysis)
+      const analysis = await analyzeImageWithGemini(file);
+      if (analysis && analysis !== 'Unable to analyze image. Please add a description manually.') {
+        setImageAnalysis(analysis);
+      } else {
+        // Fallback to server-side analysis if available
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/analyze-image`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setImageAnalysis(data.analysis || 'Image uploaded successfully. Add a description for better content generation.');
+        } else {
+          setImageAnalysis('Image uploaded successfully. Add a description for better content generation.');
+        }
+      }
+    } catch (error) {
+      console.error('Error analyzing image:', error);
+      setImageAnalysis('Image uploaded successfully. Add a description for better content generation.');
+    } finally {
       setAnalyzingImage(false);
     }
   };
@@ -143,7 +177,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       const response = await fetch(imageUrl);
       const blob = await response.blob();
       const file = new File([blob], 'ai-generated-image.png', { type: 'image/png' });
-      
+
       // Upload the AI generated image to our storage
       const user = await getCurrentUser();
       if (user) {
@@ -196,7 +230,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                 onChange={handleFileChange}
                 className="hidden"
               />
-              
+
               {formData.media ? (
                 <div className="space-y-4">
                   {formData.media.type.startsWith('image/') ? (
