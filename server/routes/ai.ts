@@ -189,6 +189,16 @@ router.post('/generate', async (req: Request, res: Response) => {
 
   } catch (error: any) {
     console.error('AI generation error:', error)
+    
+    // Check for quota errors
+    if (error.status === 429 || error.message?.includes('quota')) {
+      return res.status(429).json({ 
+        error: 'AI API quota exceeded. Please try again later or upgrade your plan.',
+        details: 'Gemini API quota exceeded',
+        fallback: true
+      })
+    }
+    
     res.status(500).json({ 
       error: 'Failed to generate content',
       details: error.message 

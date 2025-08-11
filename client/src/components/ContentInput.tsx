@@ -189,15 +189,33 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.prompt.trim()) {
-      onNext(formData);
+      // For now, passing an empty object for companyInfo and mediaAssets to simulate the structure
+      // This should be replaced with actual data fetching or state management
+      const companyInfo = { name: '', industry: '', brand_tone: '', target_audience: '', description: '' };
+      const mediaAssets = [{ url: formData.mediaUrl || '', type: formData.media?.type || '' }];
+
+      // Navigate to generator with all the data
+      onNext({
+        prompt: formData.prompt,
+        selectedPlatforms: formData.selectedPlatforms,
+        platforms: formData.selectedPlatforms,
+        companyName: companyInfo?.name,
+        companyInfo,
+        mediaAssets,
+        analysisResults: imageAnalysis,
+        industry: companyInfo?.industry,
+        tone: companyInfo?.brand_tone || 'professional',
+        targetAudience: companyInfo?.target_audience || 'Professionals',
+        description: companyInfo?.description
+      });
     }
   };
 
   const platformOptions = [
-    { id: 'facebook', name: 'Facebook', color: 'bg-blue-600', icon: '📘' },
-    { id: 'instagram', name: 'Instagram', color: 'bg-gradient-to-r from-purple-500 to-pink-500', icon: '📷' },
-    { id: 'twitter', name: 'Twitter/X', color: 'bg-black', icon: '🐦' },
     { id: 'linkedin', name: 'LinkedIn', color: 'bg-blue-700', icon: '💼' },
+    { id: 'twitter', name: 'Twitter/X', color: 'bg-black', icon: '🐦' },
+    { id: 'instagram', name: 'Instagram', color: 'bg-gradient-to-r from-purple-500 to-pink-500', icon: '📷' },
+    { id: 'facebook', name: 'Facebook', color: 'bg-blue-600', icon: '📘' },
     { id: 'tiktok', name: 'TikTok', color: 'bg-black', icon: '🎵' },
     { id: 'youtube', name: 'YouTube', color: 'bg-red-600', icon: '🎬' },
   ];
