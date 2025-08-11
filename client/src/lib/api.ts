@@ -265,4 +265,5 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
 };
 
 // Default export for compatibility
-export default { apiRequest };
+const api = { apiRequest };
+export default api;

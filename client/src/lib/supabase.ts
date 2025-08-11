@@ -41,6 +41,10 @@ export const apiClient = {
   })
 };
 
+// Legacy exports for backward compatibility
+export const supabase = apiClient;
+export const supabaseClient = apiClient;
+
 // Database types
 export interface Database {
   public: {
