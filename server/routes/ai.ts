@@ -98,7 +98,10 @@ router.post('/analyze-image', async (req: Request, res: Response) => {
 Keep the description concise but informative for social media marketing purposes.`;
 
     // Clean the base64 data if it has data URL prefix
-    const cleanBase64 = image.replace(/^data:image\/[a-z]+;base64,/, '');
+    let cleanBase64 = image;
+    if (image.startsWith('data:')) {
+      cleanBase64 = image.split(',')[1];
+    }
     
     const imagePart = {
       inlineData: {

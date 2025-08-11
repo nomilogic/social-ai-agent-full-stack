@@ -4,7 +4,7 @@ import { Platform, CompanyInfo, PostContent, GeneratedPost } from '../types';
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
 if (!apiKey) {
-  throw new Error('Missing Gemini API key. Please check your .env file.');
+  console.warn('Missing Gemini API key. Image analysis will be disabled.');
 }
 
 const genAI = new GoogleGenerativeAI(apiKey);
@@ -255,7 +255,7 @@ export async function analyzeImageWithGemini(imageFile: File): Promise<string> {
   }
 
   const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
   try {
     // Convert file to base64
@@ -281,7 +281,7 @@ Keep the description concise but informative for social media marketing purposes
     } else {
       throw new Error('Empty response from Gemini');
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error analyzing image with Gemini:', error);
 
     // Provide a more helpful fallback message

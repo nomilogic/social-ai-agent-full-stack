@@ -106,14 +106,16 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
       console.log('Analyzing image with Gemini API...');
       
-      // Call the Gemini analysis API
+      // Call the Gemini analysis API with proper data URL format
+      const dataUrl = `data:${file.type};base64,${base64}`;
+      
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/analyze-image`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          image: base64,
+          image: dataUrl,
           mimeType: file.type
         })
       });
@@ -133,7 +135,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       } else {
         setImageAnalysis('Image uploaded successfully. Add a description for better content generation.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error analyzing image:', error);
       setImageAnalysis(`Image uploaded successfully. ${error.message?.includes('quota') ? 'AI analysis quota exceeded.' : 'Add a description for better content generation.'}`);
     } finally {
