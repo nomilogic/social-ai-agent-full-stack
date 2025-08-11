@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
-import { Sparkles, LogOut, Bell, Home, Building2, Calendar, Settings } from 'lucide-react';
+import { Sparkles, LogOut, Bell, Home, Building2, Calendar, Settings, Plus } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { supabase } from '../../lib/supabase';
 import { NotificationCenter } from '../NotificationCenter';
@@ -24,6 +24,7 @@ export const AppLayout: React.FC = () => {
   const navigationItems = [
     { path: '/dashboard', icon: Home, label: 'Dashboard' },
     { path: '/companies', icon: Building2, label: 'Companies' },
+    { path: '/content', icon: Plus, label: 'Create Content' },
     { path: '/schedule', icon: Calendar, label: 'Schedule' },
     { path: '/settings', icon: Settings, label: 'Settings' },
   ];
