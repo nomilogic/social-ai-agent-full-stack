@@ -1,6 +1,16 @@
 import { pgTable, uuid, text, timestamp, boolean, jsonb, decimal, integer, date, time, pgView } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
+// Users table
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: text('email').notNull().unique(),
+  password: text('password').notNull(),
+  name: text('name').notNull(),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
 // Companies table
 export const companies = pgTable('companies', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -103,6 +113,8 @@ export const notifications = pgTable('notifications', {
 });
 
 // Type definitions for TypeScript
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
 export type Company = typeof companies.$inferSelect;
 export type NewCompany = typeof companies.$inferInsert;
 export type Post = typeof posts.$inferSelect;

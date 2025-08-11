@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, ArrowLeft, LogOut, Bell } from 'lucide-react';
 import { getCurrentUser, saveCompany, savePost, updateCompany } from './lib/database';
-import { supabase } from './lib/supabase';
 import { AuthForm } from './components/AuthForm';
 import { CompanySelector } from './components/CompanySelector';
 import { ProgressBar } from './components/ProgressBar';

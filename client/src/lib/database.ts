@@ -1,44 +1,36 @@
-import { supabase } from './supabase';
+// Using API calls instead of Supabase client
 import { CompanyInfo, PostContent, GeneratedPost } from '../types';
 
 // Company operations
 export async function saveCompany(companyInfo: CompanyInfo, userId: string) {
-  const { data, error } = await supabase
-    .from('companies')
-    .insert({
-      name: companyInfo.name,
-      website: companyInfo.website,
-      industry: companyInfo.industry,
-      target_audience: companyInfo.targetAudience,
-      brand_tone: companyInfo.brandTone,
-      goals: companyInfo.goals,
-      platforms: companyInfo.platforms,
+  const response = await fetch('/api/companies', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...companyInfo,
       user_id: userId
     })
-    .select()
-    .single();
+  });
 
-  if (error) {
+  if (!response.ok) {
+    const error = await response.json();
     console.error('Error saving company:', error);
-    throw error;
+    throw new Error(error.message || 'Failed to save company');
   }
 
-  return data;
+  return response.json();
 }
 
 export async function getCompanies(userId: string) {
-  const { data, error } = await supabase
-    .from('companies')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
-
-  if (error) {
+  const response = await fetch(`/api/companies?user_id=${userId}`);
+  
+  if (!response.ok) {
+    const error = await response.json();
     console.error('Error fetching companies:', error);
-    throw error;
+    throw new Error(error.message || 'Failed to fetch companies');
   }
 
-  return data;
+  return response.json();
 }
 
 export async function updateCompany(companyId: string, updates: Partial<CompanyInfo>, userId: string) {
@@ -170,14 +162,24 @@ export async function uploadMedia(file: File, userId: string) {
 
 // Authentication helpers
 export async function getCurrentUser() {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  //alert('Current user: ' + user?.id); console.log('Current user:', user);
-  if (error) {
-    console.error('Error getting current user:', error);
+  const token = localStorage.getItem('auth_token');
+  if (!token) return null;
+
+  try {
+    const response = await fetch('/api/auth/me', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) {
+      localStorage.removeItem('auth_token');
+      return null;
+    }
+
+    return response.json();
+  } catch (error) {
+    localStorage.removeItem('auth_token');
     return null;
   }
-  
-  return user;
 }
 
 export async function signInAnonymously() {

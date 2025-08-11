@@ -1,5 +1,6 @@
 import { createServer, type Server } from "http";
 import type { Express } from "express";
+import authRouter from './routes/auth'
 import oauthRouter from './routes/oauth'
 import linkedinRouter from './routes/linkedin'
 import socialRouter from './routes/social'
@@ -13,6 +14,7 @@ import mediaRouter from './routes/media'
 
 export async function registerRoutes(app: Express): Promise<Server> {
     // API routes
+app.use('/api/auth', authRouter)
 app.use('/api/oauth', oauthRouter)
 app.use('/api/linkedin', linkedinRouter)
 app.use('/api/social', socialRouter)
