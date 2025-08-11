@@ -28,6 +28,9 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
   );
   const [copiedPost, setCopiedPost] = useState<string | null>(null);
 
+  // Find the currently selected post
+  const selectedPost = posts.find(post => post.platform === selectedPlatform);
+
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
