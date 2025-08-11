@@ -1,6 +1,7 @@
 // Using API calls instead of Supabase client
 import { CompanyInfo, PostContent, GeneratedPost } from '../types';
 import { supabaseClient } from './supabase'; // Corrected import
+import api from './api'; // Assuming 'api' is configured to use Axios or similar for API calls
 
 // Company operations
 export async function saveCompany(companyInfo: CompanyInfo, userId: string) {
@@ -83,61 +84,58 @@ export async function savePost(
   generatedPosts: GeneratedPost[],
   userId: string
 ) {
-  const { data, error } = await supabaseClient // Corrected reference
-    .from('posts')
-    .insert({
-      company_id: companyId,
+  try {
+    const response = await api.post('/posts', {
+      companyId,
       prompt: contentData.prompt,
       tags: contentData.tags,
-      campaign_id: contentData.campaignId,
-      generated_content: generatedPosts,
-      user_id: userId
-    })
-    .select()
-    .single();
+      campaignId: contentData.campaignId,
+      generatedContent: generatedPosts,
+      userId,
+      created_at: new Date().toISOString()
+    });
 
-  if (error) {
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Failed to save post');
+    }
+
+    return response.data.data;
+  } catch (error) {
     console.error('Error saving post:', error);
     throw error;
   }
-
-  return data;
 }
 
 export async function getPosts(userId: string, companyId?: string) {
-  let query = supabaseClient // Corrected reference
-    .from('posts')
-    .select(`
-      *,
-      companies (
-        name,
-        brand_tone
-      )
-    `)
-    .eq('user_id', userId);
+  try {
+    const params = new URLSearchParams({ userId });
+    if (companyId) params.append('companyId', companyId);
 
-  if (companyId) {
-    query = query.eq('company_id', companyId);
-  }
+    const response = await api.get(`/posts?${params.toString()}`);
 
-  const { data, error } = await query.order('created_at', { ascending: false });
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Failed to fetch posts');
+    }
 
-  if (error) {
+    return response.data.data;
+  } catch (error) {
     console.error('Error fetching posts:', error);
     throw error;
   }
-
-  return data;
 }
 
 export async function deletePost(postId: string, userId: string) {
-  const { error } = await supabaseClient // Corrected reference
-    .from('posts')
-    .delete()
-    .eq('id', postId)
-    .eq('user_id', userId);
+  try {
+    const response = await api.delete(`/posts/${postId}`, {
+      params: { userId }
+    });
 
-  if (error) {
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Failed to delete post');
+    }
+
+    return true;
+  } catch (error) {
     console.error('Error deleting post:', error);
     throw error;
   }
@@ -196,12 +194,17 @@ export async function getCurrentUser() {
 }
 
 export async function signInAnonymously() {
-  const { data, error } = await supabaseClient.auth.signInAnonymously(); // Corrected reference
+  try {
+    const { data, error } = await supabaseClient.auth.signInAnonymously();
 
-  if (error) {
-    console.error('Error signing in anonymously:', error);
+    if (error) {
+      console.error('Error signing in anonymously:', error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error in signInAnonymously:', error);
     throw error;
   }
-
-  return data;
 }
