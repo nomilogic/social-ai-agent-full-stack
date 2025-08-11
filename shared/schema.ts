@@ -17,6 +17,7 @@ export const companies = pgTable('companies', {
   name: text('name').notNull(),
   website: text('website'),
   industry: text('industry'),
+  description: text('description'),
   target_audience: text('target_audience'),
   brand_tone: text('brand_tone').default('professional'),
   goals: text('goals').array().default(sql`'{}'::text[]`),

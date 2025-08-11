@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Building2, Globe, Target, Palette, Goal } from 'lucide-react';
+import { Building2, Globe, Target, Palette, Goal, FileText, Linkedin, Twitter, Instagram, Facebook, Music, Youtube } from 'lucide-react';
 import { CompanyInfo } from '../types';
 
 interface CompanySetupProps {
@@ -13,6 +14,7 @@ export const CompanySetup: React.FC<CompanySetupProps> = ({ onNext, onBack, init
     name: initialData?.name || '',
     website: initialData?.website || '',
     industry: initialData?.industry || '',
+    description: initialData?.description || '',
     targetAudience: initialData?.targetAudience || '',
     brandTone: initialData?.brandTone || 'professional',
     goals: initialData?.goals || [],
@@ -38,12 +40,48 @@ export const CompanySetup: React.FC<CompanySetupProps> = ({ onNext, onBack, init
   ];
 
   const platformOptions = [
-    { id: 'facebook', name: 'Facebook', color: 'bg-blue-600' },
-    { id: 'instagram', name: 'Instagram', color: 'bg-gradient-to-r from-purple-500 to-pink-500' },
-    { id: 'twitter', name: 'Twitter/X', color: 'bg-black' },
-    { id: 'linkedin', name: 'LinkedIn', color: 'bg-blue-700' },
-    { id: 'tiktok', name: 'TikTok', color: 'bg-black' },
-    { id: 'youtube', name: 'YouTube', color: 'bg-red-600' },
+    { 
+      id: 'facebook', 
+      name: 'Facebook', 
+      icon: Facebook,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50 border-blue-200'
+    },
+    { 
+      id: 'instagram', 
+      name: 'Instagram', 
+      icon: Instagram,
+      color: 'text-pink-600',
+      bgColor: 'bg-pink-50 border-pink-200'
+    },
+    { 
+      id: 'twitter', 
+      name: 'Twitter/X', 
+      icon: Twitter,
+      color: 'text-sky-600',
+      bgColor: 'bg-sky-50 border-sky-200'
+    },
+    { 
+      id: 'linkedin', 
+      name: 'LinkedIn', 
+      icon: Linkedin,
+      color: 'text-blue-700',
+      bgColor: 'bg-blue-50 border-blue-300'
+    },
+    { 
+      id: 'tiktok', 
+      name: 'TikTok', 
+      icon: Music,
+      color: 'text-black',
+      bgColor: 'bg-gray-50 border-gray-300'
+    },
+    { 
+      id: 'youtube', 
+      name: 'YouTube', 
+      icon: Youtube,
+      color: 'text-red-600',
+      bgColor: 'bg-red-50 border-red-200'
+    },
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -72,7 +110,7 @@ export const CompanySetup: React.FC<CompanySetupProps> = ({ onNext, onBack, init
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-8">
+    <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-8">
       <div className="text-center mb-8">
         <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
           <Building2 className="w-8 h-8 text-blue-600" />
@@ -82,78 +120,101 @@ export const CompanySetup: React.FC<CompanySetupProps> = ({ onNext, onBack, init
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Basic Information */}
+        <div className="bg-gray-50 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Building2 className="w-4 h-4 inline mr-2" />
+                Company Name *
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                placeholder="Enter your company name"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Globe className="w-4 h-4 inline mr-2" />
+                Website
+              </label>
+              <input
+                type="url"
+                value={formData.website}
+                onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                placeholder="https://yourwebsite.com"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Industry</label>
+              <select
+                value={formData.industry}
+                onChange={(e) => setFormData(prev => ({ ...prev, industry: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              >
+                <option value="">Select your industry</option>
+                {industries.map(industry => (
+                  <option key={industry} value={industry}>{industry}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <FileText className="w-4 h-4 inline mr-2" />
+                Company Description
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                rows={3}
+                placeholder="Describe what your company does, your mission, and values"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Target Audience */}
+        <div className="bg-gray-50 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Target Audience</h3>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Building2 className="w-4 h-4 inline mr-2" />
-              Company Name *
+              <Target className="w-4 h-4 inline mr-2" />
+              Audience Description
             </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+            <textarea
+              value={formData.targetAudience}
+              onChange={(e) => setFormData(prev => ({ ...prev, targetAudience: e.target.value }))}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-              placeholder="Enter your company name"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Globe className="w-4 h-4 inline mr-2" />
-              Website
-            </label>
-            <input
-              type="url"
-              value={formData.website}
-              onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-              placeholder="https://yourwebsite.com"
+              rows={3}
+              placeholder="Describe your target audience (age, interests, demographics, pain points)"
             />
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Industry</label>
-          <select
-            value={formData.industry}
-            onChange={(e) => setFormData(prev => ({ ...prev, industry: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-          >
-            <option value="">Select your industry</option>
-            {industries.map(industry => (
-              <option key={industry} value={industry}>{industry}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <Target className="w-4 h-4 inline mr-2" />
-            Target Audience
-          </label>
-          <textarea
-            value={formData.targetAudience}
-            onChange={(e) => setFormData(prev => ({ ...prev, targetAudience: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-            rows={3}
-            placeholder="Describe your target audience (age, interests, demographics)"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-4">
-            <Palette className="w-4 h-4 inline mr-2" />
-            Brand Tone
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Brand Voice */}
+        <div className="bg-gray-50 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <Palette className="w-5 h-5 inline mr-2" />
+            Brand Voice & Tone
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {toneOptions.map(tone => (
               <div
                 key={tone.value}
                 className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
                   formData.brandTone === tone.value
                     ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
                 }`}
                 onClick={() => setFormData(prev => ({ ...prev, brandTone: tone.value as any }))}
               >
@@ -164,21 +225,22 @@ export const CompanySetup: React.FC<CompanySetupProps> = ({ onNext, onBack, init
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-4">
-            <Goal className="w-4 h-4 inline mr-2" />
+        {/* Marketing Goals */}
+        <div className="bg-gray-50 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <Goal className="w-5 h-5 inline mr-2" />
             Marketing Goals
-          </label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {goalOptions.map(goal => (
               <button
                 key={goal}
                 type="button"
                 onClick={() => toggleGoal(goal)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                   formData.goals.includes(goal)
-                    ? 'bg-blue-100 text-blue-700 border-2 border-blue-300'
-                    : 'bg-gray-100 text-gray-700 border-2 border-transparent hover:bg-gray-200'
+                    ? 'bg-blue-500 text-white border-2 border-blue-500 shadow-md'
+                    : 'bg-white text-gray-700 border-2 border-gray-200 hover:bg-gray-50 hover:border-gray-300'
                 }`}
               >
                 {goal}
@@ -187,29 +249,46 @@ export const CompanySetup: React.FC<CompanySetupProps> = ({ onNext, onBack, init
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-4">
+        {/* Social Media Platforms */}
+        <div className="bg-gray-50 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Target Platforms *
-          </label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {platformOptions.map(platform => (
-              <div
-                key={platform.id}
-                className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
-                  formData.platforms.includes(platform.id as any)
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-                onClick={() => togglePlatform(platform.id)}
-              >
-                <div className={`w-8 h-8 rounded-lg ${platform.color} mb-2`}></div>
-                <h3 className="font-medium text-gray-900">{platform.name}</h3>
-              </div>
-            ))}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {platformOptions.map(platform => {
+              const IconComponent = platform.icon;
+              const isSelected = formData.platforms.includes(platform.id as any);
+              
+              return (
+                <div
+                  key={platform.id}
+                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
+                    isSelected
+                      ? `border-blue-500 bg-blue-50 shadow-md`
+                      : `border-gray-200 hover:border-gray-300 bg-white ${platform.bgColor}`
+                  }`}
+                  onClick={() => togglePlatform(platform.id)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className={`p-2 rounded-lg ${isSelected ? 'bg-blue-100' : 'bg-white'}`}>
+                      <IconComponent className={`w-6 h-6 ${isSelected ? 'text-blue-600' : platform.color}`} />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-900">{platform.name}</h3>
+                      <div className={`w-2 h-2 rounded-full mt-1 ${isSelected ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
+          {formData.platforms.length === 0 && (
+            <p className="text-sm text-red-600 mt-2">Please select at least one platform</p>
+          )}
         </div>
 
-        <div className="flex gap-4">
+        {/* Action Buttons */}
+        <div className="flex gap-4 pt-6 border-t border-gray-200">
           {onBack && (
             <button
               type="button"
@@ -224,7 +303,7 @@ export const CompanySetup: React.FC<CompanySetupProps> = ({ onNext, onBack, init
             disabled={!formData.name || formData.platforms.length === 0}
             className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-8 rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
           >
-            {initialData?.name ? 'Update Company' : 'Continue to Content Creation'}
+            {initialData?.name ? 'Update Company Profile' : 'Continue to Content Creation'}
           </button>
         </div>
       </form>
