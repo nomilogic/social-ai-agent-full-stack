@@ -2,7 +2,16 @@
 // Database operations are now handled server-side via API calls
 // Example: Use fetch('/api/companies') instead of supabase.from('companies')
 
-export const supabase = null; // Deprecated - use API calls instead
+// import { createClient } from '@supabase/supabase-js';
+
+// const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+// const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// if (!supabaseUrl || !supabaseAnonKey) {
+//   throw new Error('Missing Supabase environment variables');
+// }
+
+// export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Helper function for API calls to replace Supabase client
 export const apiClient = {
