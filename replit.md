@@ -7,7 +7,13 @@ Social Agent AI Fullstack is a comprehensive social media management platform le
 No specific user preferences were provided in the original `replit.md` file.
 
 ### System Architecture
-The project utilizes a client-server architecture. The frontend is a React Single Page Application (SPA) served by an Express.js backend, which also handles all API requests. Supabase is used for database persistence and authentication. The system integrates with numerous external social media APIs and AI service providers.
+The project utilizes a client-server architecture. The frontend is a React Single Page Application (SPA) served by an Express.js backend, which also handles all API requests. PostgreSQL is used for database persistence with Drizzle ORM for type-safe database operations. The system integrates with numerous external social media APIs and AI service providers.
+
+**Migration Status (August 2025):**
+- Successfully migrated from Supabase to PostgreSQL with Drizzle ORM
+- All database operations moved to server-side for enhanced security
+- Client-server separation implemented with proper API boundaries
+- Google Gemini AI integration active and functional
 
 **Key Architectural Decisions:**
 *   **Unified Client-Server Deployment**: The React frontend and Express API are served from the same origin on a single port (5000) in production, simplifying deployment and eliminating CORS issues.
