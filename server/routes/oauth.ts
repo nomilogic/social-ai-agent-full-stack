@@ -15,7 +15,7 @@ router.get('/linkedin', (req: Request, res: Response) => {
   console.log("LinkedIn OAuth credentials:", { CLIENT_ID, CLIENT_SECRET })
   const REDIRECT_URI = process.env.VITE_APP_URL 
     ? `${process.env.VITE_APP_URL}/oauth/linkedin/callback`
-    : `${req.protocol}://${req.get('host')}/oauth/linkedin/callback`
+    : `https://${req.get('host')}/oauth/linkedin/callback`
   
   console.log('LinkedIn OAuth env vars:', { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI })
   
