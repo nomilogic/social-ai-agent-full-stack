@@ -24,11 +24,11 @@ export const companiesApi = {
     const response = await api.get<ApiResponse<any[]>>('/companies', {
       params: { userId }
     });
-    
+
     if (!response.data.success) {
       throw new Error(response.data.error || 'Failed to fetch companies');
     }
-    
+
     return response.data.data || [];
   },
 
@@ -38,11 +38,11 @@ export const companiesApi = {
       ...companyInfo,
       userId
     });
-    
+
     if (!response.data.success) {
       throw new Error(response.data.error || 'Failed to create company');
     }
-    
+
     return response.data.data;
   },
 
@@ -52,11 +52,11 @@ export const companiesApi = {
       ...updates,
       userId
     });
-    
+
     if (!response.data.success) {
       throw new Error(response.data.error || 'Failed to update company');
     }
-    
+
     return response.data.data;
   },
 
@@ -65,7 +65,7 @@ export const companiesApi = {
     const response = await api.delete<ApiResponse>(`/companies/${companyId}`, {
       params: { userId }
     });
-    
+
     if (!response.data.success) {
       throw new Error(response.data.error || 'Failed to delete company');
     }
@@ -78,13 +78,13 @@ export const postsApi = {
   async getAll(userId: string, companyId?: string): Promise<any[]> {
     const params: any = { userId };
     if (companyId) params.companyId = companyId;
-    
+
     const response = await api.get<ApiResponse<any[]>>('/posts', { params });
-    
+
     if (!response.data.success) {
       throw new Error(response.data.error || 'Failed to fetch posts');
     }
-    
+
     return response.data.data || [];
   },
 
@@ -103,11 +103,11 @@ export const postsApi = {
       generatedContent: generatedPosts,
       userId
     });
-    
+
     if (!response.data.success) {
       throw new Error(response.data.error || 'Failed to create post');
     }
-    
+
     return response.data.data;
   },
 
@@ -126,11 +126,11 @@ export const postsApi = {
       ...updates,
       userId
     });
-    
+
     if (!response.data.success) {
       throw new Error(response.data.error || 'Failed to update post');
     }
-    
+
     return response.data.data;
   },
 
@@ -139,7 +139,7 @@ export const postsApi = {
     const response = await api.delete<ApiResponse>(`/posts/${postId}`, {
       params: { userId }
     });
-    
+
     if (!response.data.success) {
       throw new Error(response.data.error || 'Failed to delete post');
     }
@@ -151,11 +151,11 @@ export const postsApi = {
       publishedPlatforms,
       userId
     });
-    
+
     if (!response.data.success) {
       throw new Error(response.data.error || 'Failed to mark post as published');
     }
-    
+
     return response.data.data;
   }
 };
@@ -167,28 +167,28 @@ export const mediaApi = {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('userId', userId);
-    
+
     const response = await api.post<ApiResponse<{url: string}>>('/media/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     });
-    
+
     if (!response.data.success) {
       throw new Error(response.data.error || 'Failed to upload file');
     }
-    
+
     return response.data.data?.url || '';
   },
 
   // Get all media files for a user
   async getAll(userId: string): Promise<any[]> {
     const response = await api.get<ApiResponse<any[]>>(`/media/${userId}`);
-    
+
     if (!response.data.success) {
       throw new Error(response.data.error || 'Failed to fetch media files');
     }
-    
+
     return response.data.data || [];
   },
 
@@ -197,7 +197,7 @@ export const mediaApi = {
     const response = await api.delete<ApiResponse>(`/media/${userId}/${fileName}`, {
       params: { userId }
     });
-    
+
     if (!response.data.success) {
       throw new Error(response.data.error || 'Failed to delete media file');
     }
@@ -212,11 +212,11 @@ export const aiApi = {
       content,
       platforms
     });
-    
+
     if (!response.data.success) {
       throw new Error(response.data.error || 'Failed to generate content');
     }
-    
+
     return response.data.data?.posts || [];
   }
 };
@@ -228,3 +228,42 @@ export const apiService = {
   media: mediaApi,
   ai: aiApi
 };
+
+// API utility functions
+export const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
+  const baseUrl = import.meta.env.VITE_API_URL || '';
+  const url = `${baseUrl}/api${endpoint}`;
+
+  const defaultOptions: RequestInit = {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  };
+
+  const mergedOptions = {
+    ...defaultOptions,
+    ...options,
+    headers: {
+      ...defaultOptions.headers,
+      ...options.headers,
+    },
+  };
+
+  try {
+    const response = await fetch(url, mergedOptions);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('API request failed:', error);
+    throw error;
+  }
+};
+
+// Default export for compatibility
+const api = { apiRequest };
+export default api;
