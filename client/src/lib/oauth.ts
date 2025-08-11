@@ -22,8 +22,8 @@ const getBaseUrl = (): string => {
   if (typeof window !== "undefined") {
     return window.location.origin;
   }
-  // Fallback for server-side rendering or when window is not available
-  return import.meta.env.VITE_APP_URL || "http://localhost:5000";
+  // Use Replit environment variables or fallback
+  return import.meta.env.VITE_APP_URL || `https://${import.meta.env.REPL_SLUG}.${import.meta.env.REPL_OWNER}.repl.co` || "http://localhost:5000";
 };
 
 // OAuth configurations for each platform
@@ -51,10 +51,10 @@ export const oauthConfigs: Record<string, PlatformOAuthConfig> = {
   linkedin: {
     clientId: import.meta.env.VITE_LINKEDIN_CLIENT_ID || "",
     clientSecret: import.meta.env.VITE_LINKEDIN_CLIENT_SECRET || "",
-    redirectUri: `${import.meta.env.VITE_APP_URL}/oauth/linkedin/callback`,
+    redirectUri: `${getBaseUrl()}/oauth/linkedin/callback`,
     scopes: ["w_member_social", "openid", "email", "profile"],
     authUrl: "https://www.linkedin.com/oauth/v2/authorization",
-    tokenUrl: `${import.meta.env.VITE_APP_URL}/api/oauth/linkedin/callback`,
+    tokenUrl: `${getBaseUrl()}/api/oauth/linkedin/callback`,
   },
   twitter: {
     clientId: import.meta.env.VITE_TWITTER_CLIENT_ID || "",
