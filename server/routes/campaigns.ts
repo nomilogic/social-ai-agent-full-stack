@@ -1,8 +1,9 @@
-import express, { Request, Response } from 'express';
-import { db } from '../db';
-import { campaigns, companies } from '../../shared/schema';
-import { eq, and, desc } from 'drizzle-orm';
-import { validateRequestBody } from '../middleware/auth';
+import express, { Request, Response } from 'express'
+import { db } from '../db'
+import { campaigns, companies } from '../../shared/schema'
+import { eq, and, desc } from 'drizzle-orm'
+import { validateRequestBody } from '../middleware/auth'
+import { serverSupabase } from '../supabaseClient'
 
 const router = express.Router();
 

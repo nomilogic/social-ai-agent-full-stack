@@ -1,5 +1,6 @@
 // Using API calls instead of Supabase client
 import { CompanyInfo, PostContent, GeneratedPost } from '../types';
+import { supabase } from './supabase';
 
 // Company operations
 export async function saveCompany(companyInfo: CompanyInfo, userId: string) {
@@ -33,7 +34,7 @@ export async function getCompanies(userId: string) {
     }
 
     const result = await response.json();
-    
+
     // Ensure we return an array even if data is null/undefined
     return Array.isArray(result.data) ? result.data : [];
   } catch (error) {

@@ -32,7 +32,7 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
     try {
       // Use selected platforms from content data or default to LinkedIn
       const targetPlatforms = contentData?.selectedPlatforms || contentData?.platforms || ['linkedin'];
-      
+
       // Create a minimal company info for generation
       const companyInfo = {
         name: contentData?.companyName || 'Default Company',
@@ -83,7 +83,7 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
 
       setIsGenerating(false);
       setCurrentPlatform(null);
-      
+
       if (posts && posts.length > 0) {
         onComplete(posts);
       } else {
@@ -101,7 +101,7 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
       console.error('Error generating posts:', error);
       setIsGenerating(false);
       setCurrentPlatform(null);
-      
+
       // Check if it's a quota error
       if (error.message && error.message.includes('quota')) {
         console.warn('API quota exceeded, creating fallback posts');
