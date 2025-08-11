@@ -5,6 +5,16 @@ import { uploadMedia, getCurrentUser } from '../lib/database';
 import { analyzeImage as analyzeImageWithGemini } from '../lib/gemini'; // Renamed to avoid conflict
 import { AIImageGenerator } from './AIImageGenerator';
 
+// Helper function to convert file to base64
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result!.split(',')[1]); // Get base64 part
+    reader.onerror = error => reject(error);
+  });
+};
+
 interface ContentInputProps {
   onNext: (data: PostContent) => void;
   onBack: () => void;
@@ -92,30 +102,68 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
     setAnalyzingImage(true);
     try {
-      // First try with Gemini (local analysis)
-      const analysis = await analyzeImageWithGemini(file);
-      if (analysis && analysis !== 'Unable to analyze image. Please add a description manually.') {
-        setImageAnalysis(analysis);
+      const base64 = await fileToBase64(file);
+
+      // Call the AI analysis API
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/analyze-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          image: base64,
+          mimeType: file.type
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to analyze image');
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.analysis) {
+        setImageAnalysis(result.analysis);
+        setFormData(prev => ({
+          ...prev,
+          prompt: prev.prompt + (prev.prompt ? '\n\n' : '') + `Image context: ${result.analysis}`
+        }));
       } else {
-        // Fallback to server-side analysis if available
-        const formData = new FormData();
-        formData.append('image', file);
-
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/analyze-image`, {
-          method: 'POST',
-          body: formData
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setImageAnalysis(data.analysis || 'Image uploaded successfully. Add a description for better content generation.');
-        } else {
+        // Fallback to local analysis if API returns no analysis
+        try {
+          const analysis = await analyzeImageWithGemini(base64);
+          if (analysis && analysis !== 'Unable to analyze image. Please add a description manually.') {
+            setImageAnalysis(analysis);
+            setFormData(prev => ({
+              ...prev,
+              prompt: prev.prompt + (prev.prompt ? '\n\n' : '') + `Image context: ${analysis}`
+            }));
+          } else {
+            setImageAnalysis('Image uploaded successfully. Add a description for better content generation.');
+          }
+        } catch (fallbackError) {
+          console.error('Fallback image analysis also failed:', fallbackError);
           setImageAnalysis('Image uploaded successfully. Add a description for better content generation.');
         }
       }
     } catch (error) {
       console.error('Error analyzing image:', error);
-      setImageAnalysis('Image uploaded successfully. Add a description for better content generation.');
+      // Fallback to local analysis if API call fails
+      try {
+        const analysis = await analyzeImageWithGemini(base64);
+        if (analysis && analysis !== 'Unable to analyze image. Please add a description manually.') {
+          setImageAnalysis(analysis);
+          setFormData(prev => ({
+            ...prev,
+            prompt: prev.prompt + (prev.prompt ? '\n\n' : '') + `Image context: ${analysis}`
+          }));
+        } else {
+          setImageAnalysis('Image uploaded successfully. Add a description for better content generation.');
+        }
+      } catch (fallbackError) {
+        console.error('Fallback image analysis also failed:', fallbackError);
+        setImageAnalysis('Image uploaded successfully. Add a description for better content generation.');
+      }
     } finally {
       setAnalyzingImage(false);
     }

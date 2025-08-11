@@ -11,20 +11,24 @@ router.get('/', async (req: Request, res: Response) => {
   const userId = req.query.userId as string
 
   if (!userId) {
+    console.log('No userId provided in companies request')
     return res.status(400).json({ error: 'User ID is required' })
   }
 
   try {
+    console.log('Fetching companies for userId:', userId)
     const data = await db
       .select()
       .from(companies)
       .where(eq(companies.user_id, userId))
       .orderBy(desc(companies.created_at))
 
-    res.json({ success: true, data })
+    console.log('Found companies:', data.length)
+    res.json({ success: true, data: data || [] })
   } catch (err: any) {
     console.error('Server error fetching companies:', err)
-    res.status(500).json({ error: 'Internal server error' })
+    console.error('Error details:', err.message, err.stack)
+    res.status(500).json({ error: 'Internal server error', details: err.message })
   }
 })
 
