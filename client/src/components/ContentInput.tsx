@@ -134,10 +134,13 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         setImageAnalysis(result.analysis);
         console.log('Image analysis completed successfully');
       } else {
+        console.log('No analysis in result:', result);
         setImageAnalysis('Image uploaded successfully. Add a description for better content generation.');
       }
     } catch (error: any) {
       console.error('Error analyzing image:', error);
+      console.error('Error details:', error.message);
+      console.error('Error stack:', error.stack);
       setImageAnalysis(`Image uploaded successfully. ${error.message?.includes('quota') ? 'AI analysis quota exceeded.' : 'Add a description for better content generation.'}`);
     } finally {
       setAnalyzingImage(false);
