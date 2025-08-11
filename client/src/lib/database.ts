@@ -1,7 +1,6 @@
 // Using API calls instead of Supabase client
 import { CompanyInfo, PostContent, GeneratedPost } from '../types';
-import { apiClient } from './supabase';
-import api from './api'; // Assuming 'api' is configured to use Axios or similar for API calls
+import api from './api';
 
 // Company operations
 export async function saveCompany(companyInfo: CompanyInfo, userId: string) {
