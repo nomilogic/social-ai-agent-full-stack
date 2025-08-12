@@ -45,15 +45,41 @@ router.get("/linkedin/callback", async (req: Request, res: Response) => {
 
   if (error) {
     console.error("LinkedIn OAuth error:", error);
-    return res.send(
-      `<script>window.opener.postMessage({type: 'oauth_error', platform: 'linkedin', error: '${error}'}, '*'); window.close();</script>`,
-    );
+    return res.send(`
+      <script>
+        try {
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'oauth_error', 
+              platform: 'linkedin', 
+              error: '${error}'
+            }, window.location.origin);
+          }
+          setTimeout(() => window.close(), 1000);
+        } catch (e) {
+          document.body.innerHTML = '<h2>❌ Connection Failed</h2><p>Error: ${error}</p><button onclick="window.close()">Close</button>';
+        }
+      </script>
+    `);
   }
 
   if (!code || !state) {
-    return res.send(
-      `<script>window.opener.postMessage({type: 'oauth_error', platform: 'linkedin', error: 'Missing code or state'}, '*'); window.close();</script>`,
-    );
+    return res.send(`
+      <script>
+        try {
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'oauth_error', 
+              platform: 'linkedin', 
+              error: 'Missing code or state'
+            }, window.location.origin);
+          }
+          setTimeout(() => window.close(), 1000);
+        } catch (e) {
+          document.body.innerHTML = '<h2>❌ Connection Failed</h2><p>Missing required parameters</p><button onclick="window.close()">Close</button>';
+        }
+      </script>
+    `);
   }
 
   let user_id;
@@ -63,9 +89,22 @@ router.get("/linkedin/callback", async (req: Request, res: Response) => {
     );
     user_id = stateData.user_id;
   } catch (err) {
-    return res.send(
-      `<script>window.opener.postMessage({type: 'oauth_error', platform: 'linkedin', error: 'Invalid state parameter'}, '*'); window.close();</script>`,
-    );
+    return res.send(`
+      <script>
+        try {
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'oauth_error', 
+              platform: 'linkedin', 
+              error: 'Invalid state parameter'
+            }, window.location.origin);
+          }
+          setTimeout(() => window.close(), 1000);
+        } catch (e) {
+          document.body.innerHTML = '<h2>❌ Connection Failed</h2><p>Invalid state parameter</p><button onclick="window.close()">Close</button>';
+        }
+      </script>
+    `);
   }
 
   const CLIENT_ID = process.env.LINKEDIN_CLIENT_ID as string;
@@ -162,14 +201,20 @@ router.get("/linkedin/callback", async (req: Request, res: Response) => {
 
     res.send(`
       <script>
-        // Notify parent window of successful OAuth
-        window.opener.postMessage({
-          type: 'oauth_success', 
-          platform: 'linkedin',
-          profile: ${JSON.stringify(profileData)}
-        }, '*');
-
-        window.close();
+        try {
+          // Notify parent window of successful OAuth
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'oauth_success', 
+              platform: 'linkedin',
+              profile: ${JSON.stringify(profileData)}
+            }, window.location.origin);
+          }
+          setTimeout(() => window.close(), 1000);
+        } catch (error) {
+          console.error('Error sending OAuth success message:', error);
+          document.body.innerHTML = '<h2>✅ LinkedIn Connected Successfully!</h2><p>You can close this window now.</p>';
+        }
       </script>
     `);
   } catch (err) {
@@ -178,9 +223,22 @@ router.get("/linkedin/callback", async (req: Request, res: Response) => {
       ? err.response?.data?.error_description || err.message
       : "Token exchange failed";
 
-    res.send(
-      `<script>window.opener.postMessage({type: 'oauth_error', platform: 'linkedin', error: '${errorMessage}'}, '*'); window.close();</script>`,
-    );
+    res.send(`
+      <script>
+        try {
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'oauth_error', 
+              platform: 'linkedin', 
+              error: '${errorMessage}'
+            }, window.location.origin);
+          }
+          setTimeout(() => window.close(), 1000);
+        } catch (e) {
+          document.body.innerHTML = '<h2>❌ Connection Failed</h2><p>Token exchange failed</p><button onclick="window.close()">Close</button>';
+        }
+      </script>
+    `);
   }
 });
 
