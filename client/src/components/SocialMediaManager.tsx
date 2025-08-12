@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Check, 
@@ -13,7 +14,7 @@ import {
   Play
 } from 'lucide-react';
 import { Platform } from '../types';
-import { socialMediaAPI } from '../lib/socialMediaApi';
+import { oauthManager } from '../lib/oauth';
 
 interface SocialMediaManagerProps {
   userId: string;
@@ -87,7 +88,6 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
 }) => {
   const [platformStatuses, setPlatformStatuses] = useState<PlatformStatus[]>([]);
   const [loading, setLoading] = useState(true);
-  const [accessTokens, setAccessTokens] = useState<Record<Platform, string>>({} as Record<Platform, string>);
 
   const platforms: Platform[] = ['linkedin', 'facebook', 'instagram', 'twitter', 'tiktok', 'youtube'];
 
@@ -100,62 +100,32 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
     setLoading(true);
     const statuses: PlatformStatus[] = [];
 
-    // Load stored tokens from localStorage
-    const storedTokens: Record<Platform, string> = {} as Record<Platform, string>;
-    
     for (const platform of platforms) {
       try {
-        const tokenKey = `${platform}_access_token_${userId}`;
-        const accessToken = localStorage.getItem(tokenKey);
+        // Use the same OAuth manager that's working
+        const connected = await oauthManager.hasValidCredentials(userId, platform);
         
-        if (accessToken) {
-          storedTokens[platform] = accessToken;
-          
-          // Validate token
-          const isValid = await socialMediaAPI.validateToken(platform, accessToken);
-          
-          let profile = null;
-          if (isValid) {
-            try {
-              switch (platform) {
-                case 'linkedin':
-                  profile = await socialMediaAPI.getLinkedInProfile(accessToken);
-                  break;
-                case 'facebook':
-                  profile = await socialMediaAPI.getFacebookProfile(accessToken);
-                  break;
-                case 'twitter':
-                  profile = await socialMediaAPI.getTwitterProfile(accessToken);
-                  break;
-                case 'tiktok':
-                  profile = await socialMediaAPI.getTikTokProfile(accessToken);
-                  break;
-                case 'youtube':
-                  profile = await socialMediaAPI.getYouTubeProfile(accessToken);
-                  break;
-              }
-            } catch (error) {
-              console.warn(`Failed to fetch ${platform} profile:`, error);
+        // Get profile data if connected
+        let profile = null;
+        if (connected) {
+          try {
+            const credentials = await oauthManager.getCredentials(userId, platform);
+            if (credentials) {
+              // You can fetch profile data here using the access token
+              // This would depend on your API implementation
+              profile = { name: 'Connected User' }; // Placeholder
             }
+          } catch (error) {
+            console.warn(`Failed to fetch ${platform} profile:`, error);
           }
-
-          statuses.push({
-            platform,
-            connected: isValid,
-            loading: false,
-            profile: profile
-          });
-          
-          if (!isValid) {
-            localStorage.removeItem(tokenKey);
-          }
-        } else {
-          statuses.push({
-            platform,
-            connected: false,
-            loading: false
-          });
         }
+        
+        statuses.push({
+          platform,
+          connected,
+          loading: false,
+          profile
+        });
       } catch (error) {
         console.error(`Error checking ${platform}:`, error);
         statuses.push({
@@ -167,12 +137,12 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
       }
     }
 
-    setAccessTokens(storedTokens);
     setPlatformStatuses(statuses);
     setLoading(false);
   };
 
   const handleConnect = async (platform: Platform) => {
+    console.log('Connecting to platform:', platform);
     try {
       setPlatformStatuses(prev =>
         prev.map(status =>
@@ -182,8 +152,9 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
         )
       );
 
-      // Open OAuth flow in new window
-      const authUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/oauth/${platform}?user_id=${userId}`;
+      // Use the same OAuth flow that's working in OAuthManager
+      const authUrl = oauthManager.generateAuthUrl(platform, userId);
+      console.log('Opening OAuth popup with URL:', authUrl);
       
       const authWindow = window.open(
         authUrl,
@@ -191,15 +162,17 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
         'width=600,height=700,scrollbars=yes,resizable=yes'
       );
 
+      if (!authWindow) {
+        throw new Error('OAuth popup blocked');
+      }
+
       // Listen for messages from the OAuth callback
       const messageListener = (event: MessageEvent) => {
-        if (event.origin !== window.location.origin) return;
-
         if (event.data.type === 'oauth_success' && event.data.platform === platform) {
-          // Handle successful OAuth
           console.log('OAuth success for', platform);
           setTimeout(checkPlatformStatuses, 1000);
           window.removeEventListener('message', messageListener);
+          onCredentialsUpdate?.();
         } else if (event.data.type === 'oauth_error') {
           setPlatformStatuses(prev =>
             prev.map(status =>
@@ -218,7 +191,7 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
 
       window.addEventListener('message', messageListener);
 
-      // Also listen for window close as fallback
+      // Monitor window closure
       const checkClosed = setInterval(() => {
         if (authWindow?.closed) {
           clearInterval(checkClosed);
@@ -228,6 +201,7 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
       }, 1000);
 
     } catch (error) {
+      console.error('Error connecting to platform:', error);
       setPlatformStatuses(prev =>
         prev.map(status =>
           status.platform === platform
@@ -248,10 +222,9 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
     }
 
     try {
-      // Remove token from localStorage
-      const tokenKey = `${platform}_access_token_${userId}`;
-      localStorage.removeItem(tokenKey);
-
+      // Use the same OAuth manager for disconnecting
+      await oauthManager.revokeCredentials(userId, platform);
+      
       setPlatformStatuses(prev =>
         prev.map(status =>
           status.platform === platform
@@ -259,13 +232,6 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
             : status
         )
       );
-
-      // Update access tokens state
-      setAccessTokens(prev => {
-        const newTokens = { ...prev };
-        delete newTokens[platform];
-        return newTokens;
-      });
 
       onCredentialsUpdate?.();
     } catch (error) {
@@ -283,21 +249,10 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
         )
       );
 
-      // Try to refresh the token if we have a refresh token
-      const refreshTokenKey = `${platform}_refresh_token_${userId}`;
-      const refreshToken = localStorage.getItem(refreshTokenKey);
-
-      if (refreshToken) {
-        const refreshResult = await socialMediaAPI.refreshToken(platform, refreshToken);
-        
-        if (refreshResult.success) {
-          const tokenKey = `${platform}_access_token_${userId}`;
-          localStorage.setItem(tokenKey, refreshResult.access_token);
-          
-          if (refreshResult.refresh_token) {
-            localStorage.setItem(refreshTokenKey, refreshResult.refresh_token);
-          }
-        }
+      // Use the same OAuth manager for refreshing
+      const credentials = await oauthManager.getCredentials(userId, platform);
+      if (credentials) {
+        await oauthManager.refreshToken(userId, platform, credentials);
       }
       
       await checkPlatformStatuses();
@@ -377,23 +332,9 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
                   </div>
 
                   {/* Profile Info */}
-                  {status.profile && (
+                  {status.profile && status.profile.name && (
                     <div className="text-xs text-gray-500 mb-2">
-                      {status.platform === 'linkedin' && status.profile.name && (
-                        <span>✓ {status.profile.name}</span>
-                      )}
-                      {status.platform === 'facebook' && status.profile.name && (
-                        <span>✓ {status.profile.name}</span>
-                      )}
-                      {status.platform === 'twitter' && status.profile.username && (
-                        <span>✓ @{status.profile.username}</span>
-                      )}
-                      {status.platform === 'youtube' && status.profile.title && (
-                        <span>✓ {status.profile.title}</span>
-                      )}
-                      {status.platform === 'tiktok' && status.profile.display_name && (
-                        <span>✓ {status.profile.display_name}</span>
-                      )}
+                      <span>✓ {status.profile.name}</span>
                     </div>
                   )}
 
