@@ -155,7 +155,7 @@ router.post('/generate-posts', async (req: Request, res: Response) => {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
     // Create platform-specific prompts
     const generatedPosts = []
@@ -235,7 +235,7 @@ router.post('/generate', async (req: Request, res: Response) => {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
     // Create platform-specific prompts
     const generatedPosts = []
