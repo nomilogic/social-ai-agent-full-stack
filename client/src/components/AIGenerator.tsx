@@ -34,13 +34,15 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
       const targetPlatforms = contentData?.selectedPlatforms || contentData?.platforms || ['linkedin'];
 
       // Create a minimal company info for generation
-      const companyInfo = {
+      const companyInfo: CompanyInfo = {
         name: contentData?.companyName || 'Default Company',
+        website: contentData?.website || 'https://example.com',
         industry: contentData?.industry || 'Technology',
-        tone: contentData?.tone || 'professional',
-        platforms: targetPlatforms,
+        description: contentData?.description || 'A technology company',
         targetAudience: contentData?.targetAudience || 'Professionals',
-        description: contentData?.description || 'A technology company'
+        brandTone: (contentData?.tone as any) || 'professional',
+        goals: contentData?.goals || ['brand_building'],
+        platforms: targetPlatforms
       };
 
       const posts = await generateAllPosts(
@@ -89,7 +91,7 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
       } else {
         console.error('No posts generated');
         // Create fallback posts if generation fails
-        const fallbackPosts = targetPlatforms.map(platform => ({
+        const fallbackPosts = targetPlatforms.map((platform: Platform) => ({
           platform,
           caption: contentData?.prompt || 'Check out our latest updates!',
           hashtags: ['#business', '#updates'],
@@ -106,7 +108,7 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
       if (error.message && error.message.includes('quota')) {
         console.warn('API quota exceeded, creating fallback posts');
         const targetPlatforms = contentData?.selectedPlatforms || contentData?.platforms || ['linkedin'];
-        const fallbackPosts = targetPlatforms.map(platform => ({
+        const fallbackPosts = targetPlatforms.map((platform: Platform) => ({
           platform,
           caption: contentData?.prompt || 'Check out our latest updates!',
           hashtags: ['#business', '#updates'],

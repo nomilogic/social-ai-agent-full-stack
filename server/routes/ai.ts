@@ -171,7 +171,7 @@ router.post('/generate-posts', async (req: Request, res: Response) => {
         // Parse the generated content to extract caption and hashtags
         const lines = text.split('\n').filter(line => line.trim())
         let caption = text
-        let hashtags = []
+        let hashtags: string[] = []
 
         // Try to extract hashtags from the content
         const hashtagMatches = text.match(/#\w+/g)
