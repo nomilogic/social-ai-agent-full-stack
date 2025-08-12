@@ -99,15 +99,19 @@ export class OAuthManager {
 
   // Generate OAuth URL for platform
   generateAuthUrl(platform: string, userId: string): string {
-    //alert('Generating OAuth URL for platform: ' + userId);
+    console.log('Generating OAuth URL for platform:', platform, 'userId:', userId);
     this.userId = userId;
     const config = oauthConfigs[platform];
     if (!config) {
       throw new Error(`OAuth config not found for platform: ${platform}`);
     }
 
+    if (!config.clientId) {
+      throw new Error(`OAuth client ID not configured for ${platform}. Please set up the environment variables.`);
+    }
+
     const state = this.generateState(platform, userId);
-    alert("Generated state: " + state);
+    console.log("Generated state:", state);
     this.pendingAuths.set(state, userId);
 
     const params = new URLSearchParams({
@@ -120,7 +124,9 @@ export class OAuthManager {
       prompt: "consent",
     });
 
-    return `${config.authUrl}?${params.toString()}`;
+    const authUrl = `${config.authUrl}?${params.toString()}`;
+    console.log('Generated OAuth URL:', authUrl);
+    return authUrl;
   }
 
   // Handle OAuth callback
