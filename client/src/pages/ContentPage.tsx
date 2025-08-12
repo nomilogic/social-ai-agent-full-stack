@@ -100,6 +100,7 @@ export const ContentPage: React.FC = () => {
                 posts={state.generatedPosts}
                 onEdit={() => navigate('/content/generate')}
                 onBack={() => navigate('/content/generate')}
+                onPublish={handleGoToPublish}
               />
             ) : (
               <div className="text-center py-8">
