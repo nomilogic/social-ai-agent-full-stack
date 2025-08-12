@@ -11,6 +11,20 @@ export const users = pgTable('users', {
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
+// OAuth tokens table
+export const oauth_tokens = pgTable('oauth_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  platform: text('platform').notNull(), // 'linkedin', 'facebook', 'twitter', etc.
+  access_token: text('access_token').notNull(),
+  refresh_token: text('refresh_token'),
+  expires_at: timestamp('expires_at', { withTimezone: true }),
+  scope: text('scope'),
+  profile_data: jsonb('profile_data'), // Store profile info from the platform
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
 // Companies table
 export const companies = pgTable('companies', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -85,18 +99,7 @@ export const scheduled_posts = pgTable('scheduled_posts', {
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
-// OAuth tokens table
-export const oauth_tokens = pgTable('oauth_tokens', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  user_id: uuid('user_id').notNull(),
-  platform: text('platform').notNull(),
-  access_token: text('access_token').notNull(),
-  refresh_token: text('refresh_token'),
-  expires_at: timestamp('expires_at', { withTimezone: true }),
-  token_type: text('token_type').default('Bearer'),
-  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
+
 
 // Notifications table
 export const notifications = pgTable('notifications', {
