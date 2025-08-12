@@ -188,8 +188,7 @@ router.get('/status/:userId', async (req: Request, res: Response) => {
     const tokens = await db
       .select({
         platform: oauth_tokens.platform,
-        expires_at: oauth_tokens.expires_at,
-        profile_data: oauth_tokens.profile_data
+        expires_at: oauth_tokens.expires_at
       })
       .from(oauth_tokens)
       .where(eq(oauth_tokens.user_id, userId))
@@ -212,7 +211,7 @@ router.get('/status/:userId', async (req: Request, res: Response) => {
       status[token.platform] = {
         connected: !isExpired,
         expired: isExpired,
-        profile: token.profile_data
+        profile: null
       }
     })
 

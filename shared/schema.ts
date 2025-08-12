@@ -19,8 +19,7 @@ export const oauth_tokens = pgTable('oauth_tokens', {
   access_token: text('access_token').notNull(),
   refresh_token: text('refresh_token'),
   expires_at: timestamp('expires_at', { withTimezone: true }),
-  scope: text('scope'),
-  profile_data: jsonb('profile_data'), // Store profile info from the platform
+  token_type: text('token_type'),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
