@@ -182,50 +182,9 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
         )
       );
 
-      // Open OAuth flow in new window
-      const authUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/oauth/${platform}?user_id=${userId}`;
-      
-      const authWindow = window.open(
-        authUrl,
-        `${platform}_oauth`,
-        'width=600,height=700,scrollbars=yes,resizable=yes'
-      );
-
-      // Listen for messages from the OAuth callback
-      const messageListener = (event: MessageEvent) => {
-        if (event.origin !== window.location.origin) return;
-
-        if (event.data.type === 'oauth_success' && event.data.platform === platform) {
-          // Handle successful OAuth
-          console.log('OAuth success for', platform);
-          setTimeout(checkPlatformStatuses, 1000);
-          window.removeEventListener('message', messageListener);
-        } else if (event.data.type === 'oauth_error') {
-          setPlatformStatuses(prev =>
-            prev.map(status =>
-              status.platform === platform
-                ? { 
-                    ...status, 
-                    loading: false, 
-                    error: event.data.error || 'OAuth failed'
-                  }
-                : status
-            )
-          );
-          window.removeEventListener('message', messageListener);
-        }
-      };
-
-      window.addEventListener('message', messageListener);
-
-      // Also listen for window close as fallback
-      const checkClosed = setInterval(() => {
-        if (authWindow?.closed) {
-          clearInterval(checkClosed);
-          window.removeEventListener('message', messageListener);
-          setTimeout(checkPlatformStatuses, 1000);
-        }
-      }, 1000);
+      // Direct redirect to OAuth endpoint - no popup needed
+      const authUrl = `${import.meta.env.VITE_API_URL || 'http://0.0.0.0:5000/api'}/oauth/${platform}?user_id=${userId}`;
+      window.location.href = authUrl;
 
     } catch (error) {
       setPlatformStatuses(prev =>
