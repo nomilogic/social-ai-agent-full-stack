@@ -26,24 +26,22 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
   }, [userId, posts]);
 
   const checkConnectedPlatforms = async () => {
-    const connected: Platform[] = [];
-    for (const post of posts) {
-      // Check if we have a stored token
-      const tokenKey = `${post.platform}_access_token_${userId}`;
-      const accessToken = localStorage.getItem(tokenKey);
+    try {
+      // Use the server API to check OAuth status
+      const response = await fetch(`/api/oauth/status/${userId}`);
+      const statusData = await response.json();
       
-      if (accessToken) {
-        // Validate the token with the API
-        const isValid = await socialMediaAPI.validateToken(post.platform, accessToken);
-        if (isValid) {
+      const connected: Platform[] = [];
+      for (const post of posts) {
+        if (statusData[post.platform]?.connected) {
           connected.push(post.platform);
-        } else {
-          // Remove invalid token
-          localStorage.removeItem(tokenKey);
         }
       }
+      setConnectedPlatforms(connected);
+    } catch (error) {
+      console.error('Failed to check connected platforms:', error);
+      setConnectedPlatforms([]);
     }
-    setConnectedPlatforms(connected);
   };
 
   const handlePublish = async () => {

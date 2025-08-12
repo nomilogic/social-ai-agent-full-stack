@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Check, 
@@ -7,7 +6,6 @@ import {
   Trash2, 
   AlertCircle, 
   Users, 
-  Video,
   Camera,
   MessageCircle,
   Music,
@@ -100,38 +98,31 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
     setLoading(true);
     const statuses: PlatformStatus[] = [];
 
-    for (const platform of platforms) {
-      try {
-        // Use server API to check OAuth status instead of direct Supabase calls
-        const response = await fetch(`/api/oauth/status/${userId}`);
-        if (response.ok) {
-          const statusData = await response.json();
-          const platformStatus = statusData[platform];
-          
-          statuses.push({
-            platform,
-            connected: platformStatus?.connected || false,
-            loading: false,
-            profile: platformStatus?.profile || null,
-            error: undefined
-          });
-        } else {
-          // Fallback: try direct OAuth manager check
-          const connected = await oauthManager.hasValidCredentials(userId, platform);
-          statuses.push({
-            platform,
-            connected,
-            loading: false,
-            profile: connected ? { name: 'Connected User' } : null
-          });
-        }
-      } catch (error) {
-        console.error(`Error checking ${platform}:`, error);
+    try {
+      // Use the server API to get OAuth status
+      const response = await fetch(`/api/oauth/status/${userId}`);
+      const statusData = await response.json();
+
+      for (const platform of platforms) {
+        const platformStatus = statusData[platform];
+
+        statuses.push({
+          platform,
+          connected: platformStatus?.connected || false,
+          loading: false,
+          profile: platformStatus?.profile || null,
+          error: platformStatus?.expired ? 'Token expired' : undefined
+        });
+      }
+    } catch (error) {
+      console.error('Error checking platform statuses:', error);
+      // Fallback: mark all as disconnected
+      for (const platform of platforms) {
         statuses.push({
           platform,
           connected: false,
           loading: false,
-          error: error instanceof Error ? error.message : 'Connection check failed'
+          error: 'Failed to check status'
         });
       }
     }
@@ -154,7 +145,7 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
       // Use the same OAuth flow that's working in OAuthManager
       const authUrl = oauthManager.generateAuthUrl(platform, userId);
       console.log('Opening OAuth popup with URL:', authUrl);
-      
+
       const authWindow = window.open(
         authUrl,
         `${platform}_oauth`,
@@ -223,7 +214,7 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
     try {
       // Use the same OAuth manager for disconnecting
       await oauthManager.revokeCredentials(userId, platform);
-      
+
       setPlatformStatuses(prev =>
         prev.map(status =>
           status.platform === platform
@@ -253,7 +244,7 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
       if (credentials) {
         await oauthManager.refreshToken(userId, platform, credentials);
       }
-      
+
       await checkPlatformStatuses();
       onCredentialsUpdate?.();
     } catch (error) {
@@ -318,7 +309,7 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
                   <p className="text-sm text-gray-600 mb-2 line-clamp-2">
                     {info.description}
                   </p>
-                  
+
                   {/* Connection Status */}
                   <div className="flex items-center space-x-2 mb-2">
                     {status.connected ? (

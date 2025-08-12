@@ -245,4 +245,119 @@ router.get('/token/:userId/:platform', async (req: Request, res: Response) => {
   }
 })
 
+// GET /api/oauth/facebook - Initiate Facebook OAuth flow
+router.get('/facebook', (req: Request, res: Response) => {
+  const { user_id } = req.query
+  
+  if (!user_id) {
+    return res.status(400).json({ error: 'user_id is required' })
+  }
+  
+  const CLIENT_ID = process.env.FACEBOOK_CLIENT_ID as string
+  
+  if (!CLIENT_ID) {
+    return res.status(500).json({ error: 'Facebook OAuth not configured. Please add FACEBOOK_CLIENT_ID to environment variables.' })
+  }
+
+  const REDIRECT_URI = `${process.env.BASE_URL || 'http://localhost:5000'}/api/oauth/facebook/callback`
+  const state = Buffer.from(JSON.stringify({ user_id })).toString('base64')
+  const scope = "pages_manage_posts,pages_read_engagement"
+  
+  const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&scope=${scope}`
+  
+  res.redirect(authUrl)
+})
+
+// GET /api/oauth/instagram - Initiate Instagram OAuth flow
+router.get('/instagram', (req: Request, res: Response) => {
+  const { user_id } = req.query
+  
+  if (!user_id) {
+    return res.status(400).json({ error: 'user_id is required' })
+  }
+  
+  const CLIENT_ID = process.env.INSTAGRAM_CLIENT_ID as string
+  
+  if (!CLIENT_ID) {
+    return res.status(500).json({ error: 'Instagram OAuth not configured. Please add INSTAGRAM_CLIENT_ID to environment variables.' })
+  }
+
+  const REDIRECT_URI = `${process.env.BASE_URL || 'http://localhost:5000'}/api/oauth/instagram/callback`
+  const state = Buffer.from(JSON.stringify({ user_id })).toString('base64')
+  const scope = "instagram_basic,instagram_content_publish"
+  
+  const authUrl = `https://api.instagram.com/oauth/authorize?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&scope=${scope}`
+  
+  res.redirect(authUrl)
+})
+
+// GET /api/oauth/twitter - Initiate Twitter OAuth flow
+router.get('/twitter', (req: Request, res: Response) => {
+  const { user_id } = req.query
+  
+  if (!user_id) {
+    return res.status(400).json({ error: 'user_id is required' })
+  }
+  
+  const CLIENT_ID = process.env.TWITTER_CLIENT_ID as string
+  
+  if (!CLIENT_ID) {
+    return res.status(500).json({ error: 'Twitter OAuth not configured. Please add TWITTER_CLIENT_ID to environment variables.' })
+  }
+
+  const REDIRECT_URI = `${process.env.BASE_URL || 'http://localhost:5000'}/api/oauth/twitter/callback`
+  const state = Buffer.from(JSON.stringify({ user_id })).toString('base64')
+  const scope = "tweet.read tweet.write users.read offline.access"
+  
+  const authUrl = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&scope=${scope}&code_challenge=challenge&code_challenge_method=plain`
+  
+  res.redirect(authUrl)
+})
+
+// GET /api/oauth/tiktok - Initiate TikTok OAuth flow
+router.get('/tiktok', (req: Request, res: Response) => {
+  const { user_id } = req.query
+  
+  if (!user_id) {
+    return res.status(400).json({ error: 'user_id is required' })
+  }
+  
+  const CLIENT_ID = process.env.TIKTOK_CLIENT_ID as string
+  
+  if (!CLIENT_ID) {
+    return res.status(500).json({ error: 'TikTok OAuth not configured. Please add TIKTOK_CLIENT_ID to environment variables.' })
+  }
+
+  const REDIRECT_URI = `${process.env.BASE_URL || 'http://localhost:5000'}/api/oauth/tiktok/callback`
+  const state = Buffer.from(JSON.stringify({ user_id })).toString('base64')
+  const scope = "user.info.basic,video.upload"
+  
+  const authUrl = `https://www.tiktok.com/v2/auth/authorize?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&scope=${scope}`
+  
+  res.redirect(authUrl)
+})
+
+// GET /api/oauth/youtube - Initiate YouTube OAuth flow
+router.get('/youtube', (req: Request, res: Response) => {
+  const { user_id } = req.query
+  
+  if (!user_id) {
+    return res.status(400).json({ error: 'user_id is required' })
+  }
+  
+  const CLIENT_ID = process.env.YOUTUBE_CLIENT_ID as string
+  
+  if (!CLIENT_ID) {
+    return res.status(500).json({ error: 'YouTube OAuth not configured. Please add YOUTUBE_CLIENT_ID to environment variables.' })
+  }
+
+  const REDIRECT_URI = `${process.env.BASE_URL || 'http://localhost:5000'}/api/oauth/youtube/callback`
+  const state = Buffer.from(JSON.stringify({ user_id })).toString('base64')
+  const scope = "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube"
+  
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent`
+  
+  res.redirect(authUrl)
+})
+
 export default router
