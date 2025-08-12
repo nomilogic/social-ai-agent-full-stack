@@ -55,7 +55,7 @@ router.get('/linkedin/callback', async (req: Request, res: Response) => {
     user_id = stateData.user_id
   } catch (err) {
     return res.send(`<script>window.opener.postMessage({type: 'oauth_error', platform: 'linkedin', error: 'Invalid state parameter'}, '*'); window.close();</script>`)
-  }
+  }</old_str>
   
   const CLIENT_ID = process.env.LINKEDIN_CLIENT_ID as string
   const CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET as string
@@ -71,15 +71,28 @@ router.get('/linkedin/callback', async (req: Request, res: Response) => {
       client_secret: CLIENT_SECRET
     })
 
-    console.log("Exchanging code for access token...")
+    console.log("Exchanging code for access token with params:", {
+      grant_type: 'authorization_code',
+      code: code,
+      redirect_uri: REDIRECT_URI,
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET ? '***' : 'MISSING'
+    })
+
     const tokenResponse = await axios.post(
       'https://www.linkedin.com/oauth/v2/accessToken',
       tokenParams.toString(),
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+      { 
+        headers: { 
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json'
+        },
+        timeout: 30000
+      }
     )
 
     const { access_token, expires_in, scope } = tokenResponse.data
-    console.log("Received access token from LinkedIn")
+    console.log("Received access token from LinkedIn, expires in:", expires_in)
 
     // Get user profile from LinkedIn
     let profileData = null
