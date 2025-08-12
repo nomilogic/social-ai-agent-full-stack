@@ -23,7 +23,11 @@ const getBaseUrl = (): string => {
     return window.location.origin;
   }
   // Use Replit environment variables or fallback
-  return import.meta.env.VITE_APP_URL || `https://${import.meta.env.REPL_SLUG}.${import.meta.env.REPL_OWNER}.repl.co` || "http://localhost:5000";
+  return (
+    import.meta.env.VITE_APP_URL ||
+    `https://${import.meta.env.REPL_SLUG}.${import.meta.env.REPL_OWNER}.repl.co` ||
+    "http://localhost:5000"
+  );
 };
 
 // OAuth configurations for each platform
@@ -54,7 +58,8 @@ export const oauthConfigs: Record<string, PlatformOAuthConfig> = {
     redirectUri: `${getBaseUrl()}/oauth/linkedin/callback`,
     scopes: ["w_member_social", "openid", "email", "profile"],
     authUrl: "https://www.linkedin.com/oauth/v2/authorization",
-    tokenUrl: "https://www.linkedin.com/oauth/v2/accessToken",
+    tokenUrl:
+      "https://29fad8af-ed08-4697-90cf-a9e9861d4e37-00-22cjx0f1pt4i8.sisko.replit.dev/api/linkedin/access-token",
   },
   twitter: {
     clientId: import.meta.env.VITE_TWITTER_CLIENT_ID || "",
@@ -99,7 +104,12 @@ export class OAuthManager {
 
   // Generate OAuth URL for platform
   generateAuthUrl(platform: string, userId: string): string {
-    console.log('Generating OAuth URL for platform:', platform, 'userId:', userId);
+    console.log(
+      "Generating OAuth URL for platform:",
+      platform,
+      "userId:",
+      userId,
+    );
     this.userId = userId;
     const config = oauthConfigs[platform];
     if (!config) {
@@ -107,7 +117,9 @@ export class OAuthManager {
     }
 
     if (!config.clientId) {
-      throw new Error(`OAuth client ID not configured for ${platform}. Please set up the environment variables.`);
+      throw new Error(
+        `OAuth client ID not configured for ${platform}. Please set up the environment variables.`,
+      );
     }
 
     const state = this.generateState(platform, userId);
@@ -125,7 +137,7 @@ export class OAuthManager {
     });
 
     const authUrl = `${config.authUrl}?${params.toString()}`;
-    console.log('Generated OAuth URL:', authUrl);
+    console.log("Generated OAuth URL:", authUrl);
     return authUrl;
   }
 
@@ -314,7 +326,7 @@ export class OAuthManager {
       if (!response.ok) {
         return null;
       }
-      
+
       const tokenData = await response.json();
       if (!tokenData.access_token) {
         return null;
@@ -323,9 +335,9 @@ export class OAuthManager {
       return {
         accessToken: tokenData.access_token,
         refreshToken: tokenData.refresh_token,
-        tokenType: tokenData.token_type || 'Bearer',
-        expiresAt: tokenData.expires_at 
-          ? new Date(tokenData.expires_at).getTime() 
+        tokenType: tokenData.token_type || "Bearer",
+        expiresAt: tokenData.expires_at
+          ? new Date(tokenData.expires_at).getTime()
           : undefined,
       };
     } catch (error) {
@@ -389,7 +401,7 @@ export class OAuthManager {
   async revokeCredentials(userId: string, platform: string): Promise<void> {
     try {
       const response = await fetch(`/api/oauth-tokens/${userId}/${platform}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
@@ -397,7 +409,9 @@ export class OAuthManager {
       }
     } catch (error) {
       console.error(`Failed to revoke credentials for ${platform}:`, error);
-      throw new Error(`Failed to revoke credentials: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to revoke credentials: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -420,7 +434,7 @@ export class OAuthManager {
       if (!response.ok) {
         return false;
       }
-      
+
       const statusData = await response.json();
       return statusData[platform]?.connected || false;
     } catch (error) {
