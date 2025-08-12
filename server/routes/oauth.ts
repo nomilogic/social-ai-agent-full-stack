@@ -168,6 +168,10 @@ router.get('/status/:userId', async (req: Request, res: Response) => {
   const { userId } = req.params
   
   try {
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' })
+    }
+
     const tokens = await db
       .select({
         platform: oauth_tokens.platform,
@@ -179,6 +183,17 @@ router.get('/status/:userId', async (req: Request, res: Response) => {
 
     const status: Record<string, any> = {}
     
+    // Initialize all platforms as disconnected first
+    const allPlatforms = ['linkedin', 'facebook', 'instagram', 'twitter', 'tiktok', 'youtube']
+    allPlatforms.forEach(platform => {
+      status[platform] = {
+        connected: false,
+        expired: false,
+        profile: null
+      }
+    })
+    
+    // Update with actual token status
     tokens.forEach(token => {
       const isExpired = token.expires_at ? new Date() > new Date(token.expires_at) : false
       status[token.platform] = {

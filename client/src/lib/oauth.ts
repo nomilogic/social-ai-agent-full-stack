@@ -308,38 +308,30 @@ export class OAuthManager {
     userId: string,
     platform: string,
   ): Promise<OAuthCredentials | null> {
-    const { data, error } = await supabase
-      .from("oauth_tokens")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("platform", platform)
-      .single();
+    try {
+      // Use server API instead of direct Supabase calls
+      const response = await fetch(`/api/oauth/token/${userId}/${platform}`);
+      if (!response.ok) {
+        return null;
+      }
+      
+      const tokenData = await response.json();
+      if (!tokenData.access_token) {
+        return null;
+      }
 
-    if (error || !data) {
+      return {
+        accessToken: tokenData.access_token,
+        refreshToken: tokenData.refresh_token,
+        tokenType: tokenData.token_type || 'Bearer',
+        expiresAt: tokenData.expires_at 
+          ? new Date(tokenData.expires_at).getTime() 
+          : undefined,
+      };
+    } catch (error) {
+      console.error(`Failed to get credentials for ${platform}:`, error);
       return null;
     }
-
-    const credentials: OAuthCredentials = {
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token,
-      tokenType: data.token_type,
-      expiresAt: data.expires_at
-        ? new Date(data.expires_at).getTime()
-        : undefined,
-    };
-
-    // Check if token needs refresh
-    if (credentials.expiresAt && credentials.expiresAt < Date.now() + 300000) {
-      // 5 minutes buffer
-      const refreshedCredentials = await this.refreshToken(
-        userId,
-        platform,
-        credentials,
-      );
-      return refreshedCredentials || credentials;
-    }
-
-    return credentials;
   }
 
   // Refresh expired token
@@ -395,14 +387,17 @@ export class OAuthManager {
 
   // Remove stored credentials
   async revokeCredentials(userId: string, platform: string): Promise<void> {
-    const { error } = await supabase
-      .from("oauth_tokens")
-      .delete()
-      .eq("user_id", userId)
-      .eq("platform", platform);
+    try {
+      const response = await fetch(`/api/oauth-tokens/${userId}/${platform}`, {
+        method: 'DELETE',
+      });
 
-    if (error) {
-      throw new Error(`Failed to revoke credentials: ${error.message}`);
+      if (!response.ok) {
+        throw new Error(`Failed to revoke credentials: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error(`Failed to revoke credentials for ${platform}:`, error);
+      throw new Error(`Failed to revoke credentials: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -420,8 +415,18 @@ export class OAuthManager {
     userId: string,
     platform: string,
   ): Promise<boolean> {
-    const credentials = await this.getCredentials(userId, platform);
-    return credentials !== null;
+    try {
+      const response = await fetch(`/api/oauth/status/${userId}`);
+      if (!response.ok) {
+        return false;
+      }
+      
+      const statusData = await response.json();
+      return statusData[platform]?.connected || false;
+    } catch (error) {
+      console.error(`Failed to check credentials for ${platform}:`, error);
+      return false;
+    }
   }
 }
 
