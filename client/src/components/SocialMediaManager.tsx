@@ -102,37 +102,36 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
 
     for (const platform of platforms) {
       try {
-        // Use the same OAuth manager that's working
-        const connected = await oauthManager.hasValidCredentials(userId, platform);
-        
-        // Get profile data if connected
-        let profile = null;
-        if (connected) {
-          try {
-            const credentials = await oauthManager.getCredentials(userId, platform);
-            if (credentials) {
-              // You can fetch profile data here using the access token
-              // This would depend on your API implementation
-              profile = { name: 'Connected User' }; // Placeholder
-            }
-          } catch (error) {
-            console.warn(`Failed to fetch ${platform} profile:`, error);
-          }
+        // Use server API to check OAuth status instead of direct Supabase calls
+        const response = await fetch(`/api/oauth/status/${userId}`);
+        if (response.ok) {
+          const statusData = await response.json();
+          const platformStatus = statusData[platform];
+          
+          statuses.push({
+            platform,
+            connected: platformStatus?.connected || false,
+            loading: false,
+            profile: platformStatus?.profile || null,
+            error: undefined
+          });
+        } else {
+          // Fallback: try direct OAuth manager check
+          const connected = await oauthManager.hasValidCredentials(userId, platform);
+          statuses.push({
+            platform,
+            connected,
+            loading: false,
+            profile: connected ? { name: 'Connected User' } : null
+          });
         }
-        
-        statuses.push({
-          platform,
-          connected,
-          loading: false,
-          profile
-        });
       } catch (error) {
         console.error(`Error checking ${platform}:`, error);
         statuses.push({
           platform,
           connected: false,
           loading: false,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Connection check failed'
         });
       }
     }
