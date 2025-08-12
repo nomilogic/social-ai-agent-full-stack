@@ -47,6 +47,14 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
   };
 
   const handlePublish = async () => {
+    // Check if any selected platforms are not connected
+    const unconnectedPlatforms = selectedPlatforms.filter(p => !connectedPlatforms.includes(p));
+    
+    if (unconnectedPlatforms.length > 0) {
+      setError(`Please connect your ${unconnectedPlatforms.join(', ')} account(s) first before publishing.`);
+      return;
+    }
+    
     setPublishing(true);
     setError(null);
     setPublishProgress({});
@@ -74,9 +82,28 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
   return (
     <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg p-8">
       <h2 className="text-2xl font-bold text-gray-900 mb-4">Publish Your Posts</h2>
-      <p className="mb-6 text-gray-600">Select platforms and publish your AI-generated posts directly.</p>
+      <p className="mb-6 text-gray-600">Connect your social media accounts and publish your AI-generated posts directly.</p>
+      
+      {/* Connection Status Alert */}
+      {posts.some(post => !connectedPlatforms.includes(post.platform)) && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h3 className="text-blue-800 font-medium mb-2">📱 Connect Your Accounts</h3>
+          <p className="text-blue-700 text-sm mb-3">
+            You need to connect your social media accounts before publishing. Click the "Connect" buttons below.
+          </p>
+          <div className="text-sm text-blue-600">
+            <strong>Platforms needing connection:</strong> {' '}
+            {posts
+              .filter(post => !connectedPlatforms.includes(post.platform))
+              .map(post => post.platform)
+              .join(', ')}
+          </div>
+        </div>
+      )}
+
       {/* Social Media Connection Management */}
       <div className="mb-6">
+        <h3 className="font-semibold mb-4 text-gray-900">Social Media Accounts</h3>
         <SocialMediaManager
           userId={userId || ''}
           onCredentialsUpdate={checkConnectedPlatforms}
@@ -135,6 +162,12 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
           })}
         </div>
       </div>
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-800 text-sm">{error}</p>
+        </div>
+      )}
+
       <button
         className={`py-3 px-6 rounded-lg font-medium shadow transition-all duration-200 ${
           selectedPlatforms.length === 0 || selectedPlatforms.every(p => !connectedPlatforms.includes(p))
@@ -146,7 +179,14 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
         onClick={handlePublish}
         disabled={publishing || selectedPlatforms.length === 0 || selectedPlatforms.every(p => !connectedPlatforms.includes(p))}
       >
-        {publishing ? 'Publishing...' : `Publish to ${selectedPlatforms.filter(p => connectedPlatforms.includes(p)).length} Connected Platform${selectedPlatforms.filter(p => connectedPlatforms.includes(p)).length === 1 ? '' : 's'}`}
+        {publishing 
+          ? 'Publishing...' 
+          : selectedPlatforms.length === 0 
+            ? 'Select platforms to publish'
+            : selectedPlatforms.every(p => !connectedPlatforms.includes(p))
+              ? 'Connect accounts first'
+              : `Publish to ${selectedPlatforms.filter(p => connectedPlatforms.includes(p)).length} Connected Platform${selectedPlatforms.filter(p => connectedPlatforms.includes(p)).length === 1 ? '' : 's'}`
+        }
       </button>
       
       {selectedPlatforms.length === 0 && (
