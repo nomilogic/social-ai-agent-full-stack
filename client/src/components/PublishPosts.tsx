@@ -118,7 +118,10 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
             const progress = publishProgress[post.platform];
             
             return (
-              <label key={post.platform} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+              <label key={post.platform} className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
+                !isConnected ? 'border-gray-200 bg-gray-50' : 
+                selectedPlatforms.includes(post.platform) ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+              }`}>
                 <input
                   type="checkbox"
                   checked={selectedPlatforms.includes(post.platform)}
@@ -130,18 +133,18 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
                         : prev.filter(p => p !== post.platform)
                     );
                   }}
-                  className="h-4 w-4 text-blue-600"
+                  className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                 />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="capitalize font-medium">{post.platform}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="capitalize font-medium text-gray-900">{post.platform}</span>
                     {isConnected ? (
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Connected</span>
+                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full flex-shrink-0">Connected</span>
                     ) : (
-                      <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">Not Connected</span>
+                      <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full flex-shrink-0">Not Connected</span>
                     )}
                     {progress && (
-                      <span className={`text-xs px-2 py-1 rounded-full ${
+                      <span className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${
                         progress === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                         progress === 'success' ? 'bg-green-100 text-green-800' :
                         'bg-red-100 text-red-800'

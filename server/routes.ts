@@ -3,7 +3,9 @@ import type { Express } from "express";
 import express from 'express';
 import path from 'path';
 import authRouter from './routes/auth'
-import oauthRouter from './routes/oauth'
+import oauthRoutes from './routes/oauth';
+import oauthEnhancedRoutes from './routes/oauth-enhanced';
+import oauthTokensRoutes from './routes/oauth-tokens';
 import linkedinRouter from './routes/linkedin'
 import socialRouter from './routes/social'
 import aiRouter from './routes/ai'
@@ -20,7 +22,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // API routes
 app.use('/api/auth', authRouter)
-app.use('/api/oauth', oauthRouter)
+app.use('/api/oauth', oauthRoutes);
+  app.use('/api/oauth-enhanced', oauthEnhancedRoutes);
+  app.use('/api/oauth-tokens', oauthTokensRoutes);
 app.use('/api/linkedin', linkedinRouter)
 app.use('/api/social', socialRouter)
 app.use('/api/ai', aiRouter)

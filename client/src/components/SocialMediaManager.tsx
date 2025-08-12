@@ -302,14 +302,21 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
               className="flex items-start justify-between p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
             >
               <div className="flex items-start space-x-3 flex-1">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white bg-${info.color}-600`}>
+                <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white ${
+                  info.color === 'blue' ? 'bg-blue-600' :
+                  info.color === 'pink' ? 'bg-pink-600' :
+                  info.color === 'sky' ? 'bg-sky-600' :
+                  info.color === 'black' ? 'bg-gray-900' :
+                  info.color === 'red' ? 'bg-red-600' :
+                  'bg-blue-600'
+                }`}>
                   <IconComponent className="w-6 h-6" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-medium text-gray-900 mb-1">
                     {info.name}
                   </h4>
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-sm text-gray-600 mb-2 line-clamp-2">
                     {info.description}
                   </p>
                   
@@ -326,7 +333,7 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
                     {status.error && (
                       <div className="flex items-center text-red-600 text-sm">
                         <AlertCircle className="w-4 h-4 mr-1" />
-                        {status.error}
+                        <span className="truncate max-w-32">{status.error}</span>
                       </div>
                     )}
                   </div>
@@ -340,7 +347,7 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
 
                   {/* Features */}
                   <div className="flex flex-wrap gap-1">
-                    {info.features.map((feature) => (
+                    {info.features.slice(0, 3).map((feature) => (
                       <span
                         key={feature}
                         className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded"
@@ -348,6 +355,11 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
                         {feature}
                       </span>
                     ))}
+                    {info.features.length > 3 && (
+                      <span className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
+                        +{info.features.length - 3} more
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
