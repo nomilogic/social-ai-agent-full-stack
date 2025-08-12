@@ -55,7 +55,9 @@ router.get('/linkedin/callback', async (req: Request, res: Response) => {
     user_id = stateData.user_id
   } catch (err) {
     return res.send(`<script>window.opener.postMessage({type: 'oauth_error', platform: 'linkedin', error: 'Invalid state parameter'}, '*'); window.close();</script>`)
-  }</old_str>
+  }
+  
+  const CLIENT_ID = process.env.LINKEDIN_CLIENT_ID as string</old_str>
   
   const CLIENT_ID = process.env.LINKEDIN_CLIENT_ID as string
   const CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET as string
