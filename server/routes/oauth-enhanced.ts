@@ -1,5 +1,8 @@
 import express, { Request, Response } from 'express'
 import axios from 'axios'
+import { db } from '../db'
+import { oauth_tokens } from '../../shared/schema'
+import { eq, and } from 'drizzle-orm'
 
 const router = express.Router()
 
@@ -173,6 +176,63 @@ router.post('/:platform/callback', async (req: Request, res: Response) => {
       } catch (exchangeError) {
         console.warn('Failed to exchange for long-lived token:', exchangeError)
         // Continue with short-lived token
+      }
+    }
+
+    // Store the token in the database - extract user_id from state parameter
+    const { state } = req.body;
+    if (state) {
+      const stateParts = state.split('_');
+      if (stateParts.length >= 2) {
+        const user_id = stateParts[1];
+        
+        try {
+          // Calculate expiry date if expires_in is provided
+          let expires_at: Date | null = null;
+          if (tokenResponse.expires_in) {
+            expires_at = new Date(Date.now() + (tokenResponse.expires_in * 1000));
+          }
+
+          // Store token in database directly
+          const existingToken = await db
+            .select()
+            .from(oauth_tokens)
+            .where(and(
+              eq(oauth_tokens.user_id, user_id),
+              eq(oauth_tokens.platform, platform)
+            ))
+            .limit(1);
+
+          if (existingToken.length > 0) {
+            // Update existing token
+            await db
+              .update(oauth_tokens)
+              .set({
+                access_token: tokenResponse.access_token,
+                refresh_token: tokenResponse.refresh_token,
+                expires_at: expires_at,
+                updated_at: new Date()
+              })
+              .where(and(
+                eq(oauth_tokens.user_id, user_id),
+                eq(oauth_tokens.platform, platform)
+              ));
+          } else {
+            // Insert new token
+            await db.insert(oauth_tokens).values({
+              user_id: user_id,
+              platform: platform,
+              access_token: tokenResponse.access_token,
+              refresh_token: tokenResponse.refresh_token,
+              expires_at: expires_at
+            });
+          }
+          
+          console.log(`Token stored successfully for user ${user_id} on ${platform}`);
+        } catch (storeError) {
+          console.error(`Failed to store token for ${platform}:`, storeError);
+          // Don't fail the request, but log the error
+        }
       }
     }
 

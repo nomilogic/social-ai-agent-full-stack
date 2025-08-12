@@ -161,6 +161,7 @@ export class OAuthManager {
         platform,
         code,
         config,
+        userId,
       );
       console.log(`Token response for ${platform}:`, tokenResponse, config);
       if (!tokenResponse || !tokenResponse.access_token) {
@@ -191,7 +192,39 @@ export class OAuthManager {
     platform: string,
     code: string,
     config: PlatformOAuthConfig,
+    userId?: string,
   ) {
+    // For LinkedIn, use the backend service that saves tokens to database
+    if (platform === 'linkedin') {
+      const tokenData = {
+        code: code,
+        grant_type: "authorization_code",
+        redirect_uri: config.redirectUri,
+        user_id: userId // Include user_id for token storage
+      };
+
+      console.log(
+        `Exchanging LinkedIn code for token via backend service:`, tokenData
+      );
+      
+      const response = await fetch('/api/linkedin/access-token', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(tokenData),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`LinkedIn token exchange failed: ${response.status} ${errorText}`);
+      }
+
+      return response.json();
+    }
+
+    // For other platforms, use direct OAuth flow
     const tokenData = {
       code: code,
       grant_type: "authorization_code",
@@ -207,8 +240,6 @@ export class OAuthManager {
         "Content-Type": "application/x-www-form-urlencoded",
         Accept: "application/json",
       },
-      //body: tokenData,
-      //body: JSON.stringify(tokenData),
       body: new URLSearchParams(tokenData).toString(),
     });
 

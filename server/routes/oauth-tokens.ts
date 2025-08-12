@@ -29,7 +29,7 @@ router.get('/', async (req: Request, res: Response) => {
 
 // POST /api/oauth-tokens - Store new token
 router.post('/', async (req: Request, res: Response) => {
-  const { user_id, platform, access_token, refresh_token, expires_at, profile_data } = req.body;
+  const { user_id, platform, access_token, refresh_token, expires_at } = req.body;
   
   if (!user_id || !platform || !access_token) {
     return res.status(400).json({ error: 'user_id, platform, and access_token are required' });
@@ -54,7 +54,6 @@ router.post('/', async (req: Request, res: Response) => {
           access_token,
           refresh_token,
           expires_at: expires_at ? new Date(expires_at) : null,
-          profile_data,
           updated_at: new Date()
         })
         .where(and(
@@ -68,8 +67,7 @@ router.post('/', async (req: Request, res: Response) => {
         platform,
         access_token,
         refresh_token,
-        expires_at: expires_at ? new Date(expires_at) : null,
-        profile_data
+        expires_at: expires_at ? new Date(expires_at) : null
       });
     }
 
@@ -96,6 +94,70 @@ router.delete('/:userId/:platform', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error deleting OAuth token:', error);
     res.status(500).json({ error: 'Failed to delete OAuth token' });
+  }
+});
+
+// GET /api/oauth/status/:userId - Check connection status for all platforms
+router.get('/status/:userId', async (req: Request, res: Response) => {
+  const { userId } = req.params;
+
+  try {
+    const tokens = await db
+      .select()
+      .from(oauth_tokens)
+      .where(eq(oauth_tokens.user_id, userId));
+
+    const status: Record<string, { connected: boolean; expires_at?: Date }> = {};
+    
+    for (const token of tokens) {
+      const isExpired = token.expires_at && new Date() > token.expires_at;
+      status[token.platform] = {
+        connected: !isExpired,
+        expires_at: token.expires_at || undefined
+      };
+    }
+
+    res.json(status);
+  } catch (error) {
+    console.error('Error checking OAuth status:', error);
+    res.status(500).json({ error: 'Failed to check OAuth status' });
+  }
+});
+
+// GET /api/oauth/token/:userId/:platform - Get specific access token
+router.get('/token/:userId/:platform', async (req: Request, res: Response) => {
+  const { userId, platform } = req.params;
+
+  try {
+    const token = await db
+      .select()
+      .from(oauth_tokens)
+      .where(and(
+        eq(oauth_tokens.user_id, userId),
+        eq(oauth_tokens.platform, platform)
+      ))
+      .limit(1);
+
+    if (token.length === 0) {
+      return res.status(404).json({ error: 'Token not found' });
+    }
+
+    const tokenData = token[0];
+    
+    // Check if token is expired
+    if (tokenData.expires_at && new Date() > tokenData.expires_at) {
+      return res.status(401).json({ error: 'Token expired' });
+    }
+
+    res.json({
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
+      token_type: 'Bearer',
+      expires_at: tokenData.expires_at
+    });
+  } catch (error) {
+    console.error('Error fetching OAuth token:', error);
+    res.status(500).json({ error: 'Failed to fetch OAuth token' });
   }
 });
 
