@@ -27,7 +27,7 @@ router.get("/linkedin", (req: Request, res: Response) => {
     });
   }
 
-  const REDIRECT_URI = `${process.env.VITE_APP_URL || "http://localhost:5000"}/api/oauth/linkedin/callback`;
+  const REDIRECT_URI = `${process.env.VITE_APP_URL || "http://0.0.0.0:5000"}/api/oauth/linkedin/callback`;
   const state = Buffer.from(JSON.stringify({ user_id })).toString("base64");
   const scope = "profile%20w_member_social";
 
@@ -70,7 +70,7 @@ router.get("/linkedin/callback", async (req: Request, res: Response) => {
 
   const CLIENT_ID = process.env.LINKEDIN_CLIENT_ID as string;
   const CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET as string;
-  const REDIRECT_URI = `${process.env.VITE_APP_URL || "http://localhost:5000"}/api/oauth/linkedin/callback`;
+  const REDIRECT_URI = `${process.env.VITE_APP_URL || "http://0.0.0.0:5000"}/api/oauth/linkedin/callback`;
 
   try {
     // Exchange authorization code for access token
@@ -168,7 +168,7 @@ router.get("/linkedin/callback", async (req: Request, res: Response) => {
           platform: 'linkedin',
           profile: ${JSON.stringify(profileData)}
         }, '*');
-        
+
         window.close();
       </script>
     `);
