@@ -12,14 +12,14 @@ const router = express.Router()
 router.get('/linkedin', (req: Request, res: Response) => {
   console.log("Received request for LinkedIn OAuth")
   const { user_id } = req.query
-  
+
   if (!user_id) {
     return res.status(400).json({ error: 'user_id is required' })
   }
-  
+
   const CLIENT_ID = process.env.LINKEDIN_CLIENT_ID as string
   const CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET as string
-  
+
   if (!CLIENT_ID) {
     return res.status(500).json({ error: 'LinkedIn OAuth not configured. Please add LINKEDIN_CLIENT_ID to environment variables.' })
   }
@@ -27,9 +27,9 @@ router.get('/linkedin', (req: Request, res: Response) => {
   const REDIRECT_URI = `${process.env.BASE_URL || 'http://localhost:5000'}/api/oauth/linkedin/callback`
   const state = Buffer.from(JSON.stringify({ user_id })).toString('base64')
   const scope = "profile%20w_member_social"
-  
+
   const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&scope=${scope}`
-  
+
   console.log("Redirecting to LinkedIn OAuth URL:", authUrl)
   res.redirect(authUrl)
 })
@@ -37,9 +37,9 @@ router.get('/linkedin', (req: Request, res: Response) => {
 // GET /api/oauth/linkedin/callback - Handle OAuth callback
 router.get('/linkedin/callback', async (req: Request, res: Response) => {
   console.log("Received LinkedIn OAuth callback with query:", req.query)
-  
+
   const { code, state, error } = req.query
-  
+
   if (error) {
     console.error('LinkedIn OAuth error:', error)
     return res.send(`<script>window.opener.postMessage({type: 'oauth_error', platform: 'linkedin', error: '${error}'}, '*'); window.close();</script>`)
@@ -56,9 +56,7 @@ router.get('/linkedin/callback', async (req: Request, res: Response) => {
   } catch (err) {
     return res.send(`<script>window.opener.postMessage({type: 'oauth_error', platform: 'linkedin', error: 'Invalid state parameter'}, '*'); window.close();</script>`)
   }
-  
-  const CLIENT_ID = process.env.LINKEDIN_CLIENT_ID as string</old_str>
-  
+
   const CLIENT_ID = process.env.LINKEDIN_CLIENT_ID as string
   const CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET as string
   const REDIRECT_URI = `${process.env.BASE_URL || 'http://localhost:5000'}/api/oauth/linkedin/callback`
@@ -154,7 +152,7 @@ router.get('/linkedin/callback', async (req: Request, res: Response) => {
       console.error("Failed to store token in database:", dbErr)
       // Continue anyway - we can still notify the frontend
     }
-    
+
     res.send(`
       <script>
         // Notify parent window of successful OAuth
@@ -163,7 +161,7 @@ router.get('/linkedin/callback', async (req: Request, res: Response) => {
           platform: 'linkedin',
           profile: ${JSON.stringify(profileData)}
         }, '*');
-        
+
         window.close();
       </script>
     `)
@@ -173,7 +171,7 @@ router.get('/linkedin/callback', async (req: Request, res: Response) => {
     const errorMessage = axios.isAxiosError(err) 
       ? err.response?.data?.error_description || err.message
       : 'Token exchange failed'
-    
+
     res.send(`<script>window.opener.postMessage({type: 'oauth_error', platform: 'linkedin', error: '${errorMessage}'}, '*'); window.close();</script>`)
   }
 })
@@ -181,7 +179,7 @@ router.get('/linkedin/callback', async (req: Request, res: Response) => {
 // GET /api/oauth/status/:userId - Check OAuth connection status for all platforms
 router.get('/status/:userId', async (req: Request, res: Response) => {
   const { userId } = req.params
-  
+
   try {
     if (!userId) {
       return res.status(400).json({ error: 'User ID is required' })
@@ -197,7 +195,7 @@ router.get('/status/:userId', async (req: Request, res: Response) => {
       .where(eq(oauth_tokens.user_id, userId))
 
     const status: Record<string, any> = {}
-    
+
     // Initialize all platforms as disconnected first
     const allPlatforms = ['linkedin', 'facebook', 'instagram', 'twitter', 'tiktok', 'youtube']
     allPlatforms.forEach(platform => {
@@ -207,7 +205,7 @@ router.get('/status/:userId', async (req: Request, res: Response) => {
         profile: null
       }
     })
-    
+
     // Update with actual token status
     tokens.forEach(token => {
       const isExpired = token.expires_at ? new Date() > new Date(token.expires_at) : false
@@ -228,7 +226,7 @@ router.get('/status/:userId', async (req: Request, res: Response) => {
 // GET /api/oauth/token/:userId/:platform - Get access token for publishing
 router.get('/token/:userId/:platform', async (req: Request, res: Response) => {
   const { userId, platform } = req.params
-  
+
   try {
     const token = await db
       .select({
@@ -248,7 +246,7 @@ router.get('/token/:userId/:platform', async (req: Request, res: Response) => {
 
     const tokenData = token[0]
     const isExpired = tokenData.expires_at ? new Date() > new Date(tokenData.expires_at) : false
-    
+
     if (isExpired) {
       return res.status(401).json({ error: `${platform} token expired` })
     }
@@ -263,13 +261,13 @@ router.get('/token/:userId/:platform', async (req: Request, res: Response) => {
 // GET /api/oauth/facebook - Initiate Facebook OAuth flow
 router.get('/facebook', (req: Request, res: Response) => {
   const { user_id } = req.query
-  
+
   if (!user_id) {
     return res.status(400).json({ error: 'user_id is required' })
   }
-  
+
   const CLIENT_ID = process.env.FACEBOOK_CLIENT_ID as string
-  
+
   if (!CLIENT_ID) {
     return res.status(500).json({ error: 'Facebook OAuth not configured. Please add FACEBOOK_CLIENT_ID to environment variables.' })
   }
@@ -277,22 +275,22 @@ router.get('/facebook', (req: Request, res: Response) => {
   const REDIRECT_URI = `${process.env.BASE_URL || 'http://localhost:5000'}/api/oauth/facebook/callback`
   const state = Buffer.from(JSON.stringify({ user_id })).toString('base64')
   const scope = "pages_manage_posts,pages_read_engagement"
-  
+
   const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&scope=${scope}`
-  
+
   res.redirect(authUrl)
 })
 
 // GET /api/oauth/instagram - Initiate Instagram OAuth flow
 router.get('/instagram', (req: Request, res: Response) => {
   const { user_id } = req.query
-  
+
   if (!user_id) {
     return res.status(400).json({ error: 'user_id is required' })
   }
-  
+
   const CLIENT_ID = process.env.INSTAGRAM_CLIENT_ID as string
-  
+
   if (!CLIENT_ID) {
     return res.status(500).json({ error: 'Instagram OAuth not configured. Please add INSTAGRAM_CLIENT_ID to environment variables.' })
   }
@@ -300,22 +298,22 @@ router.get('/instagram', (req: Request, res: Response) => {
   const REDIRECT_URI = `${process.env.BASE_URL || 'http://localhost:5000'}/api/oauth/instagram/callback`
   const state = Buffer.from(JSON.stringify({ user_id })).toString('base64')
   const scope = "instagram_basic,instagram_content_publish"
-  
+
   const authUrl = `https://api.instagram.com/oauth/authorize?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&scope=${scope}`
-  
+
   res.redirect(authUrl)
 })
 
 // GET /api/oauth/twitter - Initiate Twitter OAuth flow
 router.get('/twitter', (req: Request, res: Response) => {
   const { user_id } = req.query
-  
+
   if (!user_id) {
     return res.status(400).json({ error: 'user_id is required' })
   }
-  
+
   const CLIENT_ID = process.env.TWITTER_CLIENT_ID as string
-  
+
   if (!CLIENT_ID) {
     return res.status(500).json({ error: 'Twitter OAuth not configured. Please add TWITTER_CLIENT_ID to environment variables.' })
   }
@@ -323,22 +321,22 @@ router.get('/twitter', (req: Request, res: Response) => {
   const REDIRECT_URI = `${process.env.BASE_URL || 'http://localhost:5000'}/api/oauth/twitter/callback`
   const state = Buffer.from(JSON.stringify({ user_id })).toString('base64')
   const scope = "tweet.read tweet.write users.read offline.access"
-  
+
   const authUrl = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&scope=${scope}&code_challenge=challenge&code_challenge_method=plain`
-  
+
   res.redirect(authUrl)
 })
 
 // GET /api/oauth/tiktok - Initiate TikTok OAuth flow
 router.get('/tiktok', (req: Request, res: Response) => {
   const { user_id } = req.query
-  
+
   if (!user_id) {
     return res.status(400).json({ error: 'user_id is required' })
   }
-  
+
   const CLIENT_ID = process.env.TIKTOK_CLIENT_ID as string
-  
+
   if (!CLIENT_ID) {
     return res.status(500).json({ error: 'TikTok OAuth not configured. Please add TIKTOK_CLIENT_ID to environment variables.' })
   }
@@ -346,22 +344,22 @@ router.get('/tiktok', (req: Request, res: Response) => {
   const REDIRECT_URI = `${process.env.BASE_URL || 'http://localhost:5000'}/api/oauth/tiktok/callback`
   const state = Buffer.from(JSON.stringify({ user_id })).toString('base64')
   const scope = "user.info.basic,video.upload"
-  
+
   const authUrl = `https://www.tiktok.com/v2/auth/authorize?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&scope=${scope}`
-  
+
   res.redirect(authUrl)
 })
 
 // GET /api/oauth/youtube - Initiate YouTube OAuth flow
 router.get('/youtube', (req: Request, res: Response) => {
   const { user_id } = req.query
-  
+
   if (!user_id) {
     return res.status(400).json({ error: 'user_id is required' })
   }
-  
+
   const CLIENT_ID = process.env.YOUTUBE_CLIENT_ID as string
-  
+
   if (!CLIENT_ID) {
     return res.status(500).json({ error: 'YouTube OAuth not configured. Please add YOUTUBE_CLIENT_ID to environment variables.' })
   }
@@ -369,9 +367,9 @@ router.get('/youtube', (req: Request, res: Response) => {
   const REDIRECT_URI = `${process.env.BASE_URL || 'http://localhost:5000'}/api/oauth/youtube/callback`
   const state = Buffer.from(JSON.stringify({ user_id })).toString('base64')
   const scope = "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube"
-  
+
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent`
-  
+
   res.redirect(authUrl)
 })
 
