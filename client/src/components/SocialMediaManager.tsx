@@ -182,40 +182,24 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
         )
       );
 
-      // Open OAuth flow in popup window
-      const authUrl = `${import.meta.env.VITE_API_URL || 'http://0.0.0.0:5000/api'}/oauth/${platform}?user_id=${userId}`;
+      // Open OAuth flow in new window
+      const authUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/oauth/${platform}?user_id=${userId}`;
       
       const authWindow = window.open(
         authUrl,
         `${platform}_oauth`,
-        'width=600,height=700,scrollbars=yes,resizable=yes,location=yes,status=yes'
+        'width=600,height=700,scrollbars=yes,resizable=yes'
       );
-
-      if (!authWindow) {
-        throw new Error('Popup blocked. Please allow popups for this site.');
-      }
 
       // Listen for messages from the OAuth callback
       const messageListener = (event: MessageEvent) => {
-        if (event.origin !== (import.meta.env.VITE_API_URL || 'http://0.0.0.0:5000')) return;
+        if (event.origin !== window.location.origin) return;
 
         if (event.data.type === 'oauth_success' && event.data.platform === platform) {
+          // Handle successful OAuth
           console.log('OAuth success for', platform);
-          setPlatformStatuses(prev =>
-            prev.map(status =>
-              status.platform === platform
-                ? { 
-                    ...status, 
-                    connected: true,
-                    loading: false, 
-                    error: undefined,
-                    profile: event.data.profile
-                  }
-                : status
-            )
-          );
+          setTimeout(checkPlatformStatuses, 1000);
           window.removeEventListener('message', messageListener);
-          onCredentialsUpdate?.();
         } else if (event.data.type === 'oauth_error') {
           setPlatformStatuses(prev =>
             prev.map(status =>
