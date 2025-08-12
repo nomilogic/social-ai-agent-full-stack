@@ -22,6 +22,13 @@ The project utilizes a client-server architecture. The frontend is a React Singl
   - Created protected routes with proper authentication flow
   - OAuth callbacks now handled through React Router routes (/oauth/:platform/callback)
   - Comprehensive page structure with nested routing for complex features
+- **OAuth Token Management Fixed (August 12, 2025):**
+  - Added missing OAuth backend endpoints (/api/oauth/status/:userId and /api/oauth/token/:userId/:platform)
+  - Updated LinkedIn access-token service to save tokens to database when user_id is provided
+  - Fixed database schema issues by removing profile_data column references
+  - Updated OAuth manager to use backend LinkedIn service that properly saves tokens
+  - Added LinkedIn OAuth tokens endpoint (/api/linkedin/oauth_tokens) for connection status checking
+  - All OAuth endpoints now working correctly and returning proper responses
 
 **Key Architectural Decisions:**
 *   **Unified Client-Server Deployment**: The React frontend and Express API are served from the same origin on a single port (5000) in production, simplifying deployment and eliminating CORS issues.

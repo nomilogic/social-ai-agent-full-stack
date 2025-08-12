@@ -362,4 +362,51 @@ router.post("/access-token", async (req: Request, res: Response) => {
     }
   }
 });
+
+// GET /api/linkedin/oauth_tokens - Get LinkedIn OAuth tokens for a user
+router.get("/oauth_tokens", async (req: Request, res: Response) => {
+  const { user_id } = req.query;
+
+  if (!user_id || typeof user_id !== 'string') {
+    return res.status(400).json({ error: "user_id parameter is required" });
+  }
+
+  try {
+    console.log(`Fetching LinkedIn tokens for user: ${user_id}`);
+    
+    const tokens = await db
+      .select()
+      .from(oauth_tokens)
+      .where(and(
+        eq(oauth_tokens.user_id, user_id),
+        eq(oauth_tokens.platform, 'linkedin')
+      ))
+      .limit(1);
+
+    if (tokens.length === 0) {
+      return res.json({ connected: false, token: null });
+    }
+
+    const token = tokens[0];
+    
+    // Check if token is expired
+    const isExpired = token.expires_at ? new Date(token.expires_at) < new Date() : false;
+    
+    return res.json({
+      connected: true,
+      expired: isExpired,
+      token: {
+        access_token: token.access_token,
+        refresh_token: token.refresh_token,
+        expires_at: token.expires_at,
+        token_type: token.token_type
+      }
+    });
+    
+  } catch (error) {
+    console.error('Failed to fetch LinkedIn tokens:', error);
+    res.status(500).json({ error: "Failed to fetch LinkedIn tokens" });
+  }
+});
+
 export default router;
