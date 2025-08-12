@@ -281,7 +281,7 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
         Connect your social media accounts to enable direct publishing across all platforms.
       </p>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="space-y-4">
         {platformStatuses.map((status) => {
           const info = platformInfo[status.platform];
           const IconComponent = info.icon;
@@ -289,9 +289,9 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
           return (
             <div
               key={status.platform}
-              className="flex items-start justify-between p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+              className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
             >
-              <div className="flex items-start space-x-3 flex-1">
+              <div className="flex items-center space-x-4 flex-1">
                 <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white ${
                   info.color === 'blue' ? 'bg-blue-600' :
                   info.color === 'pink' ? 'bg-pink-600' :
@@ -302,31 +302,37 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
                 }`}>
                   <IconComponent className="w-6 h-6" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-gray-900 mb-1">
-                    {info.name}
-                  </h4>
-                  <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium text-gray-900">
+                      {info.name}
+                    </h4>
+                    <div className="flex items-center space-x-2">
+                      {status.connected ? (
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                          <Check className="w-3 h-3 inline mr-1" />
+                          Connected
+                        </span>
+                      ) : (
+                        <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
+                          Not Connected
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <p className="text-sm text-gray-600 mb-2">
                     {info.description}
                   </p>
 
-                  {/* Connection Status */}
-                  <div className="flex items-center space-x-2 mb-2">
-                    {status.connected ? (
-                      <div className="flex items-center text-green-600 text-sm">
-                        <Check className="w-4 h-4 mr-1" />
-                        Connected
-                      </div>
-                    ) : (
-                      <span className="text-gray-500 text-sm">Not connected</span>
-                    )}
-                    {status.error && (
-                      <div className="flex items-center text-red-600 text-sm">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        <span className="truncate max-w-32">{status.error}</span>
-                      </div>
-                    )}
-                  </div>
+                  {/* Error Display */}
+                  {status.error && (
+                    <div className="flex items-center text-red-600 text-sm mb-2">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      <span>{status.error}</span>
+                    </div>
+                  )}
 
                   {/* Profile Info */}
                   {status.profile && status.profile.name && (
@@ -355,13 +361,13 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center space-x-2 ml-3">
+              <div className="flex items-center space-x-2 ml-4">
                 {status.connected ? (
                   <>
                     <button
                       onClick={() => handleRefresh(status.platform)}
                       disabled={status.loading}
-                      className="p-2 text-gray-500 hover:text-blue-600 disabled:opacity-50"
+                      className="p-2 text-gray-500 hover:text-blue-600 disabled:opacity-50 rounded-lg hover:bg-gray-100"
                       title="Refresh connection"
                     >
                       <RefreshCw className={`w-4 h-4 ${status.loading ? 'animate-spin' : ''}`} />
@@ -369,7 +375,7 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
                     <button
                       onClick={() => handleDisconnect(status.platform)}
                       disabled={status.loading}
-                      className="p-2 text-gray-500 hover:text-red-600 disabled:opacity-50"
+                      className="p-2 text-gray-500 hover:text-red-600 disabled:opacity-50 rounded-lg hover:bg-gray-100"
                       title="Disconnect"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -379,14 +385,19 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
                   <button
                     onClick={() => handleConnect(status.platform)}
                     disabled={status.loading}
-                    className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {status.loading ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Connecting...</span>
+                      </>
                     ) : (
-                      <ExternalLink className="w-4 h-4" />
+                      <>
+                        <ExternalLink className="w-4 h-4" />
+                        <span>Connect</span>
+                      </>
                     )}
-                    <span>Connect</span>
                   </button>
                 )}
               </div>
