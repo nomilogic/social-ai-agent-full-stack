@@ -22,9 +22,11 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
     if (contentData) {
       generatePosts();
     }
-  }, [contentData]);
+  }, [contentData]); // Restore original dependency
 
   const generatePosts = async () => {
+    if (isGenerating) return; // Prevent duplicate calls
+    
     setIsGenerating(true);
     setProgress(0);
     setCurrentPlatform(null);

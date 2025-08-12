@@ -92,16 +92,24 @@ export const OAuthManager: React.FC<OAuthManagerProps> = ({
         }
 
         authWindow.focus();
-        // If we get here, real OAuth might work
-        // Set up listeners as before...
-        connected = true; // Assume success for now
+        
+        // Monitor window closure and set up proper OAuth flow
+        const checkWindowClosed = setInterval(() => {
+          if (authWindow.closed) {
+            clearInterval(checkWindowClosed);
+            // Window was closed, recheck platform status
+            setTimeout(() => checkPlatformStatuses(), 1000);
+          }
+        }, 1000);
+        
+        connected = false; // Don't assume connection until verified
         
       } catch (oauthError) {
-        console.log('Real OAuth failed, trying mock OAuth:', oauthError);
-        // Fall back to mock OAuth
+        console.log('OAuth error, trying demo mode:', oauthError);
+        // Use demo OAuth as fallback
         connected = await mockOAuth.connectPlatform(platform, userId);
         if (!connected) {
-          error = 'Both real and demo OAuth failed';
+          error = 'Connection failed';
         }
       }
 
