@@ -73,7 +73,7 @@ Analyze this image and provide a detailed description that would be useful for s
 Keep the description concise but informative for social media marketing purposes.
 `;
 
-    const result = await model.generateContent([prompt, imageData]);
+    const result = await model.generateContent([prompt, imageData as any]);
     const response = await result.response;
     return response.text();
   } catch (error) {
@@ -265,7 +265,10 @@ export async function generateAllPosts(
         platform,
         caption: contentData.prompt || `📈 Exciting updates from ${companyInfo.name}!\n\nWe're continuously working to bring you the best in ${companyInfo.industry}. Stay tuned for more updates!`,
         hashtags: getDefaultHashtags(platform, companyInfo.industry),
-        imageUrl: null
+        imageUrl: null,
+        emojis: '✨ 🚀 💫',
+        characterCount: 0,
+        engagement: 'medium' as const
       }));
     }
 
@@ -311,7 +314,7 @@ Analyze this image and provide a detailed description that would be useful for s
 Keep the description concise but informative for social media marketing purposes.
 `;
 
-    const result = await model.generateContent([prompt, imageData]);
+    const result = await model.generateContent([prompt, imageData as any]);
     const response = await result.response;
     const text = response.text();
 

@@ -19,7 +19,7 @@ router.get('/', async (req: Request, res: Response) => {
     let whereCondition = eq(posts.user_id, userId)
 
     if (companyId) {
-      whereCondition = and(eq(posts.user_id, userId), eq(posts.company_id, companyId))
+      whereCondition = and(eq(posts.user_id, userId), eq(posts.company_id, companyId))!
     }
 
     const data = await db
