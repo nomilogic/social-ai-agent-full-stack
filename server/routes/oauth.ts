@@ -1,100 +1,116 @@
-import express, { Request, Response } from 'express'
-import axios from 'axios'
-import { db } from '../db'
-import { oauth_tokens } from '../../shared/schema'
-import { eq, and } from 'drizzle-orm'
+import express, { Request, Response } from "express";
+import axios from "axios";
+import { db } from "../db";
+import { oauth_tokens } from "../../shared/schema";
+import { eq, and } from "drizzle-orm";
 
-const router = express.Router()
+const router = express.Router();
 
 // Environment variables will be read inside route handlers to ensure dotenv has loaded them
 
 // GET /api/oauth/linkedin - Initiate LinkedIn OAuth flow
-router.get('/linkedin', (req: Request, res: Response) => {
-  console.log("Received request for LinkedIn OAuth")
-  const { user_id } = req.query
-  
+router.get("/linkedin", (req: Request, res: Response) => {
+  console.log("Received request for LinkedIn OAuth");
+  const { user_id } = req.query;
+
   if (!user_id) {
-    return res.status(400).json({ error: 'user_id is required' })
-  }
-  
-  const CLIENT_ID = process.env.LINKEDIN_CLIENT_ID as string
-  const CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET as string
-  
-  if (!CLIENT_ID) {
-    return res.status(500).json({ error: 'LinkedIn OAuth not configured. Please add LINKEDIN_CLIENT_ID to environment variables.' })
+    return res.status(400).json({ error: "user_id is required" });
   }
 
-  const REDIRECT_URI = `${process.env.BASE_URL || 'http://localhost:5000'}/api/oauth/linkedin/callback`
-  const state = Buffer.from(JSON.stringify({ user_id })).toString('base64')
-  const scope = "profile%20w_member_social"
-  
-  const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&scope=${scope}`
-  
-  console.log("Redirecting to LinkedIn OAuth URL:", authUrl)
-  res.redirect(authUrl)
-})
+  const CLIENT_ID = process.env.LINKEDIN_CLIENT_ID as string;
+  const CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET as string;
+
+  if (!CLIENT_ID) {
+    return res.status(500).json({
+      error:
+        "LinkedIn OAuth not configured. Please add LINKEDIN_CLIENT_ID to environment variables.",
+    });
+  }
+
+  const REDIRECT_URI = `${process.env.VITE_APP_URL || "http://localhost:5000"}/api/oauth/linkedin/callback`;
+  const state = Buffer.from(JSON.stringify({ user_id })).toString("base64");
+  const scope = "profile%20w_member_social";
+
+  const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&scope=${scope}`;
+
+  console.log("Redirecting to LinkedIn OAuth URL:", authUrl);
+  res.redirect(authUrl);
+});
 
 // GET /api/oauth/linkedin/callback - Handle OAuth callback
-router.get('/linkedin/callback', async (req: Request, res: Response) => {
-  console.log("Received LinkedIn OAuth callback with query:", req.query)
-  
-  const { code, state, error } = req.query
-  
+router.get("/linkedin/callback", async (req: Request, res: Response) => {
+  console.log("Received LinkedIn OAuth callback with query:", req.query);
+
+  const { code, state, error } = req.query;
+
   if (error) {
-    console.error('LinkedIn OAuth error:', error)
-    return res.send(`<script>window.opener.postMessage({type: 'oauth_error', platform: 'linkedin', error: '${error}'}, '*'); window.close();</script>`)
+    console.error("LinkedIn OAuth error:", error);
+    return res.send(
+      `<script>window.opener.postMessage({type: 'oauth_error', platform: 'linkedin', error: '${error}'}, '*'); window.close();</script>`,
+    );
   }
 
   if (!code || !state) {
-    return res.send(`<script>window.opener.postMessage({type: 'oauth_error', platform: 'linkedin', error: 'Missing code or state'}, '*'); window.close();</script>`)
+    return res.send(
+      `<script>window.opener.postMessage({type: 'oauth_error', platform: 'linkedin', error: 'Missing code or state'}, '*'); window.close();</script>`,
+    );
   }
 
-  let user_id
+  let user_id;
   try {
-    const stateData = JSON.parse(Buffer.from(state as string, 'base64').toString())
-    user_id = stateData.user_id
+    const stateData = JSON.parse(
+      Buffer.from(state as string, "base64").toString(),
+    );
+    user_id = stateData.user_id;
   } catch (err) {
-    return res.send(`<script>window.opener.postMessage({type: 'oauth_error', platform: 'linkedin', error: 'Invalid state parameter'}, '*'); window.close();</script>`)
+    return res.send(
+      `<script>window.opener.postMessage({type: 'oauth_error', platform: 'linkedin', error: 'Invalid state parameter'}, '*'); window.close();</script>`,
+    );
   }
-  
-  const CLIENT_ID = process.env.LINKEDIN_CLIENT_ID as string
-  const CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET as string
-  const REDIRECT_URI = `${process.env.BASE_URL || 'http://localhost:5000'}/api/oauth/linkedin/callback`
+
+  const CLIENT_ID = process.env.LINKEDIN_CLIENT_ID as string;
+  const CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET as string;
+  const REDIRECT_URI = `${process.env.VITE_APP_URL || "http://localhost:5000"}/api/oauth/linkedin/callback`;
 
   try {
     // Exchange authorization code for access token
     const tokenParams = new URLSearchParams({
-      grant_type: 'authorization_code',
+      grant_type: "authorization_code",
       code: code as string,
       redirect_uri: REDIRECT_URI,
       client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET
-    })
+      client_secret: CLIENT_SECRET,
+    });
 
-    console.log("Exchanging code for access token...")
+    console.log("Exchanging code for access token...");
     const tokenResponse = await axios.post(
-      'https://www.linkedin.com/oauth/v2/accessToken',
+      "https://www.linkedin.com/oauth/v2/accessToken",
       tokenParams.toString(),
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-    )
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
+    );
 
-    const { access_token, expires_in, scope } = tokenResponse.data
-    console.log("Received access token from LinkedIn")
+    const { access_token, expires_in, scope } = tokenResponse.data;
+    console.log("Received access token from LinkedIn");
 
     // Get user profile from LinkedIn
-    let profileData = null
+    let profileData = null;
     try {
-      const profileResponse = await axios.get('https://api.linkedin.com/v2/userinfo', {
-        headers: { Authorization: `Bearer ${access_token}` }
-      })
-      profileData = profileResponse.data
-      console.log("Retrieved LinkedIn profile:", profileData)
+      const profileResponse = await axios.get(
+        "https://api.linkedin.com/v2/userinfo",
+        {
+          headers: { Authorization: `Bearer ${access_token}` },
+        },
+      );
+      profileData = profileResponse.data;
+      console.log("Retrieved LinkedIn profile:", profileData);
     } catch (profileErr) {
-      console.warn("Failed to retrieve LinkedIn profile:", profileErr)
+      console.warn("Failed to retrieve LinkedIn profile:", profileErr);
     }
 
     // Calculate expiration time
-    const expiresAt = expires_in ? new Date(Date.now() + expires_in * 1000) : null
+    const expiresAt = expires_in
+      ? new Date(Date.now() + expires_in * 1000)
+      : null;
 
     // Store or update access token in database
     try {
@@ -102,11 +118,13 @@ router.get('/linkedin/callback', async (req: Request, res: Response) => {
       const existingToken = await db
         .select()
         .from(oauth_tokens)
-        .where(and(
-          eq(oauth_tokens.user_id, user_id),
-          eq(oauth_tokens.platform, 'linkedin')
-        ))
-        .limit(1)
+        .where(
+          and(
+            eq(oauth_tokens.user_id, user_id),
+            eq(oauth_tokens.platform, "linkedin"),
+          ),
+        )
+        .limit(1);
 
       if (existingToken.length > 0) {
         // Update existing token
@@ -117,29 +135,31 @@ router.get('/linkedin/callback', async (req: Request, res: Response) => {
             expires_at: expiresAt,
             scope,
             profile_data: profileData,
-            updated_at: new Date()
+            updated_at: new Date(),
           })
-          .where(and(
-            eq(oauth_tokens.user_id, user_id),
-            eq(oauth_tokens.platform, 'linkedin')
-          ))
+          .where(
+            and(
+              eq(oauth_tokens.user_id, user_id),
+              eq(oauth_tokens.platform, "linkedin"),
+            ),
+          );
       } else {
         // Insert new token
         await db.insert(oauth_tokens).values({
           user_id,
-          platform: 'linkedin',
+          platform: "linkedin",
           access_token,
           expires_at: expiresAt,
           scope,
-          profile_data: profileData
-        })
+          profile_data: profileData,
+        });
       }
-      console.log("Stored LinkedIn access token in database")
+      console.log("Stored LinkedIn access token in database");
     } catch (dbErr) {
-      console.error("Failed to store token in database:", dbErr)
+      console.error("Failed to store token in database:", dbErr);
       // Continue anyway - we can still notify the frontend
     }
-    
+
     res.send(`
       <script>
         // Notify parent window of successful OAuth
@@ -151,83 +171,90 @@ router.get('/linkedin/callback', async (req: Request, res: Response) => {
         
         window.close();
       </script>
-    `)
-
+    `);
   } catch (err) {
-    console.error('LinkedIn OAuth token exchange failed:', err)
-    const errorMessage = axios.isAxiosError(err) 
+    console.error("LinkedIn OAuth token exchange failed:", err);
+    const errorMessage = axios.isAxiosError(err)
       ? err.response?.data?.error_description || err.message
-      : 'Token exchange failed'
-    
-    res.send(`<script>window.opener.postMessage({type: 'oauth_error', platform: 'linkedin', error: '${errorMessage}'}, '*'); window.close();</script>`)
+      : "Token exchange failed";
+
+    res.send(
+      `<script>window.opener.postMessage({type: 'oauth_error', platform: 'linkedin', error: '${errorMessage}'}, '*'); window.close();</script>`,
+    );
   }
-})
+});
 
 // GET /api/oauth/status/:userId - Check OAuth connection status for all platforms
-router.get('/status/:userId', async (req: Request, res: Response) => {
-  const { userId } = req.params
-  
+router.get("/status/:userId", async (req: Request, res: Response) => {
+  const { userId } = req.params;
+
   try {
     const tokens = await db
       .select({
         platform: oauth_tokens.platform,
         expires_at: oauth_tokens.expires_at,
-        profile_data: oauth_tokens.profile_data
+        profile_data: oauth_tokens.profile_data,
       })
       .from(oauth_tokens)
-      .where(eq(oauth_tokens.user_id, userId))
+      .where(eq(oauth_tokens.user_id, userId));
 
-    const status: Record<string, any> = {}
-    
-    tokens.forEach(token => {
-      const isExpired = token.expires_at ? new Date() > new Date(token.expires_at) : false
+    const status: Record<string, any> = {};
+
+    tokens.forEach((token) => {
+      const isExpired = token.expires_at
+        ? new Date() > new Date(token.expires_at)
+        : false;
       status[token.platform] = {
         connected: !isExpired,
         expired: isExpired,
-        profile: token.profile_data
-      }
-    })
+        profile: token.profile_data,
+      };
+    });
 
-    res.json(status)
+    res.json(status);
   } catch (error) {
-    console.error('Failed to check OAuth status:', error)
-    res.status(500).json({ error: 'Failed to check OAuth status' })
+    console.error("Failed to check OAuth status:", error);
+    res.status(500).json({ error: "Failed to check OAuth status" });
   }
-})
+});
 
 // GET /api/oauth/token/:userId/:platform - Get access token for publishing
-router.get('/token/:userId/:platform', async (req: Request, res: Response) => {
-  const { userId, platform } = req.params
-  
+router.get("/token/:userId/:platform", async (req: Request, res: Response) => {
+  const { userId, platform } = req.params;
+
   try {
     const token = await db
       .select({
         access_token: oauth_tokens.access_token,
-        expires_at: oauth_tokens.expires_at
+        expires_at: oauth_tokens.expires_at,
       })
       .from(oauth_tokens)
-      .where(and(
-        eq(oauth_tokens.user_id, userId),
-        eq(oauth_tokens.platform, platform)
-      ))
-      .limit(1)
+      .where(
+        and(
+          eq(oauth_tokens.user_id, userId),
+          eq(oauth_tokens.platform, platform),
+        ),
+      )
+      .limit(1);
 
     if (!token.length) {
-      return res.status(404).json({ error: `No ${platform} token found` })
+      return res.status(404).json({ error: `No ${platform} token found` });
     }
 
-    const tokenData = token[0]
-    const isExpired = tokenData.expires_at ? new Date() > new Date(tokenData.expires_at) : false
-    
+    const tokenData = token[0];
+    const isExpired = tokenData.expires_at
+      ? new Date() > new Date(tokenData.expires_at)
+      : false;
+
     if (isExpired) {
-      return res.status(401).json({ error: `${platform} token expired` })
+      return res.status(401).json({ error: `${platform} token expired` });
     }
 
-    res.json({ access_token: tokenData.access_token })
+    res.json({ access_token: tokenData.access_token });
   } catch (error) {
-    console.error('Failed to get OAuth token:', error)
-    res.status(500).json({ error: 'Failed to get OAuth token' })
+    console.error("Failed to get OAuth token:", error);
+    res.status(500).json({ error: "Failed to get OAuth token" });
   }
-})
+});
 
-export default router
+export default router;
