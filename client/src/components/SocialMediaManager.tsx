@@ -4,15 +4,11 @@ import {
   ExternalLink, 
   RefreshCw, 
   Trash2, 
-  AlertCircle, 
-  Users, 
-  Camera,
-  MessageCircle,
-  Music,
-  Play
+  AlertCircle
 } from 'lucide-react';
 import { Platform } from '../types';
 import { oauthManager } from '../lib/oauth';
+import { getPlatformIcon, getPlatformDisplayName } from '../utils/platformIcons';
 
 interface SocialMediaManagerProps {
   userId: string;
@@ -28,8 +24,6 @@ interface PlatformStatus {
 }
 
 interface PlatformInfo {
-  name: string;
-  icon: React.ComponentType<{ className?: string }>;
   color: string;
   description: string;
   features: string[];
@@ -37,43 +31,31 @@ interface PlatformInfo {
 
 const platformInfo: Record<Platform, PlatformInfo> = {
   linkedin: {
-    name: 'LinkedIn',
-    icon: Users,
     color: 'blue',
     description: 'Professional networking and business content',
     features: ['Text posts', 'Image posts', 'Professional networking']
   },
   facebook: {
-    name: 'Facebook',
-    icon: MessageCircle,
     color: 'blue',
     description: 'Social networking and community engagement',
     features: ['Text posts', 'Image posts', 'Page management', 'Community building']
   },
   instagram: {
-    name: 'Instagram',
-    icon: Camera,
     color: 'pink',
     description: 'Visual storytelling and lifestyle content',
     features: ['Image posts', 'Carousel posts', 'Stories', 'Business accounts']
   },
   twitter: {
-    name: 'Twitter/X',
-    icon: MessageCircle,
     color: 'sky',
     description: 'Real-time news and microblogging',
     features: ['Text tweets', 'Image tweets', 'Thread creation', 'Real-time updates']
   },
   tiktok: {
-    name: 'TikTok',
-    icon: Music,
     color: 'black',
     description: 'Short-form video content creation',
     features: ['Video posts', 'Trending content', 'Creative tools', 'Music integration']
   },
   youtube: {
-    name: 'YouTube',
-    icon: Play,
     color: 'red',
     description: 'Long-form video content and education',
     features: ['Video uploads', 'Channel management', 'Monetization', 'Analytics']
@@ -207,7 +189,7 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
   };
 
   const handleDisconnect = async (platform: Platform) => {
-    if (!confirm(`Are you sure you want to disconnect ${platformInfo[platform].name}?`)) {
+    if (!confirm(`Are you sure you want to disconnect ${getPlatformDisplayName(platform)}?`)) {
       return;
     }
 
@@ -284,7 +266,7 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
       <div className="space-y-4">
         {platformStatuses.map((status) => {
           const info = platformInfo[status.platform];
-          const IconComponent = info.icon;
+          const IconComponent = getPlatformIcon(status.platform);
 
           return (
             <div
@@ -300,13 +282,13 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
                   info.color === 'red' ? 'bg-red-600' :
                   'bg-blue-600'
                 }`}>
-                  <IconComponent className="w-6 h-6" />
+                  {IconComponent && <IconComponent className="w-6 h-6" />}
                 </div>
                 
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-medium text-gray-900">
-                      {info.name}
+                      {getPlatformDisplayName(status.platform)}
                     </h4>
                     <div className="flex items-center space-x-2">
                       {status.connected ? (
