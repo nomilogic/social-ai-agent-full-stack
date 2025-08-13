@@ -285,19 +285,44 @@ export async function postToAllPlatforms(
       onProgress?.(post.platform, 'pending');
       console.log(`Attempting to post to ${post.platform} for user ${userId}`);
       
-      // Try mock OAuth first since it's more likely to work in demo
-      const mockResult = await mockOAuth.publishPost(post.platform, userId, post);
+      // First, try to get real OAuth tokens
+      let realPostResult = null;
+      try {
+        const tokenResponse = await fetch(`/api/oauth/token/${userId}/${post.platform}`);
+        if (tokenResponse.ok) {
+          const tokenData = await tokenResponse.json();
+          if (tokenData.access_token) {
+            console.log(`Found real OAuth token for ${post.platform}, attempting real post`);
+            realPostResult = await postWithRealOAuth(post, tokenData.access_token);
+          }
+        }
+      } catch (error) {
+        console.log(`Real OAuth failed for ${post.platform}, will try demo mode:`, error);
+      }
       
-      if (mockResult.success) {
+      if (realPostResult?.success) {
         results[post.platform] = { 
           success: true, 
-          data: mockResult,
-          method: 'demo' 
+          data: realPostResult,
+          method: 'real' 
         };
         onProgress?.(post.platform, 'success');
-        console.log(`Successfully posted to ${post.platform} via demo mode`);
+        console.log(`Successfully posted to ${post.platform} via real OAuth`);
       } else {
-        throw new Error(mockResult.message);
+        // Fall back to mock OAuth for demo
+        const mockResult = await mockOAuth.publishPost(post.platform, userId, post);
+        
+        if (mockResult.success) {
+          results[post.platform] = { 
+            success: true, 
+            data: mockResult,
+            method: 'demo' 
+          };
+          onProgress?.(post.platform, 'success');
+          console.log(`Successfully posted to ${post.platform} via demo mode`);
+        } else {
+          throw new Error(mockResult.message);
+        }
       }
       
     } catch (error: any) {
@@ -316,6 +341,50 @@ export async function postToAllPlatforms(
   }
   
   return results;
+}
+
+// Function to handle real OAuth posting
+async function postWithRealOAuth(post: GeneratedPost, accessToken: string): Promise<{ success: boolean; message: string; postId?: string }> {
+  try {
+    switch (post.platform) {
+      case 'linkedin':
+        const result = await postToLinkedInFromServer(accessToken, post);
+        return {
+          success: true,
+          message: `Successfully posted to LinkedIn`,
+          postId: result.data.id
+        };
+      
+      case 'facebook':
+        // Add real Facebook posting logic here
+        throw new Error('Real Facebook posting not implemented yet');
+      
+      case 'instagram':
+        // Add real Instagram posting logic here
+        throw new Error('Real Instagram posting not implemented yet');
+      
+      case 'twitter':
+        // Add real Twitter posting logic here
+        throw new Error('Real Twitter posting not implemented yet');
+      
+      case 'tiktok':
+        // Add real TikTok posting logic here
+        throw new Error('Real TikTok posting not implemented yet');
+      
+      case 'youtube':
+        // Add real YouTube posting logic here
+        throw new Error('Real YouTube posting not implemented yet');
+      
+      default:
+        throw new Error(`Unsupported platform: ${post.platform}`);
+    }
+  } catch (error: any) {
+    console.error(`Real OAuth posting failed for ${post.platform}:`, error);
+    return {
+      success: false,
+      message: error.message || `Failed to post to ${post.platform}`
+    };
+  }
 }
 
 // Enhanced error handling with retry logic
