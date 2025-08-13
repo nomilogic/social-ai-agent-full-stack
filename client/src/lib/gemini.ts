@@ -228,34 +228,122 @@ export async function generateAllPosts(
   contentData: PostContent,
   onProgress?: (platform: Platform, progress: number) => void
 ): Promise<GeneratedPost[]> {
+  const platforms = companyInfo.platforms || contentData.selectedPlatforms || ['linkedin'];
+  const posts: GeneratedPost[] = [];
+  
+  console.log('Generating posts for platforms:', platforms);
+  
   try {
     const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : 'http://localhost:5000');
-    const response = await fetch(`${apiUrl}/api/ai/generate-posts`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        companyInfo,
-        contentData,
-        platforms: companyInfo.platforms || ['linkedin']
-      })
-    });
+    
+    // Generate posts for each platform with progress updates
+    for (let i = 0; i < platforms.length; i++) {
+      const platform = platforms[i] as Platform;
+      const progress = ((i + 1) / platforms.length) * 100;
+      
+      // Update progress
+      if (onProgress) {
+        onProgress(platform, progress);
+      }
+      
+      console.log(`Generating content for ${platform}...`);
+      
+      try {
+        // Make individual API call for each platform to get proper generation
+        const response = await fetch(`${apiUrl}/api/ai/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            company: {
+              name: companyInfo.name,
+              industry: companyInfo.industry,
+              description: companyInfo.description,
+              targetAudience: companyInfo.targetAudience,
+              brandTone: companyInfo.brandTone
+            },
+            content: {
+              topic: contentData.prompt,
+              contentType: contentData.contentType || 'general',
+              tone: contentData.tone || companyInfo.brandTone,
+              targetAudience: contentData.targetAudience || companyInfo.targetAudience,
+              tags: contentData.tags || []
+            },
+            platforms: [platform]
+          })
+        });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        if (!response.ok) {
+          console.warn(`Failed to generate content for ${platform}, using fallback`);
+          throw new Error(`Generation failed for ${platform}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.success && data.posts && data.posts.length > 0) {
+          const post = data.posts[0];
+          
+          // Parse the generated content to extract caption and hashtags
+          let caption = post.content || contentData.prompt || 'Check out our latest updates!';
+          let hashtags: string[] = [];
+          
+          // Extract hashtags from content
+          const hashtagMatches = caption.match(/#\w+/g);
+          if (hashtagMatches) {
+            hashtags = hashtagMatches.slice(0, 5);
+            // Clean hashtags from caption
+            caption = caption.replace(/#\w+(\s+#\w+)*/g, '').trim();
+          }
+          
+          // Add default hashtags if none found
+          if (hashtags.length === 0) {
+            hashtags = [`#${companyInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`, '#socialmedia'];
+          }
+
+          posts.push({
+            platform,
+            caption: caption,
+            hashtags: hashtags,
+            imageUrl: contentData.mediaUrl || null,
+            success: true
+          });
+        } else {
+          throw new Error('No content generated');
+        }
+      } catch (platformError) {
+        console.error(`Error generating for ${platform}:`, platformError);
+        
+        // Add fallback post for this platform
+        posts.push({
+          platform,
+          caption: contentData.prompt || 'Check out our latest updates!',
+          hashtags: [`#${companyInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`, '#update'],
+          imageUrl: contentData.mediaUrl || null,
+          success: false,
+          error: platformError instanceof Error ? platformError.message : 'Generation failed'
+        });
+      }
+      
+      // Small delay between platforms for better UX
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    const data = await response.json();
+    console.log('Generated posts:', posts);
+    return posts;
 
-    if (!data.success) {
-      throw new Error(data.error || 'Failed to generate posts');
-    }
-
-    return data.posts || [];
   } catch (error: any) {
     console.error('Error in generateAllPosts:', error);
+    
+    // Return fallback posts for all platforms
+    return platforms.map((platform: Platform) => ({
+      platform,
+      caption: contentData.prompt || 'Check out our latest updates!',
+      hashtags: [`#${companyInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`],
+      imageUrl: contentData.mediaUrl || null,
+      success: false,
+      error: error.message || 'AI generation failed'
+    }));ole.error('Error in generateAllPosts:', error);
 
     // Check for quota errors
     if (error.message && (error.message.includes('quota') || error.message.includes('429'))) {

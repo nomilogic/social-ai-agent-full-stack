@@ -17,6 +17,10 @@ interface PostPreviewProps {
   onBack: () => void;
   onEdit: () => void;
   onPublish?: () => void;
+  onPostsUpdate: (updatedPosts: GeneratedPost[]) => void; // Added prop
+  editingPost: GeneratedPost | null; // Added prop
+  setEditingIndex: React.Dispatch<React.SetStateAction<number | null>>; // Added prop
+  editingIndex: number | null; // Added prop
 }
 
 export const PostPreview: React.FC<PostPreviewProps> = ({
@@ -24,6 +28,10 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
   onBack,
   onEdit,
   onPublish,
+  onPostsUpdate, // Receive the new prop
+  editingPost, // Receive the new prop
+  setEditingIndex, // Receive the new prop
+  editingIndex, // Receive the new prop
 }) => {
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>(
     generatedPosts[0]?.platform || "facebook",
@@ -355,6 +363,22 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
     (post) => post.platform === selectedPlatform,
   );
 
+  // Handle save logic
+  const handleSave = (postIndex: number, updatedPost: any) => {
+    console.log('Saving post:', postIndex, updatedPost);
+    const updatedPosts = [...generatedPosts]; // Use generatedPosts here
+    updatedPosts[postIndex] = {
+      ...updatedPosts[postIndex],
+      caption: updatedPost.caption || updatedPost.content || '', // Ensure caption is always set
+      hashtags: updatedPost.hashtags || [],
+      imageUrl: updatedPost.imageUrl || updatedPosts[postIndex].imageUrl // Preserve existing imageUrl if not in updatedPost
+    };
+    console.log('Updated posts:', updatedPosts);
+    onPostsUpdate(updatedPosts);
+    setEditingIndex(null);
+  };
+
+
   return (
     <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-lg p-8">
       <div className="text-center mb-8">
@@ -376,7 +400,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
             Select Platform
           </h3>
           <div className="space-y-3">
-            {generatedPosts.map((post) => (
+            {generatedPosts.map((post, index) => (
               <button
                 key={post.platform}
                 onClick={() => setSelectedPlatform(post.platform)}
