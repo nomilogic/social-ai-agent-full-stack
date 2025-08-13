@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, ChevronDown, Check, Info, Zap, DollarSign, Clock, Brain } from 'lucide-react';
+import { Settings, ChevronDown, Check, Info, Zap, DollarSign, Clock, Brain, Bot, Search, Sparkles } from 'lucide-react';
 import { AIModel, aiService, AI_MODELS, IMAGE_MODELS } from '../lib/aiService';
 
 interface AIModelSelectorProps {
@@ -62,13 +62,13 @@ export const AIModelSelector: React.FC<AIModelSelectorProps> = ({
   const getProviderIcon = (provider: string) => {
     switch (provider) {
       case 'openai':
-        return '🤖';
+        return Bot;
       case 'google':
-        return '🔍';
+        return Search;
       case 'anthropic':
-        return '🧠';
+        return Brain;
       default:
-        return '⚡';
+        return Sparkles;
     }
   };
 
@@ -116,7 +116,12 @@ export const AIModelSelector: React.FC<AIModelSelectorProps> = ({
     >
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center space-x-2">
-          <span className="text-lg">{getProviderIcon(model.provider)}</span>
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getProviderColor(model.provider)} bg-opacity-20`}>
+            {(() => {
+              const IconComponent = getProviderIcon(model.provider);
+              return <IconComponent className={`w-4 h-4 ${getProviderColor(model.provider).split(' ')[1]}`} />;
+            })()}
+          </div>
           <div>
             <h3 className="font-semibold text-gray-900">{model.name}</h3>
             <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${getProviderColor(model.provider)}`}>
