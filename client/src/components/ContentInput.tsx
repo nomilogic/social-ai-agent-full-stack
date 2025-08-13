@@ -26,6 +26,7 @@ import { uploadMedia, getCurrentUser } from "../lib/database";
 import { analyzeImage as analyzeImageWithGemini } from "../lib/gemini"; // Renamed to avoid conflict
 import { AIImageGenerator } from "./AIImageGenerator";
 import { platformOptions } from "../utils/platformIcons";
+import { PostPreview } from "./PostPreview"; // Assuming PostPreview is in the same directory
 
 // Helper function to convert file to base64
 const fileToBase64 = (file: File): Promise<string> => {
@@ -45,7 +46,7 @@ const fileToBase64 = (file: File): Promise<string> => {
 };
 
 interface ContentInputProps {
-  onNext: (data: PostContent) => void;
+  onNext?: (data?: PostContent) => void; // Made optional for preview navigation
   onBack: () => void;
   initialData?: Partial<PostContent>;
   selectedPlatforms?: Platform[];
@@ -77,6 +78,18 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const [useForAIReference, setUseForAIReference] = useState(true);
   const [useInPost, setUseInPost] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // State for generated posts and preview
+  const [analyzing, setAnalyzing] = useState(false);
+  const [generatedResults, setGeneratedResults] = useState<PostContent[] | null>(null); // Assuming GeneratedPost is PostContent for now
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+
+  const handleNext = () => {
+    if (generatedResults && generatedResults.length > 0) {
+      setShowPreview(true);
+    }
+  };
 
   // Initialize with existing data when in edit mode
   useEffect(() => {
@@ -235,22 +248,26 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         ? [{ url: formData.mediaUrl, type: formData.media?.type || "image" }]
         : [];
 
-      // Navigate to generator with all the data
-      onNext({
-        ...formData,
-        prompt: formData.prompt,
-        selectedPlatforms: formData.selectedPlatforms,
-        platforms: formData.selectedPlatforms,
-        companyName: companyInfo.name,
-        companyInfo,
-        mediaAssets,
-        analysisResults: imageAnalysis,
-        industry: companyInfo.industry,
-        tone: companyInfo.brand_tone,
-        targetAudience: companyInfo.target_audience,
-        description: companyInfo.description,
-        imageAnalysis: imageAnalysis,
-      });
+      // Simulate generating results and then call handleNext
+      const simulatedGeneratedPosts: PostContent[] = [
+        {
+          ...formData,
+          prompt: formData.prompt,
+          selectedPlatforms: formData.selectedPlatforms,
+          platforms: formData.selectedPlatforms,
+          companyName: companyInfo.name,
+          companyInfo,
+          mediaAssets,
+          analysisResults: imageAnalysis,
+          industry: companyInfo.industry,
+          tone: companyInfo.brand_tone,
+          targetAudience: companyInfo.target_audience,
+          description: companyInfo.description,
+          imageAnalysis: imageAnalysis,
+        },
+      ];
+      setGeneratedResults(simulatedGeneratedPosts);
+      handleNext();
     }
   };
 
@@ -708,6 +725,19 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           contentText={formData.prompt}
           selectedPlatforms={formData.selectedPlatforms}
           onClose={() => setShowAIGenerator(false)}
+        />
+      )}
+
+      {/* Post Preview Modal */}
+      {showPreview && generatedResults && (
+        <PostPreview
+          posts={generatedResults}
+          onBack={() => setShowPreview(false)}
+          onEdit={() => setShowPreview(false)}
+          onPublish={() => {
+            // Navigate to publish page
+            if (onNext) onNext(generatedResults[0]); // Pass the first generated post for publishing
+          }}
         />
       )}
     </div>
