@@ -439,26 +439,28 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
           {/* Image Analysis Results - Show prominently when available */}
           {imageAnalysis && (
-            <div className="lg:col-span-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6 mb-6 shadow-sm">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h4 className="font-semibold text-blue-900 mb-3 flex items-center text-lg">
-                    <Eye className="w-5 h-5 mr-2" />
-                    🤖 AI Image Analysis Complete
-                  </h4>
-                  <p className="text-blue-800 text-sm leading-relaxed mb-4">{imageAnalysis}</p>
-                  <div className="flex items-center text-xs text-blue-600">
-                    <Sparkles className="w-4 h-4 mr-1" />
-                    <span>Click "Add to Description" to use this analysis in your content</span>
-                  </div>
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 shadow-sm">
+              <div className="space-y-3">
+                <h4 className="font-semibold text-blue-900 flex items-center text-sm">
+                  <Eye className="w-4 h-4 mr-2" />
+                  🤖 AI Image Analysis Complete
+                </h4>
+                <div className="max-h-32 overflow-y-auto">
+                  <p className="text-blue-800 text-xs leading-relaxed">{imageAnalysis}</p>
                 </div>
-                <button
-                  onClick={useImageAnalysis}
-                  className="ml-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center space-x-2"
-                >
-                  <span>Add to Description</span>
-                  <span className="text-lg">✨</span>
-                </button>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center text-xs text-blue-600">
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    <span className="text-xs">Click "Add to Description" to use this analysis</span>
+                  </div>
+                  <button
+                    onClick={useImageAnalysis}
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center space-x-1"
+                  >
+                    <span>Add to Description</span>
+                    <span>✨</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}
