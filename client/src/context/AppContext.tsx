@@ -113,6 +113,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const currentUser = await getCurrentUser();
         if (currentUser) {
           dispatch({ type: 'SET_USER', payload: currentUser });
+
+          // Check if user has completed onboarding by checking for profile
+          try {
+            const response = await fetch(`/api/auth/profile?userId=${currentUser.id}`);
+            if (response.ok) {
+              const profile = await response.json();
+              if (profile && profile.plan) {
+                dispatch({ type: 'SET_USER_PLAN', payload: profile.plan });
+                dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: true });
+              }
+            }
+          } catch (profileError) {
+            console.log('No profile found, user needs onboarding');
+          }
         }
       } catch (error) {
         console.error('Error initializing auth:', error);

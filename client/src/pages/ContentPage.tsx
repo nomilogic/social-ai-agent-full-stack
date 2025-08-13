@@ -29,7 +29,7 @@ export const ContentPage: React.FC = () => {
         // Continue anyway - we can still preview the posts
       }
     }
-    
+
     dispatch({ type: 'SET_GENERATED_POSTS', payload: posts });
     navigate('/content/preview');
   };
@@ -48,89 +48,97 @@ export const ContentPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Create Content</h1>
-        <p className="text-gray-600 mt-2">Generate AI-powered social media content for your brand.</p>
-      </div>
-
-      <ProgressBar
-        currentStep={getCurrentStep()}
-        totalSteps={4}
-        stepLabels={stepLabels}
-      />
-
-      <Routes>
-        <Route
-          index
-          element={
-            <ContentInput
-              onNext={handleContentNext}
-              onBack={() => navigate('/dashboard')}
-              initialData={state.contentData}
-              editMode={!!state.contentData}
-            />
-          }
-        />
-        <Route
-          path="generate"
-          element={
-            state.contentData ? (
-              <AIGenerator
-                contentData={state.contentData}
-                onComplete={handleGenerationComplete}
-                onBack={() => navigate('/content')}
-              />
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-600">No content data found. Please start from the beginning.</p>
-                <button
-                  onClick={() => navigate('/content')}
-                  className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Start Over
-                </button>
-              </div>
-            )
-          }
-        />
-        <Route
-          path="preview"
-          element={
-            state.generatedPosts && state.generatedPosts.length > 0 ? (
-              <PostPreview
-                posts={state.generatedPosts}
-                onEdit={() => navigate('/content')}
-                onBack={() => navigate('/content/generate')}
-                onPublish={handleGoToPublish}
-              />
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-600">No generated posts found. Please generate content first.</p>
-                <button
-                  onClick={() => navigate('/content')}
-                  className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Start Content Creation
-                </button>
-              </div>
-            )
-          }
-        />
-      </Routes>
-
-      {/* Publish Modal */}
-      {showPublishModal && state.generatedPosts && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-auto">
-            <PublishPosts
-              posts={state.generatedPosts}
-              onBack={() => setShowPublishModal(false)}
-              userId={state.user?.id || ''}
-            />
+    <div className="min-h-screen animated-bg">
+      <div className="min-h-screen bg-white/10 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto py-8 space-y-8">
+          <div className="text-center floating-element">
+            <h1 className="text-4xl font-bold text-white mb-4 drop-shadow-lg">
+              AI Content Generator
+            </h1>
+            <p className="text-xl text-white/80 max-w-2xl mx-auto drop-shadow">
+              Create engaging social media content with the power of artificial intelligence
+            </p>
           </div>
+
+          <ProgressBar
+            currentStep={getCurrentStep()}
+            totalSteps={4}
+            stepLabels={stepLabels}
+          />
+
+          <Routes>
+            <Route
+              index
+              element={
+                <ContentInput
+                  onNext={handleContentNext}
+                  onBack={() => navigate('/dashboard')}
+                  initialData={state.contentData}
+                  editMode={!!state.contentData}
+                />
+              }
+            />
+            <Route
+              path="generate"
+              element={
+                state.contentData ? (
+                  <AIGenerator
+                    contentData={state.contentData}
+                    onComplete={handleGenerationComplete}
+                    onBack={() => navigate('/content')}
+                  />
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600">No content data found. Please start from the beginning.</p>
+                    <button
+                      onClick={() => navigate('/content')}
+                      className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Start Over
+                    </button>
+                  </div>
+                )
+              }
+            />
+            <Route
+              path="preview"
+              element={
+                state.generatedPosts && state.generatedPosts.length > 0 ? (
+                  <PostPreview
+                    posts={state.generatedPosts}
+                    onEdit={() => navigate('/content')}
+                    onBack={() => navigate('/content/generate')}
+                    onPublish={handleGoToPublish}
+                  />
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600">No generated posts found. Please generate content first.</p>
+                    <button
+                      onClick={() => navigate('/content')}
+                      className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Start Content Creation
+                    </button>
+                  </div>
+                )
+              }
+            />
+          </Routes>
+
+          {/* Publish Modal */}
+          {showPublishModal && state.generatedPosts && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-auto">
+                <PublishPosts
+                  posts={state.generatedPosts}
+                  onBack={() => setShowPublishModal(false)}
+                  userId={state.user?.id || ''}
+                />
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };
