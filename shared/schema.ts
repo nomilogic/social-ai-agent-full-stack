@@ -7,9 +7,6 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   password: text('password').notNull(),
   name: text('name').notNull(),
-  plan: text('plan').default('free'), // 'free', 'ipro', 'business'
-  plan_expires_at: timestamp('plan_expires_at', { withTimezone: true }),
-  usage_stats: jsonb('usage_stats').default(sql`'{}'::jsonb`),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });

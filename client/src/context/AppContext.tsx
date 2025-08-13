@@ -146,27 +146,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 };
 
-// Hook with utility functions
+// Hook
 export const useAppContext = () => {
   const context = useContext(AppContext);
   if (!context) {
     throw new Error('useAppContext must be used within an AppProvider');
   }
-  
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    context.dispatch({ type: 'RESET_STATE' });
-  };
-  
-  return {
-    ...context,
-    user: context.state.user,
-    userPlan: context.state.userPlan,
-    selectedProfile: context.state.selectedProfile,
-    selectedCampaign: context.state.selectedCampaign,
-    loading: context.state.loading,
-    error: context.state.error,
-    logout,
-  };
+  return context;
 };

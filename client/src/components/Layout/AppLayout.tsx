@@ -72,12 +72,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen relative">
-      {/* Animated Background - Full Cover */}
-      <div className="animated-bg"></div>
-      
-      {/* Themed Background Overlay */}
-      <div className={`fixed inset-0 bg-gradient-to-br ${currentTheme.bgGradient} mix-blend-overlay`}>
-        <div className="absolute inset-0 bg-black/10"></div>
+      {/* Themed Background */}
+      <div className={`fixed inset-0 bg-gradient-to-br ${currentTheme.bgGradient}`}>
+        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
       </div>
 
       {/* Mobile Menu Overlay */}
@@ -85,110 +83,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={() => setIsMobileMenuOpen(false)} />
       )}
 
-      {/* Desktop Navigation - Top Horizontal Bar */}
-      <div className="hidden lg:block">
-        <div className="fixed top-0 left-0 right-0 z-50 theme-bg-card backdrop-blur-lg border-b border-white/20">
-          <div className="flex items-center justify-between h-16 px-6">
-            <div className="flex items-center space-x-8">
-              <h1 className="text-xl font-bold theme-text-primary">Social AI</h1>
-              <nav className="flex space-x-6">
-                {navigation.map((item) => {
-                  const isActive = location.pathname === item.path;
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.name}
-                      to={item.path}
-                      className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        isActive
-                          ? 'theme-bg-primary theme-text-primary'
-                          : 'theme-text-secondary hover:theme-bg-primary hover:theme-text-primary'
-                      }`}
-                    >
-                      <Icon className="mr-2 h-4 w-4" />
-                      {item.name}
-                    </Link>
-                  );
-                })}
-              </nav>
-            </div>
-            
-            {/* Desktop Right Side */}
-            <div className="flex items-center space-x-4">
-              {/* Search */}
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-4 w-4 theme-text-light" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="block w-64 pl-10 pr-3 py-2 theme-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              
-              {/* Theme Selector */}
-              <ThemeSelector />
-
-              {/* Notifications */}
-              <div className="relative" ref={notificationRef}>
-                <button
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="p-2 theme-text-light hover:theme-text-primary relative"
-                >
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center text-xs text-white">
-                    3
-                  </span>
-                </button>
-                {showNotifications && <NotificationCenter isOpen={showNotifications} onClose={() => setShowNotifications(false)} userId={user?.id} />}
-              </div>
-
-              {/* User Menu */}
-              <div className="relative" ref={userMenuRef}>
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center p-2 text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-white/30"
-                >
-                  <img
-                    className="h-8 w-8 rounded-full object-cover border-2 border-white/30"
-                    src={user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user_metadata?.name || user?.email || 'User')}&background=3b82f6&color=fff`}
-                    alt=""
-                  />
-                </button>
-                {showUserMenu && (
-                  <div className="absolute right-0 z-10 mt-2 w-48 theme-bg-card rounded-md shadow-lg py-1 border border-white/20">
-                    <div className="px-4 py-2 text-sm border-b border-white/20">
-                      <div className="font-medium theme-text-primary">{user?.user_metadata?.name || 'User'}</div>
-                      <div className="theme-text-light">{user?.email}</div>
-                    </div>
-                    <Link
-                      to="/settings"
-                      className="flex items-center px-4 py-2 text-sm theme-text-secondary hover:theme-bg-primary hover:theme-text-primary"
-                      onClick={() => setShowUserMenu(false)}
-                    >
-                      <User className="mr-3 h-4 w-4" />
-                      Profile Settings
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center w-full px-4 py-2 text-sm theme-text-secondary hover:theme-bg-primary hover:theme-text-primary"
-                    >
-                      <LogOut className="mr-3 h-4 w-4" />
-                      Sign out
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile Sidebar */}
-      <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 theme-bg-card backdrop-blur-lg border-r border-white/20 transform ${
+      {/* Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 theme-bg-card backdrop-blur-lg border-r border-white/20 transform ${
         isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-      } transition-transform duration-300 ease-in-out`}>
+      } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
         <div className="flex items-center justify-between h-16 px-4 border-b border-white/20">
           <h1 className="text-xl font-bold theme-text-primary">Social AI</h1>
           <button 
@@ -221,9 +119,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 lg:pt-16">
-        {/* Mobile Top Navigation */}
-        <div className="lg:hidden sticky top-0 z-10 theme-bg-card backdrop-blur-lg border-b border-white/20 px-4 py-4">
+      <div className="lg:pl-64 relative z-10">
+        {/* Top Navigation */}
+        <div className="sticky top-0 z-10 theme-bg-card backdrop-blur-lg border-b border-white/20 px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <button
@@ -261,7 +159,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     3
                   </span>
                 </button>
-                {showNotifications && <NotificationCenter isOpen={showNotifications} onClose={() => setShowNotifications(false)} userId={user?.id} />}
+                {showNotifications && <NotificationCenter onClose={() => setShowNotifications(false)} userId={user?.id} />}
               </div>
 
               {/* User Menu */}
@@ -307,10 +205,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         {/* Main Content */}
         <main className="py-6">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="theme-bg-primary rounded-xl backdrop-blur-sm border-0 overflow-hidden h-fit">
-              <div className="p-6 h-fit">
-                {children}
-              </div>
+            <div className="theme-bg-primary rounded-xl p-6 backdrop-blur-sm">
+              {children}
             </div>
           </div>
         </main>
