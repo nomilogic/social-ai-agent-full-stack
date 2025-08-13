@@ -47,10 +47,14 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
         platforms: targetPlatforms
       };
 
+      console.log('Starting AI generation with company info:', companyInfo);
+      console.log('Content data:', contentData);
+
       const posts = await generateAllPosts(
         companyInfo,
         contentData,
         (platform, progress) => {
+          console.log(`Progress: ${platform} - ${progress}%`);
           setCurrentPlatform(platform);
           setProgress(progress);
         }

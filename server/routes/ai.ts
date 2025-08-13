@@ -244,23 +244,53 @@ router.post('/generate', async (req: Request, res: Response) => {
       const prompt = createPlatformPrompt(company, content, platform)
 
       try {
+        console.log(`Generating content for ${platform} with prompt:`, prompt.substring(0, 200) + '...')
+        
         const result = await model.generateContent(prompt)
         const response = await result.response
         const text = response.text()
 
+        console.log(`Generated content for ${platform}:`, text.substring(0, 200) + '...')
+
+        // Parse the generated content to extract caption and hashtags
+        let caption = text.trim()
+        let hashtags: string[] = []
+
+        // Try to extract hashtags from the content
+        const hashtagMatches = text.match(/#\w+/g)
+        if (hashtagMatches) {
+          hashtags = [...new Set(hashtagMatches)].slice(0, 5) // Remove duplicates and limit to 5
+          // Remove hashtags from caption if they appear at the end
+          caption = text.replace(/\n\s*#\w+(\s+#\w+)*\s*$/, '').trim()
+        }
+
+        // Add default hashtags if none found
+        if (hashtags.length === 0) {
+          hashtags = [`#${company.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`]
+        }
+
         generatedPosts.push({
           platform,
-          content: text,
+          content: caption,
+          caption: caption, // Include both for compatibility
+          hashtags: hashtags,
           success: true
         })
       } catch (error: any) {
+        console.error(`Error generating for ${platform}:`, error)
+        
         generatedPosts.push({
           platform,
+          content: content.topic || 'Check out our latest updates!',
+          caption: content.topic || 'Check out our latest updates!',
+          hashtags: [`#${company.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`],
           error: error.message,
           success: false
         })
       }
     }
+
+    console.log('Final generated posts:', generatedPosts)
 
     res.json({
       success: true,
