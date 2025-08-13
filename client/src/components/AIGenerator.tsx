@@ -157,9 +157,13 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
                 {(() => {
                   const IconComponent = getPlatformIcon(currentPlatform);
                   return IconComponent ? (
-                    <IconComponent className="w-8 h-8 text-blue-600" />
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white ${getPlatformColors(currentPlatform)}`}>
+                      <IconComponent className="w-6 h-6" />
+                    </div>
                   ) : (
-                    <Brain className="w-8 h-8 text-blue-600" />
+                    <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-gray-600 text-white">
+                      <Brain className="w-6 h-6" />
+                    </div>
                   );
                 })()}
               </div>

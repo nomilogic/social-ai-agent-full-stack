@@ -27,6 +27,7 @@ import { analyzeImage as analyzeImageWithGemini } from "../lib/gemini"; // Renam
 import { AIImageGenerator } from "./AIImageGenerator";
 import { platformOptions } from "../utils/platformIcons";
 import { PostPreview } from "./PostPreview"; // Assuming PostPreview is in the same directory
+import { getPlatformIcon, getPlatformDisplayName, getPlatformColors } from '../utils/platformIcons';
 
 // Helper function to convert file to base64
 const fileToBase64 = (file: File): Promise<string> => {
@@ -684,8 +685,8 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           : "border-gray-200 hover:border-gray-300 bg-white"
                       }`}
                     >
-                      <IconComponent 
-                        className={`w-5 h-5 ${isSelected ? platform.color : 'text-gray-500'}`} 
+                      <IconComponent
+                        className={`w-5 h-5 ${isSelected ? platform.color : 'text-gray-500'}`}
                       />
                       <span className={`text-sm font-medium ${isSelected ? platform.color : 'text-gray-700'}`}>
                         {platform.name}
