@@ -2,7 +2,7 @@ import React from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { CompanySelector } from '../components/CompanySelector';
-import { CompanySetup } from '../components/CompanySetup';
+import { ProfileSetup } from '../components/ProfileSetup';
 import { CompanyDashboard } from '../components/CompanyDashboard';
 import { CampaignSelector } from '../components/CampaignSelector';
 import { CampaignSetup } from '../components/CampaignSetup';
@@ -14,7 +14,12 @@ export const CompaniesPage: React.FC = () => {
   const navigate = useNavigate();
 
   const handleSelectCompany = (company: any) => {
-    dispatch({ type: 'SET_SELECTED_COMPANY', payload: company });
+    // Convert to proper Company format for context
+    const companyData = {
+      ...company,
+      userId: state.user?.id || company.userId || ''
+    };
+    dispatch({ type: 'SET_SELECTED_COMPANY', payload: companyData });
     navigate(`/companies/${company.id}`);
   };
 
@@ -38,7 +43,7 @@ export const CompaniesPage: React.FC = () => {
                 className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >
                 <Plus className="w-4 h-4" />
-                <span>New Company</span>
+                <span>New Profile</span>
               </button>
             </div>
             
@@ -46,16 +51,19 @@ export const CompaniesPage: React.FC = () => {
               userId={state.user?.id || ''}
               onSelectCompany={handleSelectCompany}
               onCreateNew={handleCreateCompany}
-              onSchedule={(company) => {
-                dispatch({ type: 'SET_SELECTED_COMPANY', payload: company });
+              onScheduleCompany={(company) => {
+                const companyData = { ...company, userId: state.user?.id || company.userId || '' };
+                dispatch({ type: 'SET_SELECTED_COMPANY', payload: companyData });
                 navigate('/schedule');
               }}
-              onCampaigns={(company) => {
-                dispatch({ type: 'SET_SELECTED_COMPANY', payload: company });
+              onCampaignCompany={(company) => {
+                const companyData = { ...company, userId: state.user?.id || company.userId || '' };
+                dispatch({ type: 'SET_SELECTED_COMPANY', payload: companyData });
                 navigate(`/companies/${company.id}/campaigns`);
               }}
-              onDashboard={(company) => {
-                dispatch({ type: 'SET_SELECTED_COMPANY', payload: company });
+              onDashboardCompany={(company) => {
+                const companyData = { ...company, userId: state.user?.id || company.userId || '' };
+                dispatch({ type: 'SET_SELECTED_COMPANY', payload: companyData });
                 navigate(`/companies/${company.id}`);
               }}
             />
@@ -67,12 +75,12 @@ export const CompaniesPage: React.FC = () => {
         element={
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Create New Company</h1>
-              <p className="text-gray-600 mt-2">Add a new company profile to start creating content.</p>
+              <h1 className="text-3xl font-bold text-gray-900">Create New Profile</h1>
+              <p className="text-gray-600 mt-2">Add a new profile to start creating content.</p>
             </div>
-            <CompanySetup
-              onNext={(companyData) => {
-                // Handle company creation and navigate back
+            <ProfileSetup
+              onNext={(profileData) => {
+                // Handle profile creation and navigate back
                 navigate('/companies');
               }}
               onBack={() => navigate('/companies')}
@@ -99,16 +107,36 @@ export const CompaniesPage: React.FC = () => {
         element={
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Edit Company</h1>
-              <p className="text-gray-600 mt-2">Update your company profile information.</p>
+              <h1 className="text-3xl font-bold text-gray-900">Edit Profile</h1>
+              <p className="text-gray-600 mt-2">Update your profile information.</p>
             </div>
-            <CompanySetup
-              onNext={(companyData) => {
+            <ProfileSetup
+              onNext={(profileData) => {
+                // Convert ProfileInfo to Company format for context compatibility
+                const companyData = {
+                  id: state.selectedCompany?.id || '',
+                  name: profileData.name,
+                  industry: profileData.industry,
+                  description: profileData.description,
+                  tone: profileData.brandTone,
+                  target_audience: profileData.targetAudience,
+                  userId: state.user?.id || ''
+                };
                 dispatch({ type: 'SET_SELECTED_COMPANY', payload: companyData });
                 navigate(`/companies/${state.selectedCompany?.id}`);
               }}
               onBack={() => navigate(`/companies/${state.selectedCompany?.id}`)}
-              existingCompany={state.selectedCompany}
+              initialData={state.selectedCompany ? {
+                type: 'business',
+                name: state.selectedCompany.name,
+                website: '',
+                industry: state.selectedCompany.industry,
+                description: state.selectedCompany.description || '',
+                targetAudience: state.selectedCompany.target_audience || '',
+                brandTone: (state.selectedCompany.tone as any) || 'professional',
+                goals: [],
+                platforms: []
+              } : undefined}
             />
           </div>
         } 
@@ -134,15 +162,16 @@ export const CompaniesPage: React.FC = () => {
             <CampaignSelector
               companyId={state.selectedCompany?.id || ''}
               onSelectCampaign={(campaign) => {
-                dispatch({ type: 'SET_SELECTED_CAMPAIGN', payload: campaign });
+                const campaignData = { ...campaign, id: campaign.id!, isActive: campaign.status === 'active' };
+                dispatch({ type: 'SET_SELECTED_CAMPAIGN', payload: campaignData });
                 navigate(`/companies/${state.selectedCompany?.id}/campaigns/${campaign.id}`);
               }}
-              onCreateNewCampaign={() => navigate(`/companies/${state.selectedCompany?.id}/campaigns/new`)}
+              onCreateNew={() => navigate(`/companies/${state.selectedCompany?.id}/campaigns/new`)}
               onEditCampaign={(campaign) => {
-                dispatch({ type: 'SET_SELECTED_CAMPAIGN', payload: campaign });
+                const campaignData = { ...campaign, id: campaign.id!, isActive: campaign.status === 'active' };
+                dispatch({ type: 'SET_SELECTED_CAMPAIGN', payload: campaignData });
                 navigate(`/companies/${state.selectedCompany?.id}/campaigns/${campaign.id}/edit`);
               }}
-              onBack={() => navigate(`/companies/${state.selectedCompany?.id}`)}
             />
           </div>
         } 
@@ -157,11 +186,12 @@ export const CompaniesPage: React.FC = () => {
             </div>
             <CampaignSetup
               companyId={state.selectedCompany?.id || ''}
-              onSave={(campaign) => {
-                dispatch({ type: 'SET_SELECTED_CAMPAIGN', payload: campaign });
+              onNext={(campaign) => {
+                const campaignData = { ...campaign, id: campaign.id!, isActive: campaign.status === 'active' };
+                dispatch({ type: 'SET_SELECTED_CAMPAIGN', payload: campaignData });
                 navigate(`/companies/${state.selectedCompany?.id}/campaigns`);
               }}
-              onCancel={() => navigate(`/companies/${state.selectedCompany?.id}/campaigns`)}
+              onBack={() => navigate(`/companies/${state.selectedCompany?.id}/campaigns`)}
             />
           </div>
         } 
@@ -170,7 +200,7 @@ export const CompaniesPage: React.FC = () => {
         path=":companyId/campaigns/:campaignId" 
         element={
           <CampaignDashboard
-            campaign={state.selectedCampaign}
+            campaign={state.selectedCampaign!}
             company={state.selectedCompany}
             onCreatePost={() => navigate('/content')}
             onViewPosts={() => navigate('/content')}
@@ -189,12 +219,17 @@ export const CompaniesPage: React.FC = () => {
             </div>
             <CampaignSetup
               companyId={state.selectedCompany?.id || ''}
-              campaignData={state.selectedCampaign}
-              onSave={(campaign) => {
-                dispatch({ type: 'SET_SELECTED_CAMPAIGN', payload: campaign });
+              initialData={state.selectedCampaign ? {
+                ...state.selectedCampaign,
+                platforms: [],
+                status: 'active' as const
+              } : undefined}
+              onNext={(campaign) => {
+                const campaignData = { ...campaign, id: campaign.id!, isActive: campaign.status === 'active' };
+                dispatch({ type: 'SET_SELECTED_CAMPAIGN', payload: campaignData });
                 navigate(`/companies/${state.selectedCompany?.id}/campaigns/${campaign.id}`);
               }}
-              onCancel={() => navigate(`/companies/${state.selectedCompany?.id}/campaigns/${state.selectedCampaign?.id}`)}
+              onBack={() => navigate(`/companies/${state.selectedCompany?.id}/campaigns/${state.selectedCampaign?.id}`)}
             />
           </div>
         } 

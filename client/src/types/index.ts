@@ -1,3 +1,17 @@
+export interface ProfileInfo {
+  type: 'individual' | 'business';
+  name: string;
+  website: string;
+  industry: string;
+  description: string;
+  targetAudience: string;
+  brandTone: 'professional' | 'playful' | 'motivational' | 'casual' | 'authoritative';
+  goals: string[];
+  platforms: Platform[];
+  plan?: 'free' | 'ipro' | 'business';
+}
+
+// Keep CompanyInfo for backward compatibility
 export interface CompanyInfo {
   name: string;
   website: string;
@@ -55,7 +69,9 @@ export interface Campaign {
 
 export interface StepData {
   company?: CompanyInfo;
+  profile?: ProfileInfo;
   companyId?: string;
+  profileId?: string;
   campaign?: Campaign;
   campaignId?: string;
   content?: PostContent;
