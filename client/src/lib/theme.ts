@@ -1,4 +1,3 @@
-
 export interface ThemeColors {
   name: string;
   bgGradient: string;
