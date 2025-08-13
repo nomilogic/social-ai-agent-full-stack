@@ -365,8 +365,8 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
       imageUrl: updatedPost.imageUrl || updatedPosts[postIndex].imageUrl, // Preserve existing imageUrl if not in updatedPost
     };
     console.log("Updated posts:", updatedPosts);
-    onPostsUpdate(updatedPosts);
-    setEditingIndex(null);
+    onPostsUpdate?.(updatedPosts);
+    setEditingIndex?.(null);
   };
 
   return (
@@ -389,59 +389,82 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Select Platform
           </h3>
-          <div className="space-y-3">
+          <div className="flex flex-wrap gap-3">
             {generatedPosts.map((post, index) => {
               const IconComponent = getPlatformIcon(post.platform);
               return (
                 <button
                   key={post.platform}
                   onClick={() => setSelectedPlatform(post.platform)}
-                  className={`w-full p-4 rounded-lg border-2 transition-all duration-200 text-left ${
+                  className={`relative p-3 rounded-full transition-all duration-200 transform hover:scale-105 ${
                     selectedPlatform === post.platform
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
+                      ? "ring-4 ring-blue-200 shadow-lg"
+                      : "hover:shadow-md"
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      {IconComponent && (
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${getPlatformColors(post.platform)}`}
-                        >
-                          <IconComponent className="w-4 h-4" />
-                        </div>
-                      )}
-                      <div>
-                        <h4 className="font-medium text-gray-900 capitalize">
-                          {post.platform}
-                        </h4>
-                        <p className="text-sm text-gray-600">
-                          {post.characterCount} characters
-                        </p>
-                      </div>
-                    </div>
+                  {/* Main Platform Icon */}
+                  {IconComponent && (
                     <div
-                      className={`w-3 h-3 rounded-full ${
-                        post.engagement === "high"
-                          ? "bg-green-500"
-                          : post.engagement === "medium"
-                            ? "bg-yellow-500"
-                            : "bg-red-500"
-                      }`}
-                    ></div>
-                  </div>
-                  <div className="mt-2">
-                    <div
-                      className={`inline-block px-2 py-1 rounded text-xs text-white ${getPlatformColors(post.platform)}`}
+                      className={`w-12 h-12 rounded-full flex items-center justify-center text-white ${getPlatformColors(post.platform)} shadow-lg`}
                     >
-                      {post.engagement} engagement
+                      <IconComponent className="w-6 h-6" />
                     </div>
-                  </div>
+                  )}
+                  
+                  {/* Indicator Light */}
+                  <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full border-2 border-white shadow-lg ${
+                    post.engagement === "high"
+                      ? "bg-green-500"
+                      : post.engagement === "medium"
+                        ? "bg-yellow-500"
+                        : "bg-red-500"
+                  }`}></div>
+                  
+                  {/* Selected Indicator */}
+                  {selectedPlatform === post.platform && (
+                    <div className="absolute inset-0 rounded-full border-2 border-blue-500 animate-pulse"></div>
+                  )}
                 </button>
               );
             })}
           </div>
-
+          
+          {/* Platform Info Display */}
+          {selectedPost && (
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3 mb-2">
+                {(() => {
+                  const IconComponent = getPlatformIcon(selectedPost.platform);
+                  return IconComponent ? (
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-white ${getPlatformColors(selectedPost.platform)}`}
+                    >
+                      <IconComponent className="w-3 h-3" />
+                    </div>
+                  ) : null;
+                })()}
+                <h4 className="font-medium text-gray-900 capitalize">
+                  {getPlatformDisplayName(selectedPost.platform)}
+                </h4>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="text-gray-600">Characters:</span>
+                  <span className="ml-1 font-medium">{selectedPost.characterCount}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Engagement:</span>
+                  <span className={`ml-1 font-medium ${
+                    selectedPost.engagement === "high" ? "text-green-600" :
+                    selectedPost.engagement === "medium" ? "text-yellow-600" : "text-red-600"
+                  }`}>
+                    {selectedPost.engagement}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {selectedPost && (
             <div className="mt-6 space-y-3">
               <button
@@ -550,7 +573,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                         Hashtags
                       </h5>
                       <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                        {selectedPost.hashtags.map((tag, index) => (
+                        {selectedPost.hashtags.map((tag: string, index: number) => (
                           <span
                             key={index}
                             className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
