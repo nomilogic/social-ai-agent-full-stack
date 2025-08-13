@@ -1,117 +1,128 @@
+import { ProfileInfo } from '../types';
+
 export interface PlanLimits {
-  posts_per_month: number;
-  ai_generations_per_day: number;
-  social_platforms: number;
-  campaigns: number;
-  scheduled_posts: number;
-  analytics_retention_days: number;
-  team_members: number;
-  auto_posting: boolean;
-  advanced_analytics: boolean;
-  priority_support: boolean;
-  ai_training: boolean;
-  custom_branding: boolean;
-  api_access: boolean;
+  textualPosts: number;
+  imageGenerations: number;
+  platforms: number;
+  hasAutoScheduling: boolean;
+  hasAnalytics: boolean;
+  hasAdvancedAI: boolean;
+  hasTeamCollaboration: boolean;
+  hasCustomBranding: boolean;
+  hasAPIAccess: boolean;
+  hasBulkUpload: boolean;
+  hasCampaignManagement: boolean;
+  hasAdvancedTargeting: boolean;
+  supportLevel: 'community' | 'email' | 'priority';
 }
 
 export const PLAN_FEATURES: Record<'free' | 'ipro' | 'business', PlanLimits> = {
   free: {
-    posts_per_month: 10,
-    ai_generations_per_day: 5,
-    social_platforms: 2,
-    campaigns: 1,
-    scheduled_posts: 10,
-    analytics_retention_days: 7,
-    team_members: 1,
-    auto_posting: false,
-    advanced_analytics: false,
-    priority_support: false,
-    ai_training: false,
-    custom_branding: false,
-    api_access: false,
+    textualPosts: 5,
+    imageGenerations: 2,
+    platforms: 1,
+    hasAutoScheduling: false,
+    hasAnalytics: false,
+    hasAdvancedAI: false,
+    hasTeamCollaboration: false,
+    hasCustomBranding: false,
+    hasAPIAccess: false,
+    hasBulkUpload: false,
+    hasCampaignManagement: false,
+    hasAdvancedTargeting: false,
+    supportLevel: 'community'
   },
   ipro: {
-    posts_per_month: 100,
-    ai_generations_per_day: 50,
-    social_platforms: 5,
-    campaigns: 10,
-    scheduled_posts: 100,
-    analytics_retention_days: 30,
-    team_members: 3,
-    auto_posting: true,
-    advanced_analytics: true,
-    priority_support: false,
-    ai_training: false,
-    custom_branding: true,
-    api_access: false,
+    textualPosts: 1000,
+    imageGenerations: 20,
+    platforms: 999, // unlimited
+    hasAutoScheduling: true,
+    hasAnalytics: true,
+    hasAdvancedAI: true,
+    hasTeamCollaboration: false,
+    hasCustomBranding: false,
+    hasAPIAccess: false,
+    hasBulkUpload: false,
+    hasCampaignManagement: true,
+    hasAdvancedTargeting: false,
+    supportLevel: 'email'
   },
   business: {
-    posts_per_month: -1, // unlimited
-    ai_generations_per_day: -1, // unlimited
-    social_platforms: -1, // unlimited
-    campaigns: -1, // unlimited
-    scheduled_posts: -1, // unlimited
-    analytics_retention_days: 365,
-    team_members: -1, // unlimited
-    auto_posting: true,
-    advanced_analytics: true,
-    priority_support: true,
-    ai_training: true,
-    custom_branding: true,
-    api_access: true,
-  },
+    textualPosts: 999999, // unlimited
+    imageGenerations: 100,
+    platforms: 999, // unlimited
+    hasAutoScheduling: true,
+    hasAnalytics: true,
+    hasAdvancedAI: true,
+    hasTeamCollaboration: true,
+    hasCustomBranding: true,
+    hasAPIAccess: true,
+    hasBulkUpload: true,
+    hasCampaignManagement: true,
+    hasAdvancedTargeting: true,
+    supportLevel: 'priority'
+  }
 };
 
-export function getPlanLimits(plan: 'free' | 'ipro' | 'business'): PlanLimits {
-  return PLAN_FEATURES[plan];
-}
+export const getPlanLimits = (profileType: 'individual' | 'business', plan?: string): PlanLimits => {
+  if (profileType === 'business') {
+    return PLAN_FEATURES.business;
+  }
 
-export function isFeatureAvailable(
-  plan: 'free' | 'ipro' | 'business',
+  // For individual users, use their selected plan
+  const selectedPlan = (plan as 'free' | 'ipro' | 'business') || 'free';
+  return PLAN_FEATURES[selectedPlan];
+};
+
+export const isFeatureAvailable = (
+  profileType: 'individual' | 'business', 
+  plan: string | undefined, 
   feature: keyof PlanLimits
-): boolean {
-  const limits = getPlanLimits(plan);
-  const value = limits[feature];
-  
-  // For boolean features, return the value directly
-  if (typeof value === 'boolean') {
-    return value;
-  }
-  
-  // For numeric features, -1 means unlimited, so it's available
-  // Any positive number means it's available with limits
-  return value === -1 || value > 0;
-}
+): boolean => {
+  const limits = getPlanLimits(profileType, plan);
+  return Boolean(limits[feature]);
+};
 
-export function checkLimit(
-  plan: 'free' | 'ipro' | 'business',
-  feature: keyof PlanLimits,
-  currentUsage: number
-): { canUse: boolean; limit: number; remaining: number } {
-  const limits = getPlanLimits(plan);
-  const limit = limits[feature] as number;
-  
-  if (limit === -1) {
-    return { canUse: true, limit: -1, remaining: -1 };
-  }
-  
-  const remaining = Math.max(0, limit - currentUsage);
+export const getUsageLimits = (
+  profileType: 'individual' | 'business', 
+  plan: string | undefined
+): { textualPosts: number; imageGenerations: number; platforms: number } => {
+  const limits = getPlanLimits(profileType, plan);
   return {
-    canUse: remaining > 0,
-    limit,
-    remaining,
+    textualPosts: limits.textualPosts,
+    imageGenerations: limits.imageGenerations,
+    platforms: limits.platforms
   };
-}
+};
 
-export function shouldShowUpgradePrompt(
-  plan: 'free' | 'ipro' | 'business',
-  feature: keyof PlanLimits,
-  currentUsage: number
-): boolean {
-  const { canUse, limit } = checkLimit(plan, feature, currentUsage);
-  
-  if (limit === -1) return false; // unlimited, no upgrade needed
-  
-  // Show upgrade prompt if usage is at 80% of limit or can't use
-  return !canUse || currentUsage >= limit * 0.8;
-}
+export const getRestrictedFeatures = (
+  profileType: 'individual' | 'business', 
+  plan: string | undefined
+): string[] => {
+  if (profileType === 'business') {
+    return []; // Business profiles have all features
+  }
+
+  const limits = getPlanLimits(profileType, plan);
+  const restrictedFeatures: string[] = [];
+
+  if (!limits.hasAutoScheduling) restrictedFeatures.push('Auto Scheduling');
+  if (!limits.hasAnalytics) restrictedFeatures.push('Analytics');
+  if (!limits.hasAdvancedAI) restrictedFeatures.push('Advanced AI Models');
+  if (!limits.hasTeamCollaboration) restrictedFeatures.push('Team Collaboration');
+  if (!limits.hasCustomBranding) restrictedFeatures.push('Custom Branding');
+  if (!limits.hasAPIAccess) restrictedFeatures.push('API Access');
+  if (!limits.hasBulkUpload) restrictedFeatures.push('Bulk Upload');
+  if (!limits.hasCampaignManagement) restrictedFeatures.push('Advanced Campaign Management');
+  if (!limits.hasAdvancedTargeting) restrictedFeatures.push('Advanced Targeting');
+
+  return restrictedFeatures;
+};
+
+export const shouldShowUpgradePrompt = (
+  profileType: 'individual' | 'business', 
+  plan: string | undefined, 
+  feature: keyof PlanLimits
+): boolean => {
+  return profileType === 'individual' && !isFeatureAvailable(profileType, plan, feature);
+};

@@ -28,8 +28,6 @@
   background-color: var(--theme-bg-primary);
   backdrop-filter: blur(10px);
   border: 1px solid var(--theme-border);
-  height: fit-content;
-  min-height: auto;
 }
 
 .theme-bg-card {
@@ -122,7 +120,7 @@
   animation-name: slide-in-from-bottom;
 }
 
-/* Animated background styles - Improved with slower animation and reduced opacity */
+/* Animated background styles */
 @keyframes gradient-shift {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -135,35 +133,22 @@
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); }
-  50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.2); }
+  0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.5); }
 }
 
 .animated-bg {
-  background: linear-gradient(-45deg, 
-    rgba(102, 126, 234, 0.2), 
-    rgba(118, 75, 162, 0.2), 
-    rgba(240, 147, 251, 0.2), 
-    rgba(245, 87, 108, 0.2), 
-    rgba(79, 172, 254, 0.2), 
-    rgba(0, 242, 254, 0.2)
-  );
+  background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #f5576c, #4facfe, #00f2fe);
   background-size: 400% 400%;
-  animation: gradient-shift 30s ease infinite; /* Slowed down from 15s to 30s */
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: -1;
+  animation: gradient-shift 15s ease infinite;
 }
 
 .floating-element {
-  animation: float 6s ease-in-out infinite; /* Slowed down from 3s to 6s */
+  animation: float 3s ease-in-out infinite;
 }
 
 .pulse-glow {
-  animation: pulse-glow 4s ease-in-out infinite; /* Slowed down from 2s to 4s */
+  animation: pulse-glow 2s ease-in-out infinite;
 }
 
 /* Tailwind CSS theme configuration */
