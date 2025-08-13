@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sparkles, Brain, Zap } from 'lucide-react';
 import { CompanyInfo, PostContent, GeneratedPost, Platform } from '../types';
 import { generateAllPosts } from '../lib/gemini';
-import { getPlatformIcon, getPlatformDisplayName } from '../utils/platformIcons';
+import { getPlatformIcon, getPlatformDisplayName, getPlatformColors } from '../utils/platformIcons';
 
 interface AIGeneratorProps {
   contentData: any;
@@ -153,13 +153,13 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
         {currentPlatform && (
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl border border-blue-200">
             <div className="flex items-center justify-center space-x-4">
-              <div className="w-16 h-16 bg-white rounded-2xl shadow-lg flex items-center justify-center animate-bounce">
+              <div className={`w-16 h-16 rounded-2xl shadow-lg flex items-center justify-center animate-bounce text-white ${getPlatformColors(currentPlatform)}`}>
                 {(() => {
                   const IconComponent = getPlatformIcon(currentPlatform);
                   return IconComponent ? (
-                    <IconComponent className="w-8 h-8 text-blue-600" />
+                    <IconComponent className="w-8 h-8" />
                   ) : (
-                    <Brain className="w-8 h-8 text-blue-600" />
+                    <Brain className="w-8 h-8" />
                   );
                 })()}
               </div>
