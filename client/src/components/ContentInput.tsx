@@ -25,7 +25,7 @@ import { PostContent, Platform } from "../types";
 import { uploadMedia, getCurrentUser } from "../lib/database";
 import { analyzeImage as analyzeImageWithGemini } from "../lib/gemini"; // Renamed to avoid conflict
 import { AIImageGenerator } from "./AIImageGenerator";
-import { platformOptions } from "../utils/platformIcons";
+import { getPlatformColors, platformOptions } from "../utils/platformIcons";
 
 // Helper function to convert file to base64
 const fileToBase64 = (file: File): Promise<string> => {
@@ -254,8 +254,6 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     }
   };
 
-
-
   const togglePlatform = (platform: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -329,7 +327,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-4 flex items-center">
                 <ImageIcon className="w-5 h-5 mr-2 text-blue-600" />
                 Upload Media (Optional)
-                <span className="ml-2 text-xs text-gray-500">• Images, Videos</span>
+                <span className="ml-2 text-xs text-gray-500">
+                  • Images, Videos
+                </span>
               </label>
             </div>
             <div
@@ -453,7 +453,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                       <div className="flex items-center justify-center mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
                         <Loader className="w-4 h-4 animate-spin mr-2 text-amber-600" />
                         <Upload className="w-4 h-4 mr-2 text-amber-600" />
-                        <span className="text-amber-700">Uploading file...</span>
+                        <span className="text-amber-700">
+                          Uploading file...
+                        </span>
                       </div>
                     )}
                     {!analyzingImage &&
@@ -463,7 +465,8 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                         <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
                           <p className="text-green-700 text-xs flex items-center">
                             <CheckCircle className="w-3 h-3 mr-1" />
-                            Media uploaded successfully! AI analysis will appear above.
+                            Media uploaded successfully! AI analysis will appear
+                            above.
                           </p>
                         </div>
                       )}
@@ -655,7 +658,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {platformOptions.map((platform) => {
                   const IconComponent = platform.icon;
-                  const isSelected = formData.selectedPlatforms?.includes(platform.id);
+                  const isSelected = formData.selectedPlatforms?.includes(
+                    platform.id,
+                  );
                   return (
                     <button
                       key={platform.id}
@@ -667,10 +672,14 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           : "border-gray-200 hover:border-gray-300 bg-white"
                       }`}
                     >
-                      <IconComponent 
-                        className={`w-5 h-5 ${isSelected ? platform.color : 'text-gray-500'}`} 
-                      />
-                      <span className={`text-sm font-medium ${isSelected ? platform.color : 'text-gray-700'}`}>
+                      <div
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-white ${getPlatformColors(platform.id)}`}
+                      >
+                        <IconComponent className="w-4 h-4" />
+                      </div>
+                      <span
+                        className={`text-sm font-medium ${isSelected ? platform.color : "text-gray-700"}`}
+                      >
                         {platform.name}
                       </span>
                     </button>
