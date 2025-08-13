@@ -10,14 +10,9 @@ import {
   ThumbsUp,
   Send,
   Edit,
-  Facebook,
-  Instagram,
-  Twitter,
-  Linkedin,
-  Youtube,
-  Music,
 } from "lucide-react";
 import { GeneratedPost, Platform } from "../types";
+import { getPlatformIcon, getPlatformColors, getPlatformDisplayName } from "../utils/platformIcons";
 
 interface PostPreviewProps {
   posts: any[];
@@ -55,30 +50,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
     }
   };
 
-  const getPlatformColors = (platform: Platform) => {
-    const colors = {
-      facebook: "bg-blue-600 border-blue-200",
-      instagram:
-        "bg-gradient-to-r from-purple-500 to-pink-500 border-purple-200",
-      twitter: "bg-black border-gray-200",
-      linkedin: "bg-blue-700 border-blue-200",
-      tiktok: "bg-black border-gray-200",
-      youtube: "bg-red-600 border-red-200",
-    };
-    return colors[platform] || "bg-gray-600";
-  };
 
-  const getPlatformIcon = (platform: Platform) => {
-    const icons = {
-      facebook: Facebook,
-      instagram: Instagram,
-      twitter: Twitter,
-      linkedin: Linkedin,
-      tiktok: Music,
-      youtube: Youtube,
-    };
-    return icons[platform];
-  };
 
   const renderPlatformPreview = (post: GeneratedPost) => {
     const renderImage = () =>

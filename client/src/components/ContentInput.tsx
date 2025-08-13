@@ -8,11 +8,24 @@ import {
   Eye,
   Loader,
   Sparkles,
+  Image as ImageIcon,
+  Video,
+  Plus,
+  X,
+  CheckCircle,
+  AlertCircle,
+  Target,
+  Hash,
+  MousePointer,
+  Palette,
+  Brain,
+  Zap,
 } from "lucide-react";
 import { PostContent, Platform } from "../types";
 import { uploadMedia, getCurrentUser } from "../lib/database";
 import { analyzeImage as analyzeImageWithGemini } from "../lib/gemini"; // Renamed to avoid conflict
 import { AIImageGenerator } from "./AIImageGenerator";
+import { platformOptions } from "../utils/platformIcons";
 
 // Helper function to convert file to base64
 const fileToBase64 = (file: File): Promise<string> => {
@@ -241,19 +254,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     }
   };
 
-  const platformOptions = [
-    { id: "linkedin", name: "LinkedIn", color: "bg-blue-700", icon: "💼" },
-    { id: "twitter", name: "Twitter/X", color: "bg-black", icon: "🐦" },
-    {
-      id: "instagram",
-      name: "Instagram",
-      color: "bg-gradient-to-r from-purple-500 to-pink-500",
-      icon: "📷",
-    },
-    { id: "facebook", name: "Facebook", color: "bg-blue-600", icon: "📘" },
-    { id: "tiktok", name: "TikTok", color: "bg-black", icon: "🎵" },
-    { id: "youtube", name: "YouTube", color: "bg-red-600", icon: "🎬" },
-  ];
+
 
   const togglePlatform = (platform: string) => {
     setFormData((prev) => ({
@@ -325,9 +326,10 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           {/* Left Column - Media Upload */}
           <div className="flex flex-col space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-4">
-                <Camera className="w-4 h-4 inline mr-2" />
+              <label className="block text-sm font-medium text-gray-700 mb-4 flex items-center">
+                <ImageIcon className="w-5 h-5 mr-2 text-blue-600" />
                 Upload Media (Optional)
+                <span className="ml-2 text-xs text-gray-500">• Images, Videos</span>
               </label>
             </div>
             <div
@@ -351,28 +353,42 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
               {formData.media || formData.mediaUrl ? (
                 <div className="space-y-4">
-                  {formData.media?.type.startsWith("image/") ||
-                  formData.mediaUrl?.startsWith("image/") ? (
-                    <img
-                      src={
-                        formData.media
-                          ? URL.createObjectURL(formData.media)
-                          : formData.mediaUrl!
-                      }
-                      alt="Preview"
-                      className="max-h-48 mx-auto rounded-lg shadow-md"
-                    />
-                  ) : (
-                    <video
-                      src={
-                        formData.media
-                          ? URL.createObjectURL(formData.media)
-                          : formData.mediaUrl!
-                      }
-                      className="max-h-48 mx-auto rounded-lg shadow-md"
-                      controls
-                    />
-                  )}
+                  <div className="relative">
+                    {formData.media?.type.startsWith("image/") ||
+                    formData.mediaUrl?.startsWith("image/") ? (
+                      <div className="relative">
+                        <img
+                          src={
+                            formData.media
+                              ? URL.createObjectURL(formData.media)
+                              : formData.mediaUrl!
+                          }
+                          alt="Preview"
+                          className="max-h-48 mx-auto rounded-lg shadow-md"
+                        />
+                        <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded-md text-xs flex items-center">
+                          <ImageIcon className="w-3 h-3 mr-1" />
+                          Image
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <video
+                          src={
+                            formData.media
+                              ? URL.createObjectURL(formData.media)
+                              : formData.mediaUrl!
+                          }
+                          className="max-h-48 mx-auto rounded-lg shadow-md"
+                          controls
+                        />
+                        <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded-md text-xs flex items-center">
+                          <Video className="w-3 h-3 mr-1" />
+                          Video
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <div className="text-sm text-gray-600 space-y-3">
                     <div>
                       <p className="font-medium">
@@ -397,9 +413,10 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           }
                           className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                         />
+                        <Brain className="w-4 h-4 text-blue-600" />
                         <label
                           htmlFor="useForAI"
-                          className="text-sm text-gray-700 cursor-pointer"
+                          className="text-sm text-gray-700 cursor-pointer flex-1"
                         >
                           Use for AI reference
                         </label>
@@ -413,9 +430,10 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           onChange={(e) => setUseInPost(e.target.checked)}
                           className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
                         />
+                        <Target className="w-4 h-4 text-green-600" />
                         <label
                           htmlFor="useInPost"
-                          className="text-sm text-gray-700 cursor-pointer"
+                          className="text-sm text-gray-700 cursor-pointer flex-1"
                         >
                           Use it in the post
                         </label>
@@ -423,17 +441,19 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                     </div>
 
                     {analyzingImage && (
-                      <div className="flex items-center justify-center mt-3 p-2 bg-blue-50 rounded-lg">
+                      <div className="flex items-center justify-center mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
                         <Loader className="w-4 h-4 animate-spin mr-2 text-blue-600" />
+                        <Brain className="w-4 h-4 mr-2 text-blue-600" />
                         <span className="text-blue-700 font-medium">
-                          🤖 AI is analyzing your image...
+                          AI is analyzing your image...
                         </span>
                       </div>
                     )}
                     {uploading && (
-                      <div className="flex items-center justify-center mt-2 p-2 bg-gray-50 rounded-lg">
-                        <Loader className="w-4 h-4 animate-spin mr-2" />
-                        <span className="text-gray-700">Uploading file...</span>
+                      <div className="flex items-center justify-center mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                        <Loader className="w-4 h-4 animate-spin mr-2 text-amber-600" />
+                        <Upload className="w-4 h-4 mr-2 text-amber-600" />
+                        <span className="text-amber-700">Uploading file...</span>
                       </div>
                     )}
                     {!analyzingImage &&
@@ -442,9 +462,8 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                       !imageAnalysis && (
                         <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
                           <p className="text-green-700 text-xs flex items-center">
-                            <Eye className="w-3 h-3 mr-1" />
-                            Media uploaded successfully! AI analysis will appear
-                            above.
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Media uploaded successfully! AI analysis will appear above.
                           </p>
                         </div>
                       )}
@@ -634,23 +653,29 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                 Target Platforms for This Post
               </label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {platformOptions.map((platform) => (
-                  <button
-                    key={platform.id}
-                    type="button"
-                    onClick={() => togglePlatform(platform.id)}
-                    className={`p-3 rounded-lg border-2 transition-all duration-200 flex items-center space-x-2 ${
-                      formData.selectedPlatforms?.includes(
-                        platform.id as Platform,
-                      )
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <span className="text-lg">{platform.icon}</span>
-                    <span className="text-sm font-medium">{platform.name}</span>
-                  </button>
-                ))}
+                {platformOptions.map((platform) => {
+                  const IconComponent = platform.icon;
+                  const isSelected = formData.selectedPlatforms?.includes(platform.id);
+                  return (
+                    <button
+                      key={platform.id}
+                      type="button"
+                      onClick={() => togglePlatform(platform.id)}
+                      className={`p-3 rounded-lg border-2 transition-all duration-200 flex items-center space-x-3 ${
+                        isSelected
+                          ? `${platform.bgColor} ${platform.borderColor} border-2`
+                          : "border-gray-200 hover:border-gray-300 bg-white"
+                      }`}
+                    >
+                      <IconComponent 
+                        className={`w-5 h-5 ${isSelected ? platform.color : 'text-gray-500'}`} 
+                      />
+                      <span className={`text-sm font-medium ${isSelected ? platform.color : 'text-gray-700'}`}>
+                        {platform.name}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>

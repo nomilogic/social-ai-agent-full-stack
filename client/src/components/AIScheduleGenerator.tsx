@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Calendar, Clock, Sparkles, Plus, RefreshCw, Send, Brain } from 'lucide-react';
 import { AIModelSelector } from './AIModelSelector';
 import { aiService } from '../lib/aiService';
+import { platformOptions, getPlatformIcon, getPlatformDisplayName } from '../utils/platformIcons';
 
 interface ScheduleRequest {
   prompt: string;
@@ -40,12 +41,7 @@ const EXAMPLE_PROMPTS = [
   "Share industry news 3 times per week for a month"
 ];
 
-const PLATFORMS = [
-  { id: 'linkedin', name: 'LinkedIn', color: 'bg-blue-600' },
-  { id: 'twitter', name: 'Twitter', color: 'bg-sky-400' },
-  { id: 'instagram', name: 'Instagram', color: 'bg-pink-600' },
-  { id: 'facebook', name: 'Facebook', color: 'bg-blue-700' }
-];
+
 
 export const AIScheduleGenerator: React.FC<AIScheduleGeneratorProps> = ({
   onGenerateSchedule,
@@ -246,20 +242,26 @@ export const AIScheduleGenerator: React.FC<AIScheduleGeneratorProps> = ({
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">Select Platforms:</label>
           <div className="flex flex-wrap gap-3">
-            {PLATFORMS.map(platform => (
-              <button
-                key={platform.id}
-                onClick={() => handlePlatformToggle(platform.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
-                  selectedPlatforms.includes(platform.id)
-                    ? `${platform.color} text-white border-transparent`
-                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
-                }`}
-              >
-                <div className={`w-3 h-3 rounded-full ${selectedPlatforms.includes(platform.id) ? 'bg-white bg-opacity-30' : platform.color}`} />
-                {platform.name}
-              </button>
-            ))}
+            {platformOptions.map(platform => {
+              const IconComponent = platform.icon;
+              const isSelected = selectedPlatforms.includes(platform.id);
+              return (
+                <button
+                  key={platform.id}
+                  onClick={() => handlePlatformToggle(platform.id)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border-2 transition-all ${
+                    isSelected
+                      ? `${platform.bgColor} ${platform.borderColor} ${platform.color}`
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  <IconComponent 
+                    className={`w-4 h-4 ${isSelected ? platform.color : 'text-gray-500'}`}
+                  />
+                  <span className="font-medium">{platform.name}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
