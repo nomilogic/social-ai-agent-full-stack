@@ -384,19 +384,18 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
 
   // Handle save logic
   const handleSave = (postIndex: number, updatedPost: any) => {
-    console.log('Saving post:', postIndex, updatedPost);
+    console.log("Saving post:", postIndex, updatedPost);
     const updatedPosts = [...generatedPosts]; // Use generatedPosts here
     updatedPosts[postIndex] = {
       ...updatedPosts[postIndex],
-      caption: updatedPost.caption || updatedPost.content || '', // Ensure caption is always set
+      caption: updatedPost.caption || updatedPost.content || "", // Ensure caption is always set
       hashtags: updatedPost.hashtags || [],
-      imageUrl: updatedPost.imageUrl || updatedPosts[postIndex].imageUrl // Preserve existing imageUrl if not in updatedPost
+      imageUrl: updatedPost.imageUrl || updatedPosts[postIndex].imageUrl, // Preserve existing imageUrl if not in updatedPost
     };
-    console.log('Updated posts:', updatedPosts);
+    console.log("Updated posts:", updatedPosts);
     onPostsUpdate(updatedPosts);
     setEditingIndex(null);
   };
-
 
   return (
     <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-lg p-8">
@@ -434,7 +433,9 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       {IconComponent && (
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${getPlatformColors(post.platform)}`}>
+                        <div
+                          className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${getPlatformColors(post.platform)}`}
+                        >
                           <IconComponent className="w-4 h-4" />
                         </div>
                       )}
@@ -509,41 +510,53 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
         {/* Preview */}
         <div className="lg:col-span-2">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Preview</h3>
-          
+
           {/* Grid layout for preview and details */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left side - Platform Preview */}
             <div className="flex justify-center">
               {selectedPost && renderPlatformPreview(selectedPost)}
             </div>
-            
+
             {/* Right side - Post Details */}
             {selectedPost && (
               <div className="space-y-4">
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
                     {(() => {
-                      const IconComponent = getPlatformIcon(selectedPost.platform);
+                      const IconComponent = getPlatformIcon(
+                        selectedPost.platform,
+                      );
                       return IconComponent ? (
                         <>
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white ${getPlatformColors(selectedPost.platform)}`}>
+                          <div
+                            className={`w-6 h-6 rounded-full flex items-center justify-center text-white ${getPlatformColors(selectedPost.platform)}`}
+                          >
                             <IconComponent className="w-3 h-3" />
                           </div>
-                          <span className="capitalize">{selectedPost.platform} Details</span>
+                          <span className="capitalize">
+                            {selectedPost.platform} Details
+                          </span>
                         </>
                       ) : (
-                        <span className="capitalize">{selectedPost.platform} Details</span>
+                        <span className="capitalize">
+                          {selectedPost.platform} Details
+                        </span>
                       );
                     })()}
                   </h4>
                   <div className="grid grid-cols-1 gap-3 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Character Count:</span>
-                      <span className="font-medium">{selectedPost.characterCount}</span>
+                      <span className="font-medium">
+                        {selectedPost.characterCount}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Hashtags:</span>
-                      <span className="font-medium">{selectedPost.hashtags.length}</span>
+                      <span className="font-medium">
+                        {selectedPost.hashtags.length}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Engagement:</span>
@@ -559,34 +572,35 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                         {selectedPost.engagement}
                       </span>
                     </div>
+                    {selectedPost.hashtags.length > 0 && (
+                      <div className="mt-3">
+                        <h5 className="text-sm font-medium text-gray-900 mb-1">
+                          Hashtags
+                        </h5>
+                        <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                          {selectedPost.hashtags.map((tag, index) => (
+                            <span
+                              key={index}
+                              className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-                
+
                 {/* Content Description with scroll */}
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                {/* <div className="bg-white border border-gray-200 rounded-lg p-4">
                   <h4 className="font-medium text-gray-900 mb-2">Content</h4>
                   <div className="max-h-40 overflow-y-auto bg-gray-50 rounded p-3 text-sm text-gray-700">
                     <p className="whitespace-pre-wrap leading-relaxed">
                       {selectedPost.caption}
                     </p>
                   </div>
-                  
-                  {selectedPost.hashtags.length > 0 && (
-                    <div className="mt-3">
-                      <h5 className="text-sm font-medium text-gray-900 mb-1">Hashtags</h5>
-                      <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                        {selectedPost.hashtags.map((tag, index) => (
-                          <span
-                            key={index}
-                            className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                </div> */}
               </div>
             )}
           </div>
