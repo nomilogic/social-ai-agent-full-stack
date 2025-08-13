@@ -36,7 +36,7 @@ export const oauthConfigs: Record<string, PlatformOAuthConfig> = {
     clientId: import.meta.env.VITE_FACEBOOK_CLIENT_ID || "",
     clientSecret: import.meta.env.VITE_FACEBOOK_CLIENT_SECRET || "",
     redirectUri: `${getBaseUrl()}/oauth/facebook/callback`,
-    scopes: ["pages_messaging", "pages_manage_posts", "publish_video"],
+    scopes: ["pages_manage_posts", "pages_read_engagement", "publish_to_groups"],
     authUrl: "https://www.facebook.com/v19.0/dialog/oauth",
     tokenUrl: "https://graph.facebook.com/v19.0/oauth/access_token",
   },

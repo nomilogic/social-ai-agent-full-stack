@@ -271,13 +271,146 @@ router.get('/facebook', (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Facebook OAuth not configured. Please add FACEBOOK_CLIENT_ID to environment variables.' })
   }
 
-  const REDIRECT_URI = `${process.env.BASE_URL || 'http://localhost:5000'}/api/oauth/facebook/callback`
+  const REDIRECT_URI = `${process.env.BASE_URL || 'http://localhost:5000'}/oauth/facebook/callback`
   const state = Buffer.from(JSON.stringify({ user_id })).toString('base64')
-  const scope = "pages_manage_posts,pages_read_engagement"
+  const scope = "pages_manage_posts,pages_read_engagement,publish_to_groups"
 
   const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&scope=${scope}`
 
   res.redirect(authUrl)
+})
+
+// GET /api/oauth/facebook/callback - Handle Facebook OAuth callback
+router.get('/facebook/callback', async (req: Request, res: Response) => {
+  console.log("Received Facebook OAuth callback with query:", req.query)
+
+  const { code, state, error } = req.query
+
+  if (error) {
+    console.error('Facebook OAuth error:', error)
+    return res.send(`<script>window.opener.postMessage({type: 'oauth_error', platform: 'facebook', error: '${error}'}, '*'); window.close();</script>`)
+  }
+
+  if (!code || !state) {
+    return res.send(`<script>window.opener.postMessage({type: 'oauth_error', platform: 'facebook', error: 'Missing code or state'}, '*'); window.close();</script>`)
+  }
+
+  let user_id
+  try {
+    const stateData = JSON.parse(Buffer.from(state as string, 'base64').toString())
+    user_id = stateData.user_id
+  } catch (err) {
+    return res.send(`<script>window.opener.postMessage({type: 'oauth_error', platform: 'facebook', error: 'Invalid state parameter'}, '*'); window.close();</script>`)
+  }
+
+  const CLIENT_ID = process.env.FACEBOOK_CLIENT_ID as string
+  const CLIENT_SECRET = process.env.FACEBOOK_CLIENT_SECRET as string
+  const REDIRECT_URI = `${process.env.BASE_URL || 'http://localhost:5000'}/oauth/facebook/callback`
+
+  try {
+    // Exchange authorization code for access token
+    const tokenUrl = 'https://graph.facebook.com/v19.0/oauth/access_token'
+    const tokenParams = new URLSearchParams({
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET,
+      redirect_uri: REDIRECT_URI,
+      code: code as string
+    })
+
+    console.log("Exchanging Facebook code for access token...")
+
+    const tokenResponse = await axios.post(tokenUrl, tokenParams.toString(), {
+      headers: { 
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json'
+      },
+      timeout: 30000
+    })
+
+    const { access_token, expires_in } = tokenResponse.data
+    console.log("Received Facebook access token, expires in:", expires_in)
+
+    // Get user profile from Facebook
+    let profileData = null
+    try {
+      const profileResponse = await axios.get('https://graph.facebook.com/me', {
+        params: {
+          access_token: access_token,
+          fields: 'id,name,email,picture'
+        }
+      })
+      profileData = profileResponse.data
+      console.log("Retrieved Facebook profile:", profileData)
+    } catch (profileErr) {
+      console.warn("Failed to retrieve Facebook profile:", profileErr)
+    }
+
+    // Calculate expiration time
+    const expiresAt = expires_in ? new Date(Date.now() + expires_in * 1000) : null
+
+    // Store or update access token in database
+    try {
+      // First, check if token already exists for this user and platform
+      const existingToken = await db
+        .select()
+        .from(oauth_tokens)
+        .where(and(
+          eq(oauth_tokens.user_id, user_id),
+          eq(oauth_tokens.platform, 'facebook')
+        ))
+        .limit(1)
+
+      if (existingToken.length > 0) {
+        // Update existing token
+        await db
+          .update(oauth_tokens)
+          .set({
+            access_token,
+            expires_at: expiresAt,
+            profile_data: profileData,
+            updated_at: new Date()
+          })
+          .where(and(
+            eq(oauth_tokens.user_id, user_id),
+            eq(oauth_tokens.platform, 'facebook')
+          ))
+      } else {
+        // Insert new token
+        await db.insert(oauth_tokens).values({
+          user_id,
+          platform: 'facebook',
+          access_token,
+          expires_at: expiresAt,
+          profile_data: profileData
+        })
+      }
+      console.log("Stored Facebook access token in database")
+    } catch (dbErr) {
+      console.error("Failed to store token in database:", dbErr)
+      // Continue anyway - we can still notify the frontend
+    }
+
+    res.send(`
+      <script>
+        // Notify parent window of successful OAuth
+        window.opener.postMessage({
+          type: 'oauth_success', 
+          platform: 'facebook',
+          profile: ${JSON.stringify(profileData)}
+        }, '*');
+
+        window.close();
+      </script>
+    `)
+
+  } catch (err) {
+    console.error('Facebook OAuth token exchange failed:', err)
+    const errorMessage = axios.isAxiosError(err) 
+      ? err.response?.data?.error?.message || err.message
+      : 'Token exchange failed'
+
+    res.send(`<script>window.opener.postMessage({type: 'oauth_error', platform: 'facebook', error: '${errorMessage}'}, '*'); window.close();</script>`)
+  }
 })
 
 // GET /api/oauth/instagram - Initiate Instagram OAuth flow

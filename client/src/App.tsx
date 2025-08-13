@@ -16,11 +16,16 @@ function App() {
     <AppProvider>
       <Routes>
         {/* OAuth callback routes */}
-        <Route path="/oauth/:platform/callback" element={<OAuthCallback />} />
-        
+        <Route path="/oauth/facebook/callback" element={<OAuthCallback />} />
+        <Route path="/oauth/instagram/callback" element={<OAuthCallback />} />
+        <Route path="/oauth/linkedin/callback" element={<OAuthCallback />} />
+        <Route path="/oauth/twitter/callback" element={<OAuthCallback />} />
+        <Route path="/oauth/tiktok/callback" element={<OAuthCallback />} />
+        <Route path="/oauth/youtube/callback" element={<OAuthCallback />} />
+
         {/* Public routes */}
         <Route path="/auth" element={<AuthPage />} />
-        
+
         {/* Protected routes */}
         <Route path="/" element={
           <ProtectedRoute>
@@ -35,7 +40,7 @@ function App() {
           <Route path="schedule" element={<SchedulePage />} />
           <Route path="settings/*" element={<SettingsPage />} />
         </Route>
-        
+
         {/* Catch all - redirect to dashboard if authenticated, auth if not */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
