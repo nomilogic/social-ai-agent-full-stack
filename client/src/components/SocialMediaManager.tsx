@@ -276,10 +276,10 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
               className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
             >
               <div className="flex items-center space-x-4 flex-1">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${getPlatformColors(status.platform).split(' ')[0]} text-white`}>
+                <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white ${getPlatformColors(status.platform)}`}>
                   {IconComponent && <IconComponent className="w-6 h-6" />}
                 </div>
-                
+
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-medium text-gray-900">
@@ -298,7 +298,7 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
                       )}
                     </div>
                   </div>
-                  
+
                   <p className="text-sm text-gray-600 mb-2">
                     {info.description}
                   </p>
