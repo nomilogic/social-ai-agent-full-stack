@@ -11,14 +11,14 @@ export const AuthPage: React.FC = () => {
   // Check if user is already authenticated
   useEffect(() => {
     if (state.user) {
-      const from = (location.state as any)?.from?.pathname || '/dashboard';
+      const from = (location.state as any)?.from?.pathname || '/pricing';
       navigate(from, { replace: true });
     }
   }, [state.user, navigate, location]);
 
   const handleAuthSuccess = (user: any) => {
     dispatch({ type: 'SET_USER', payload: user });
-    const from = (location.state as any)?.from?.pathname || '/dashboard';
+    const from = (location.state as any)?.from?.pathname || '/pricing';
     navigate(from, { replace: true });
   };
 

@@ -53,8 +53,8 @@ function App() {
           <Route path="settings/*" element={<SettingsPage />} />
         </Route>
 
-        {/* Catch all - redirect to content creation by default */}
-        <Route path="*" element={<Navigate to="/content" replace />} />
+        {/* Catch all - redirect to auth by default */}
+        <Route path="*" element={<Navigate to="/auth" replace />} />
       </Routes>
     </AppProvider>
   );
