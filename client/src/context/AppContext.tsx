@@ -10,54 +10,62 @@ export interface User {
   };
 }
 
-export interface Company {
+export interface Profile {
   id: string;
   name: string;
+  type: 'individual' | 'business';
   industry: string;
   description?: string;
   tone?: string;
   target_audience?: string;
   userId: string;
+  plan: 'free' | 'ipro' | 'business';
 }
 
 export interface Campaign {
   id: string;
   name: string;
   description?: string;
-  companyId: string;
+  profileId: string;
   isActive: boolean;
 }
 
 export interface AppState {
   user: User | null;
-  selectedCompany: Company | null;
+  userPlan: 'free' | 'ipro' | 'business' | null;
+  selectedProfile: Profile | null;
   selectedCampaign: Campaign | null;
   loading: boolean;
   error: string | null;
   generatedPosts: any[];
   contentData: any;
+  hasCompletedOnboarding: boolean;
 }
 
 // Actions
 type AppAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_USER'; payload: User | null }
-  | { type: 'SET_SELECTED_COMPANY'; payload: Company | null }
+  | { type: 'SET_USER_PLAN'; payload: 'free' | 'ipro' | 'business' | null }
+  | { type: 'SET_SELECTED_PROFILE'; payload: Profile | null }
   | { type: 'SET_SELECTED_CAMPAIGN'; payload: Campaign | null }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_GENERATED_POSTS'; payload: any[] }
   | { type: 'SET_CONTENT_DATA'; payload: any }
+  | { type: 'SET_ONBOARDING_COMPLETE'; payload: boolean }
   | { type: 'RESET_STATE' };
 
 // Initial state
 const initialState: AppState = {
   user: null,
-  selectedCompany: null,
+  userPlan: null,
+  selectedProfile: null,
   selectedCampaign: null,
   loading: true,
   error: null,
   generatedPosts: [],
   contentData: null,
+  hasCompletedOnboarding: false,
 };
 
 // Reducer
@@ -67,8 +75,10 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, loading: action.payload };
     case 'SET_USER':
       return { ...state, user: action.payload };
-    case 'SET_SELECTED_COMPANY':
-      return { ...state, selectedCompany: action.payload };
+    case 'SET_USER_PLAN':
+      return { ...state, userPlan: action.payload };
+    case 'SET_SELECTED_PROFILE':
+      return { ...state, selectedProfile: action.payload };
     case 'SET_SELECTED_CAMPAIGN':
       return { ...state, selectedCampaign: action.payload };
     case 'SET_ERROR':
@@ -77,6 +87,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, generatedPosts: action.payload };
     case 'SET_CONTENT_DATA':
       return { ...state, contentData: action.payload };
+    case 'SET_ONBOARDING_COMPLETE':
+      return { ...state, hasCompletedOnboarding: action.payload };
     case 'RESET_STATE':
       return { ...initialState, loading: false };
     default:
