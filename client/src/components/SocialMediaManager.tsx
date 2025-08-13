@@ -8,11 +8,12 @@ import {
 } from 'lucide-react';
 import { Platform } from '../types';
 import { oauthManager } from '../lib/oauth';
-import { getPlatformIcon, getPlatformDisplayName } from '../utils/platformIcons';
+import { getPlatformIcon, getPlatformDisplayName, getPlatformColors } from '../utils/platformIcons';
 
 interface SocialMediaManagerProps {
   userId: string;
   onCredentialsUpdate?: () => void;
+  selectedPlatforms?: Platform[];
 }
 
 interface PlatformStatus {
@@ -64,12 +65,13 @@ const platformInfo: Record<Platform, PlatformInfo> = {
 
 export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
   userId,
-  onCredentialsUpdate
+  onCredentialsUpdate,
+  selectedPlatforms
 }) => {
   const [platformStatuses, setPlatformStatuses] = useState<PlatformStatus[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const platforms: Platform[] = ['linkedin', 'facebook', 'instagram', 'twitter', 'tiktok', 'youtube'];
+  const platforms: Platform[] = selectedPlatforms || ['linkedin', 'facebook', 'instagram', 'twitter', 'tiktok', 'youtube'];
 
   useEffect(() => {
     checkPlatformStatuses();
@@ -274,14 +276,7 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
               className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
             >
               <div className="flex items-center space-x-4 flex-1">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white ${
-                  info.color === 'blue' ? 'bg-blue-600' :
-                  info.color === 'pink' ? 'bg-pink-600' :
-                  info.color === 'sky' ? 'bg-sky-600' :
-                  info.color === 'black' ? 'bg-gray-900' :
-                  info.color === 'red' ? 'bg-red-600' :
-                  'bg-blue-600'
-                }`}>
+                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${getPlatformColors(status.platform).split(' ')[0]} text-white`}>
                   {IconComponent && <IconComponent className="w-6 h-6" />}
                 </div>
                 
@@ -411,7 +406,7 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
       {platformStatuses.filter(s => s.connected).length > 0 && (
         <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-sm text-green-700">
-            ✅ You have {platformStatuses.filter(s => s.connected).length} platform(s) connected and ready for publishing!
+            ✅ You have {platformStatuses.filter(s => s.connected).length} of {platforms.length} platform(s) connected and ready for publishing!
           </p>
         </div>
       )}
