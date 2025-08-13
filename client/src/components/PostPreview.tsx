@@ -9,7 +9,13 @@ import {
   Eye,
   ThumbsUp,
   Send,
-  Edit, // Import Edit icon
+  Edit,
+  Facebook,
+  Instagram,
+  Twitter,
+  Linkedin,
+  Youtube,
+  Music,
 } from "lucide-react";
 import { GeneratedPost, Platform } from "../types";
 
@@ -60,6 +66,18 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
       youtube: "bg-red-600 border-red-200",
     };
     return colors[platform] || "bg-gray-600";
+  };
+
+  const getPlatformIcon = (platform: Platform) => {
+    const icons = {
+      facebook: Facebook,
+      instagram: Instagram,
+      twitter: Twitter,
+      linkedin: Linkedin,
+      tiktok: Music,
+      youtube: Youtube,
+    };
+    return icons[platform];
   };
 
   const renderPlatformPreview = (post: GeneratedPost) => {
@@ -401,44 +419,54 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
             Select Platform
           </h3>
           <div className="space-y-3">
-            {generatedPosts.map((post, index) => (
-              <button
-                key={post.platform}
-                onClick={() => setSelectedPlatform(post.platform)}
-                className={`w-full p-4 rounded-lg border-2 transition-all duration-200 text-left ${
-                  selectedPlatform === post.platform
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium text-gray-900 capitalize">
-                      {post.platform}
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      {post.characterCount} characters
-                    </p>
+            {generatedPosts.map((post, index) => {
+              const IconComponent = getPlatformIcon(post.platform);
+              return (
+                <button
+                  key={post.platform}
+                  onClick={() => setSelectedPlatform(post.platform)}
+                  className={`w-full p-4 rounded-lg border-2 transition-all duration-200 text-left ${
+                    selectedPlatform === post.platform
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      {IconComponent && (
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${getPlatformColors(post.platform)}`}>
+                          <IconComponent className="w-4 h-4" />
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="font-medium text-gray-900 capitalize">
+                          {post.platform}
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          {post.characterCount} characters
+                        </p>
+                      </div>
+                    </div>
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        post.engagement === "high"
+                          ? "bg-green-500"
+                          : post.engagement === "medium"
+                            ? "bg-yellow-500"
+                            : "bg-red-500"
+                      }`}
+                    ></div>
                   </div>
-                  <div
-                    className={`w-3 h-3 rounded-full ${
-                      post.engagement === "high"
-                        ? "bg-green-500"
-                        : post.engagement === "medium"
-                          ? "bg-yellow-500"
-                          : "bg-red-500"
-                    }`}
-                  ></div>
-                </div>
-                <div className="mt-2">
-                  <div
-                    className={`inline-block px-2 py-1 rounded text-xs text-white ${getPlatformColors(post.platform)}`}
-                  >
-                    {post.engagement} engagement
+                  <div className="mt-2">
+                    <div
+                      className={`inline-block px-2 py-1 rounded text-xs text-white ${getPlatformColors(post.platform)}`}
+                    >
+                      {post.engagement} engagement
+                    </div>
                   </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
 
           {selectedPost && (
@@ -481,49 +509,87 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
         {/* Preview */}
         <div className="lg:col-span-2">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Preview</h3>
-          <div className="flex justify-center mb-6">
-            {selectedPost && renderPlatformPreview(selectedPost)}
-          </div>
-
-          {selectedPost && (
-            <div className="mt-6 bg-gray-50 rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-2">Post Details</h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-600">Character Count:</span>
-                  <span className="ml-2 font-medium">
-                    {selectedPost.characterCount}
-                  </span>
+          
+          {/* Grid layout for preview and details */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left side - Platform Preview */}
+            <div className="flex justify-center">
+              {selectedPost && renderPlatformPreview(selectedPost)}
+            </div>
+            
+            {/* Right side - Post Details */}
+            {selectedPost && (
+              <div className="space-y-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                    {(() => {
+                      const IconComponent = getPlatformIcon(selectedPost.platform);
+                      return IconComponent ? (
+                        <>
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white ${getPlatformColors(selectedPost.platform)}`}>
+                            <IconComponent className="w-3 h-3" />
+                          </div>
+                          <span className="capitalize">{selectedPost.platform} Details</span>
+                        </>
+                      ) : (
+                        <span className="capitalize">{selectedPost.platform} Details</span>
+                      );
+                    })()}
+                  </h4>
+                  <div className="grid grid-cols-1 gap-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Character Count:</span>
+                      <span className="font-medium">{selectedPost.characterCount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Hashtags:</span>
+                      <span className="font-medium">{selectedPost.hashtags.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Engagement:</span>
+                      <span
+                        className={`font-medium capitalize ${
+                          selectedPost.engagement === "high"
+                            ? "text-green-600"
+                            : selectedPost.engagement === "medium"
+                              ? "text-yellow-600"
+                              : "text-red-600"
+                        }`}
+                      >
+                        {selectedPost.engagement}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-gray-600">Hashtags:</span>
-                  <span className="ml-2 font-medium">
-                    {selectedPost.hashtags.length}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Engagement:</span>
-                  <span
-                    className={`ml-2 font-medium capitalize ${
-                      selectedPost.engagement === "high"
-                        ? "text-green-600"
-                        : selectedPost.engagement === "medium"
-                          ? "text-yellow-600"
-                          : "text-red-600"
-                    }`}
-                  >
-                    {selectedPost.engagement}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Platform:</span>
-                  <span className="ml-2 font-medium capitalize">
-                    {selectedPost.platform}
-                  </span>
+                
+                {/* Content Description with scroll */}
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Content</h4>
+                  <div className="max-h-40 overflow-y-auto bg-gray-50 rounded p-3 text-sm text-gray-700">
+                    <p className="whitespace-pre-wrap leading-relaxed">
+                      {selectedPost.caption}
+                    </p>
+                  </div>
+                  
+                  {selectedPost.hashtags.length > 0 && (
+                    <div className="mt-3">
+                      <h5 className="text-sm font-medium text-gray-900 mb-1">Hashtags</h5>
+                      <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                        {selectedPost.hashtags.map((tag, index) => (
+                          <span
+                            key={index}
+                            className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
