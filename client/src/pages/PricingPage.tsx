@@ -1,7 +1,9 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, Star, Zap, Crown } from 'lucide-react';
+import { Check, Star, Zap, Crown, ArrowLeft } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { ProfileSetup } from '../components/ProfileSetup';
 
 interface PricingTier {
   id: 'free' | 'ipro' | 'business';
@@ -75,7 +77,7 @@ const pricingTiers: PricingTier[] = [
 export const PricingPage: React.FC = () => {
   const navigate = useNavigate();
   const { dispatch } = useAppContext();
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<'free' | 'ipro' | 'business' | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSelectPlan = async (planId: 'free' | 'ipro' | 'business') => {
@@ -86,14 +88,67 @@ export const PricingPage: React.FC = () => {
       // Store the selected plan in context
       dispatch({ type: 'SET_USER_PLAN', payload: planId });
       
-      // Navigate to profile setup
-      navigate('/onboarding/profile');
+      // Don't navigate yet, show the profile setup form
     } catch (error) {
       console.error('Error selecting plan:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleBackToPricing = () => {
+    setSelectedPlan(null);
+    dispatch({ type: 'SET_USER_PLAN', payload: null });
+  };
+
+  const handleProfileComplete = () => {
+    // Navigate to dashboard after profile setup
+    navigate('/dashboard');
+  };
+
+  if (selectedPlan) {
+    const selectedTier = pricingTiers.find(tier => tier.id === selectedPlan);
+    const userType = selectedPlan === 'business' ? 'business' : 'individual';
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-16 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <button
+              onClick={handleBackToPricing}
+              className="flex items-center text-blue-600 hover:text-blue-800 mb-4 mx-auto"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Pricing
+            </button>
+            <div className="mb-6">
+              <div className={`inline-flex items-center px-6 py-3 rounded-full ${selectedTier?.buttonClass}`}>
+                {selectedTier && <selectedTier.icon className="w-6 h-6 mr-2" />}
+                <span className="font-semibold">{selectedTier?.name} Plan Selected</span>
+              </div>
+            </div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              {userType === 'business' ? 'Business Profile Setup' : 'Creator Profile Setup'}
+            </h1>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              {userType === 'business' 
+                ? 'Set up your business profile to unlock team collaboration and enterprise features.'
+                : 'Complete your creator profile to start generating amazing content with AI.'
+              }
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <ProfileSetup 
+              userType={userType}
+              selectedPlan={selectedPlan}
+              onComplete={handleProfileComplete}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-16 px-4">

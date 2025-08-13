@@ -1,3 +1,39 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom animations for carousel */
+@keyframes slide-in-from-top {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-from-bottom {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation-duration: 0.7s;
+  animation-fill-mode: both;
+}
+
+.slide-in-from-top {
+  animation-name: slide-in-from-top;
+}
+
+.slide-in-from-bottom {
+  animation-name: slide-in-from-bottom;
+}
