@@ -516,78 +516,80 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
             {selectedPost && renderPlatformPreview(selectedPost)}
           </div>
 
-          {/* Post Details - Below Preview */}
+          {/* Post Details - Below Preview with constrained width */}
           {selectedPost && (
-            <div className="space-y-4">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                  {(() => {
-                    const IconComponent = getPlatformIcon(
-                      selectedPost.platform,
-                    );
-                    return IconComponent ? (
-                      <>
-                        <div
-                          className={`w-6 h-6 rounded-full flex items-center justify-center text-white ${getPlatformColors(selectedPost.platform)}`}
-                        >
-                          <IconComponent className="w-3 h-3" />
-                        </div>
+            <div className="flex justify-center">
+              <div className="max-w-lg w-full space-y-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                    {(() => {
+                      const IconComponent = getPlatformIcon(
+                        selectedPost.platform,
+                      );
+                      return IconComponent ? (
+                        <>
+                          <div
+                            className={`w-6 h-6 rounded-full flex items-center justify-center text-white ${getPlatformColors(selectedPost.platform)}`}
+                          >
+                            <IconComponent className="w-3 h-3" />
+                          </div>
+                          <span className="capitalize">
+                            {selectedPost.platform} Details
+                          </span>
+                        </>
+                      ) : (
                         <span className="capitalize">
                           {selectedPost.platform} Details
                         </span>
-                      </>
-                    ) : (
-                      <span className="capitalize">
-                        {selectedPost.platform} Details
+                      );
+                    })()}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                    <div className="flex justify-between md:flex-col md:items-start">
+                      <span className="text-gray-600">Character Count:</span>
+                      <span className="font-medium">
+                        {selectedPost.characterCount}
                       </span>
-                    );
-                  })()}
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                  <div className="flex justify-between md:flex-col md:items-start">
-                    <span className="text-gray-600">Character Count:</span>
-                    <span className="font-medium">
-                      {selectedPost.characterCount}
-                    </span>
-                  </div>
-                  <div className="flex justify-between md:flex-col md:items-start">
-                    <span className="text-gray-600">Hashtags:</span>
-                    <span className="font-medium">
-                      {selectedPost.hashtags.length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between md:flex-col md:items-start">
-                    <span className="text-gray-600">Engagement:</span>
-                    <span
-                      className={`font-medium capitalize ${
-                        selectedPost.engagement === "high"
-                          ? "text-green-600"
-                          : selectedPost.engagement === "medium"
-                            ? "text-yellow-600"
-                            : "text-red-600"
-                      }`}
-                    >
-                      {selectedPost.engagement}
-                    </span>
-                  </div>
-                </div>
-                {selectedPost.hashtags.length > 0 && (
-                  <div className="mt-4">
-                    <h5 className="text-sm font-medium text-gray-900 mb-2">
-                      Hashtags
-                    </h5>
-                    <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                      {selectedPost.hashtags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
-                        >
-                          {tag}
-                        </span>
-                      ))}
+                    </div>
+                    <div className="flex justify-between md:flex-col md:items-start">
+                      <span className="text-gray-600">Hashtags:</span>
+                      <span className="font-medium">
+                        {selectedPost.hashtags.length}
+                      </span>
+                    </div>
+                    <div className="flex justify-between md:flex-col md:items-start">
+                      <span className="text-gray-600">Engagement:</span>
+                      <span
+                        className={`font-medium capitalize ${
+                          selectedPost.engagement === "high"
+                            ? "text-green-600"
+                            : selectedPost.engagement === "medium"
+                              ? "text-yellow-600"
+                              : "text-red-600"
+                        }`}
+                      >
+                        {selectedPost.engagement}
+                      </span>
                     </div>
                   </div>
-                )}
+                  {selectedPost.hashtags.length > 0 && (
+                    <div className="mt-4">
+                      <h5 className="text-sm font-medium text-gray-900 mb-2">
+                        Hashtags
+                      </h5>
+                      <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                        {selectedPost.hashtags.map((tag, index) => (
+                          <span
+                            key={index}
+                            className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
