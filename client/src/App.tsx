@@ -1,8 +1,9 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AppProvider } from './context/AppContext';
-import { ProtectedRoute } from './components/ProtectedRoute';
 import { AppLayout } from './components/Layout/AppLayout';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthPage } from './pages/AuthPage';
 import { PricingPage } from './pages/PricingPage';
 import { OnboardingPage } from './pages/OnboardingPage';
@@ -13,8 +14,14 @@ import { SettingsPage } from './pages/SettingsPage';
 import { OAuthCallback } from './components/OAuthCallback';
 import { LandingPage } from './pages/LandingPage';
 import { CompaniesPage } from './pages/CompaniesPage';
+import { themeManager } from './lib/theme';
 
 function App() {
+  useEffect(() => {
+    // Initialize theme system
+    themeManager.initialize();
+  }, []);
+
   return (
     <AppProvider>
       <Routes>
