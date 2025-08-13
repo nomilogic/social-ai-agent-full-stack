@@ -95,7 +95,18 @@ router.post("/post", async (req: Request, res: Response) => {
 
       // Step 2b: Download the image from the provided URL
       console.log("Downloading image from URL:", post.imageUrl);
-      const imageResponse = await axios.get(post.imageUrl, {
+      
+      // Convert relative URL to full URL if needed
+      let imageUrl = post.imageUrl;
+      if (imageUrl.startsWith('/uploads/')) {
+        const baseUrl = process.env.NODE_ENV === 'production' 
+          ? process.env.BASE_URL || 'http://localhost:5000'
+          : 'http://localhost:5000';
+        imageUrl = `${baseUrl}${imageUrl}`;
+      }
+      
+      console.log("Full image URL:", imageUrl);
+      const imageResponse = await axios.get(imageUrl, {
         responseType: "arraybuffer",
         timeout: 30000,
         headers: {
