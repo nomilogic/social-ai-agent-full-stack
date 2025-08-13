@@ -685,9 +685,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           : "border-gray-200 hover:border-gray-300 bg-white"
                       }`}
                     >
-                      <IconComponent
-                        className={`w-5 h-5 ${isSelected ? platform.color : 'text-gray-500'}`}
-                      />
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white ${getPlatformColors(platform.id)}`}>
+                        <IconComponent className="w-4 h-4" />
+                      </div>
                       <span className={`text-sm font-medium ${isSelected ? platform.color : 'text-gray-700'}`}>
                         {platform.name}
                       </span>
