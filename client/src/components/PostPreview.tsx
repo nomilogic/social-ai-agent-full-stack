@@ -29,7 +29,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
   posts: generatedPosts, // Renamed to avoid conflict with selectedPlatform initialization
   onBack,
   onEdit,
-  onPublish,
+  onPublish = () => {},
   onPostsUpdate, // Receive the new prop
   editingPost, // Receive the new prop
   setEditingIndex, // Receive the new prop
