@@ -25,6 +25,7 @@ import { PostContent, Platform } from "../types";
 import { uploadMedia, getCurrentUser } from "../lib/database";
 import { analyzeImage as analyzeImageWithGemini } from "../lib/gemini"; // Renamed to avoid conflict
 import { AIImageGenerator } from "./AIImageGenerator";
+import { PostPreview } from "./PostPreview";
 import { getPlatformColors, platformOptions } from "../utils/platformIcons";
 
 // Helper function to convert file to base64
@@ -76,6 +77,8 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [useForAIReference, setUseForAIReference] = useState(true);
   const [useInPost, setUseInPost] = useState(true);
+  const [generatedResults, setGeneratedResults] = useState<any[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize with existing data when in edit mode
@@ -219,7 +222,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.prompt.trim()) {
       // For now, passing an empty object for companyInfo and mediaAssets to simulate the structure
@@ -235,8 +238,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         ? [{ url: formData.mediaUrl, type: formData.media?.type || "image" }]
         : [];
 
-      // Navigate to generator with all the data
-      onNext({
+      const postData = {
         ...formData,
         prompt: formData.prompt,
         selectedPlatforms: formData.selectedPlatforms,
@@ -250,7 +252,25 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         targetAudience: companyInfo.target_audience,
         description: companyInfo.description,
         imageAnalysis: imageAnalysis,
-      });
+      };
+
+      // If onNext callback is provided, use it
+      if (onNext && typeof onNext === 'function') {
+        onNext(postData);
+      } else {
+        // Otherwise, simulate generation for preview
+        const simulatedGeneratedPosts = [
+          {
+            platform: formData.selectedPlatforms[0] || "linkedin",
+            content: formData.prompt,
+            caption: formData.prompt,
+            hashtags: formData.tags,
+            engagement: Math.floor(Math.random() * 1000),
+          },
+        ];
+        setGeneratedResults(simulatedGeneratedPosts);
+        setShowPreview(true);
+      }
     }
   };
 
@@ -302,6 +322,12 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       console.error("Error handling AI generated image:", error);
       // Fallback: just use the URL directly
       setFormData((prev) => ({ ...prev, mediaUrl: imageUrl }));
+    }
+  };
+
+  const handleNext = () => {
+    if (generatedResults && generatedResults.length > 0) {
+      setShowPreview(true);
     }
   };
 
@@ -718,6 +744,21 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           selectedPlatforms={formData.selectedPlatforms}
           onClose={() => setShowAIGenerator(false)}
         />
+      )}
+
+      {/* Post Preview */}
+      {showPreview && generatedResults && generatedResults.length > 0 && (
+        <div className="mt-8">
+          <PostPreview
+            generatedPosts={generatedResults}
+            onBack={() => setShowPreview(false)}
+            onNext={() => {
+              // Handle next step - could be publishing or scheduling
+              console.log("Moving to next step with posts:", generatedResults);
+            }}
+            mediaUrl={formData.mediaUrl}
+          />
+        </div>
       )}
     </div>
   );
