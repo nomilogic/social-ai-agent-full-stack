@@ -307,7 +307,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         {/* Main Content */}
         <main className="py-6">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="theme-bg-primary rounded-xl backdrop-blur-sm border-0 overflow-hidden w-fit min-w-full">
+            <div className="theme-bg-primary rounded-xl backdrop-blur-sm border-0 overflow-hidden">
               <div className="p-6">
                 {children}
               </div>
