@@ -33,10 +33,10 @@ export const AIModelSelector: React.FC<AIModelSelectorProps> = ({
   const [showDetails, setShowDetails] = useState(false);
   const [userPreferences, setUserPreferences] = useState<{[key: string]: string}>({});
 
-  const availableModels = task === 'image-generation' 
+  const availableModels = task === 'image-generation'
     ? aiService.getAvailableModels('image')
     : aiService.getAvailableModels('text');
-  
+
   const recommendedModels = TASK_RECOMMENDATIONS[task] || [];
   const currentModel = selectedModel || aiService.getModelPreference(task);
   const selectedModelInfo = aiService.getModel(currentModel);
@@ -54,7 +54,7 @@ export const AIModelSelector: React.FC<AIModelSelectorProps> = ({
     aiService.setModelPreference(task, modelId);
     onModelSelect(modelId);
     setIsOpen(false);
-    
+
     // Update local preferences state
     setUserPreferences(prev => ({ ...prev, [task]: modelId }));
   };
@@ -101,16 +101,16 @@ export const AIModelSelector: React.FC<AIModelSelectorProps> = ({
     return null;
   };
 
-  const ModelCard = ({ model, isSelected, onClick }: { 
-    model: AIModel; 
-    isSelected: boolean; 
+  const ModelCard = ({ model, isSelected, onClick }: {
+    model: AIModel;
+    isSelected: boolean;
     onClick: () => void;
   }) => (
     <div
       onClick={onClick}
       className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
-        isSelected 
-          ? 'border-blue-500 bg-blue-50 shadow-sm' 
+        isSelected
+          ? 'border-blue-500 bg-blue-50 shadow-sm'
           : 'border-gray-200 hover:border-gray-300'
       }`}
     >
@@ -131,9 +131,9 @@ export const AIModelSelector: React.FC<AIModelSelectorProps> = ({
         </div>
         {isSelected && <Check className="w-5 h-5 text-blue-600" />}
       </div>
-      
+
       <p className="text-sm text-gray-600 mb-3">{model.description}</p>
-      
+
       <div className="flex flex-wrap gap-1 mb-3">
         {model.capabilities.slice(0, 3).map(capability => (
           <span key={capability} className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">
@@ -146,7 +146,7 @@ export const AIModelSelector: React.FC<AIModelSelectorProps> = ({
           </span>
         )}
       </div>
-      
+
       {showAdvanced && (
         <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
           <div className="flex items-center">
@@ -161,7 +161,7 @@ export const AIModelSelector: React.FC<AIModelSelectorProps> = ({
           )}
         </div>
       )}
-      
+
       <div className="mt-2">
         {getPerformanceBadge(model.id)}
       </div>
@@ -178,13 +178,22 @@ export const AIModelSelector: React.FC<AIModelSelectorProps> = ({
             <span>AI Model for {TASK_DESCRIPTIONS[task]}</span>
           </div>
         </label>
-        
+
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="w-full flex items-center justify-between p-3 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         >
           <div className="flex items-center space-x-3">
-            <span className="text-lg">{getProviderIcon(selectedModelInfo?.provider || 'openai')}</span>
+            <div className="w-5 h-5 flex items-center justify-center">
+              {selectedModelInfo ? (
+                (() => {
+                  const IconComponent = getProviderIcon(selectedModelInfo.provider);
+                  return <IconComponent className="w-4 h-4 text-gray-600" />;
+                })()
+              ) : (
+                <Sparkles className="w-4 h-4 text-gray-600" />
+              )}
+            </div>
             <div className="text-left">
               <div className="font-medium text-gray-900">
                 {selectedModelInfo?.name || 'Select AI Model'}
@@ -212,7 +221,7 @@ export const AIModelSelector: React.FC<AIModelSelectorProps> = ({
                 <span>{showDetails ? 'Hide' : 'Show'} Details</span>
               </button>
             </div>
-            
+
             {/* Recommended Models */}
             <div className="mb-6">
               <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
@@ -233,7 +242,7 @@ export const AIModelSelector: React.FC<AIModelSelectorProps> = ({
                 }
               </div>
             </div>
-            
+
             {/* All Available Models */}
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-3">All Available Models</h4>
