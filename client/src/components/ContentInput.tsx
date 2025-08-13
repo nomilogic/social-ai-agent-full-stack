@@ -287,12 +287,13 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Media Upload */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-4">
-              <Camera className="w-4 h-4 inline mr-2" />
-              Upload Media (Optional)
-            </label>
+          {/* Left Column - Media Upload */}
+          <div className="flex flex-col space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-4">
+                <Camera className="w-4 h-4 inline mr-2" />
+                Upload Media (Optional)
+              </label></div>
             <div
               className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
                 dragActive
@@ -435,39 +436,39 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Image Analysis Results - Show prominently when available */}
-          {imageAnalysis && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 shadow-sm">
-              <div className="space-y-3">
-                <h4 className="font-semibold text-blue-900 flex items-center text-sm">
-                  <Eye className="w-4 h-4 mr-2" />
-                  🤖 AI Image Analysis Complete
-                </h4>
-                <div className="max-h-32 overflow-y-auto">
-                  <p className="text-blue-800 text-xs leading-relaxed">{imageAnalysis}</p>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center text-xs text-blue-600">
-                    <Sparkles className="w-3 h-3 mr-1" />
-                    <span className="text-xs">Click "Add to Description" to use this analysis</span>
+            {/* Image Analysis Results - In left column below media */}
+            {imageAnalysis && (
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 shadow-sm">
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-blue-900 flex items-center text-sm">
+                    <Eye className="w-4 h-4 mr-2" />
+                    🤖 AI Image Analysis Complete
+                  </h4>
+                  <div className="max-h-32 overflow-y-auto">
+                    <p className="text-blue-800 text-xs leading-relaxed">{imageAnalysis}</p>
                   </div>
-                  <button
-                    onClick={useImageAnalysis}
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center space-x-1"
-                  >
-                    <span>Add to Description</span>
-                    <span>✨</span>
-                  </button>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center text-xs text-blue-600">
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      <span className="text-xs">Click "Add to Description" to use this analysis</span>
+                    </div>
+                    <button
+                      onClick={useImageAnalysis}
+                      className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center space-x-1"
+                    >
+                      <span>Add to Description</span>
+                      <span>✨</span>
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Content Details */}
-          <div className="space-y-6">
-            <div>
+          {/* Right Column - Content Details */}
+          <div className="flex flex-col space-y-6 h-full">
+            <div className="flex-1 flex flex-col">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <FileText className="w-4 h-4 inline mr-2" />
                 Content Description *
@@ -475,8 +476,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
               <textarea
                 value={formData.prompt}
                 onChange={(e) => setFormData(prev => ({ ...prev, prompt: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                rows={6}
+                className="flex-1 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 min-h-[200px]"
                 placeholder="Describe what you want to share... (e.g., 'Launch of our new eco-friendly water bottles with 50% recycled materials')"
                 required
               />
