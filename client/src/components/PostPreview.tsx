@@ -9,6 +9,7 @@ import {
   Eye,
   ThumbsUp,
   Send,
+  Edit, // Import Edit icon
 } from "lucide-react";
 import { GeneratedPost, Platform } from "../types";
 
@@ -529,12 +530,13 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
       <div className="flex gap-4 pt-8 border-t border-gray-200 mt-8">
         <button
           onClick={onBack}
-          className="flex-1 bg-gray-100 text-gray-700 py-4 px-8 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200"
+          className="flex-1 bg-gray-100 text-gray-700 py-4 px-8 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center space-x-2"
         >
-          Back to Edit
+          <Edit className="w-5 h-5" />
+          <span>Edit</span>
         </button>
         <button
-          onClick={onEdit}
+          onClick={() => window.location.href = '/content'}
           className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-8 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
         >
           Edit & Regenerate

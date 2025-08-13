@@ -67,6 +67,8 @@ export const ContentPage: React.FC = () => {
             <ContentInput
               onNext={handleContentNext}
               onBack={() => navigate('/dashboard')}
+              initialData={state.contentData}
+              editMode={!!state.contentData}
             />
           }
         />
@@ -98,7 +100,7 @@ export const ContentPage: React.FC = () => {
             state.generatedPosts && state.generatedPosts.length > 0 ? (
               <PostPreview
                 posts={state.generatedPosts}
-                onEdit={() => navigate('/content/generate')}
+                onEdit={() => navigate('/content')}
                 onBack={() => navigate('/content/generate')}
                 onPublish={handleGoToPublish}
               />
