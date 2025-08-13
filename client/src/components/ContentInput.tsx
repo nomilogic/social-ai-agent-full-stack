@@ -63,7 +63,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         prompt: initialData.prompt || '',
         tags: initialData.tags || [],
         campaignId: initialData.campaignId || '',
-        selectedPlatforms: initialData.selectedPlatforms || selectedPlatforms,
+        selectedPlatforms: initialData.selectedPlatforms || selectedPlatforms || ['linkedin'],
         media: initialData.media,
         mediaUrl: initialData.mediaUrl,
       }));
@@ -71,7 +71,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         setImageAnalysis(initialData.imageAnalysis);
       }
     }
-  }, [initialData, selectedPlatforms]);
+  }, [initialData, selectedPlatforms, editMode]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
