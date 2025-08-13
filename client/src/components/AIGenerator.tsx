@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sparkles, Brain, Zap } from 'lucide-react';
 import { CompanyInfo, PostContent, GeneratedPost, Platform } from '../types';
 import { generateAllPosts } from '../lib/gemini';
+import { getPlatformIcon, getPlatformDisplayName } from '../utils/platformIcons';
 
 interface AIGeneratorProps {
   contentData: any;
@@ -127,17 +128,7 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
     }
   };
 
-  const getPlatformIcon = (platform: Platform) => {
-    const icons = {
-      facebook: '📘',
-      instagram: '📷',
-      twitter: '🐦',
-      linkedin: '💼',
-      tiktok: '🎵',
-      youtube: '🎬'
-    };
-    return icons[platform] || '📱';
-  };
+
 
   return (
     <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg p-8">
@@ -162,12 +153,19 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
         {currentPlatform && (
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl border border-blue-200">
             <div className="flex items-center justify-center space-x-4">
-              <div className="text-3xl animate-bounce">
-                {getPlatformIcon(currentPlatform)}
+              <div className="w-16 h-16 bg-white rounded-2xl shadow-lg flex items-center justify-center animate-bounce">
+                {(() => {
+                  const IconComponent = getPlatformIcon(currentPlatform);
+                  return IconComponent ? (
+                    <IconComponent className="w-8 h-8 text-blue-600" />
+                  ) : (
+                    <Brain className="w-8 h-8 text-blue-600" />
+                  );
+                })()}
               </div>
               <div>
                 <p className="text-lg font-medium text-gray-800">
-                  Optimizing for {currentPlatform.charAt(0).toUpperCase() + currentPlatform.slice(1)}
+                  Optimizing for {getPlatformDisplayName(currentPlatform)}
                 </p>
                 <p className="text-sm text-gray-600">
                   Analyzing audience, tone, and platform best practices...

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Edit, Plus, Trash2, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, Edit, Plus, Trash2, Eye, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 interface ScheduledPost {
   id: string;
@@ -118,10 +118,10 @@ export const PostCalendar: React.FC<PostCalendarProps> = ({
             </h3>
             <button
               onClick={() => setSelectedPost(null)}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100"
             >
+              <X className="w-5 h-5" />
               <span className="sr-only">Close</span>
-              ×
             </button>
           </div>
           
