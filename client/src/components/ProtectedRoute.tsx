@@ -35,13 +35,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   // If user has plan but hasn't completed onboarding, redirect to profile setup
-  if (state.userPlan && !state.onboardingComplete && location.pathname !== '/onboarding' && location.pathname !== '/pricing') {
+  if (state.userPlan && !state.hasCompletedOnboarding && location.pathname !== '/onboarding' && location.pathname !== '/pricing') {
     return <Navigate to="/onboarding" replace />;
   }
 
-  // If user completed onboarding but trying to access onboarding pages, redirect to content
-  if (state.onboardingComplete && (location.pathname === '/onboarding' || location.pathname === '/pricing')) {
-    return <Navigate to="/content" replace />;
+  // If user completed onboarding but trying to access onboarding pages, redirect to dashboard
+  if (state.hasCompletedOnboarding && (location.pathname === '/onboarding' || location.pathname === '/pricing')) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;

@@ -89,8 +89,8 @@ export const OAuthCallback: React.FC = () => {
   }, [searchParams, navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="max-w-md w-full bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 text-center">
         <div className="mb-6">
           {status === "processing" && (
             <Loader className="w-12 h-12 text-blue-600 animate-spin mx-auto" />
@@ -143,7 +143,7 @@ export const OAuthCallback: React.FC = () => {
           <div className="mt-6">
             <button
               onClick={() => navigate("/settings")}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg"
             >
               Continue to Settings
             </button>
