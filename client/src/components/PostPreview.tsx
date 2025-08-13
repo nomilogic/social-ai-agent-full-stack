@@ -18,10 +18,10 @@ interface PostPreviewProps {
   onBack: () => void;
   onEdit: () => void;
   onPublish?: () => void;
-  onPostsUpdate: (updatedPosts: GeneratedPost[]) => void; // Added prop
-  editingPost: GeneratedPost | null; // Added prop
-  setEditingIndex: React.Dispatch<React.SetStateAction<number | null>>; // Added prop
-  editingIndex: number | null; // Added prop
+  onPostsUpdate?: (updatedPosts: GeneratedPost[]) => void; // Made optional
+  editingPost?: GeneratedPost | null; // Made optional
+  setEditingIndex?: React.Dispatch<React.SetStateAction<number | null>>; // Made optional
+  editingIndex?: number | null; // Made optional
 }
 
 export const PostPreview: React.FC<PostPreviewProps> = ({
@@ -529,17 +529,17 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
 
       <div className="flex gap-4 pt-8 border-t border-gray-200 mt-8">
         <button
-          onClick={onBack}
+          onClick={onEdit}
           className="flex-1 bg-gray-100 text-gray-700 py-4 px-8 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center space-x-2"
         >
           <Edit className="w-5 h-5" />
-          <span>Edit</span>
+          <span>Edit Content</span>
         </button>
         <button
-          onClick={() => window.location.href = '/content'}
+          onClick={onBack}
           className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-8 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
         >
-          Edit & Regenerate
+          Back to Generation
         </button>
       </div>
 
