@@ -7,7 +7,6 @@ import { PublishPosts } from '../components/PublishPosts';
 import { ProgressBar } from '../components/ProgressBar';
 import { useAppContext } from '../context/AppContext';
 import { savePost } from '../lib/database';
-import { getPlatformIcon, getPlatformDisplayName, getPlatformColors } from '../utils/platformIcons';
 
 export const ContentPage: React.FC = () => {
   const { state, dispatch } = useAppContext();

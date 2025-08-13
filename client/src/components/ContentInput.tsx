@@ -26,8 +26,6 @@ import { uploadMedia, getCurrentUser } from "../lib/database";
 import { analyzeImage as analyzeImageWithGemini } from "../lib/gemini"; // Renamed to avoid conflict
 import { AIImageGenerator } from "./AIImageGenerator";
 import { platformOptions } from "../utils/platformIcons";
-import { PostPreview } from "./PostPreview"; // Assuming PostPreview is in the same directory
-import { getPlatformIcon, getPlatformDisplayName, getPlatformColors } from '../utils/platformIcons';
 
 // Helper function to convert file to base64
 const fileToBase64 = (file: File): Promise<string> => {
@@ -47,7 +45,7 @@ const fileToBase64 = (file: File): Promise<string> => {
 };
 
 interface ContentInputProps {
-  onNext?: (data?: PostContent) => void; // Made optional for preview navigation
+  onNext: (data: PostContent) => void;
   onBack: () => void;
   initialData?: Partial<PostContent>;
   selectedPlatforms?: Platform[];
@@ -79,18 +77,6 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const [useForAIReference, setUseForAIReference] = useState(true);
   const [useInPost, setUseInPost] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // State for generated posts and preview
-  const [analyzing, setAnalyzing] = useState(false);
-  const [generatedResults, setGeneratedResults] = useState<PostContent[] | null>(null); // Assuming GeneratedPost is PostContent for now
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-
-  const handleNext = () => {
-    if (generatedResults && generatedResults.length > 0) {
-      setShowPreview(true);
-    }
-  };
 
   // Initialize with existing data when in edit mode
   useEffect(() => {
@@ -249,26 +235,22 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         ? [{ url: formData.mediaUrl, type: formData.media?.type || "image" }]
         : [];
 
-      // Simulate generating results and then call handleNext
-      const simulatedGeneratedPosts: PostContent[] = [
-        {
-          ...formData,
-          prompt: formData.prompt,
-          selectedPlatforms: formData.selectedPlatforms,
-          platforms: formData.selectedPlatforms,
-          companyName: companyInfo.name,
-          companyInfo,
-          mediaAssets,
-          analysisResults: imageAnalysis,
-          industry: companyInfo.industry,
-          tone: companyInfo.brand_tone,
-          targetAudience: companyInfo.target_audience,
-          description: companyInfo.description,
-          imageAnalysis: imageAnalysis,
-        },
-      ];
-      setGeneratedResults(simulatedGeneratedPosts);
-      handleNext();
+      // Navigate to generator with all the data
+      onNext({
+        ...formData,
+        prompt: formData.prompt,
+        selectedPlatforms: formData.selectedPlatforms,
+        platforms: formData.selectedPlatforms,
+        companyName: companyInfo.name,
+        companyInfo,
+        mediaAssets,
+        analysisResults: imageAnalysis,
+        industry: companyInfo.industry,
+        tone: companyInfo.brand_tone,
+        targetAudience: companyInfo.target_audience,
+        description: companyInfo.description,
+        imageAnalysis: imageAnalysis,
+      });
     }
   };
 
@@ -685,9 +667,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           : "border-gray-200 hover:border-gray-300 bg-white"
                       }`}
                     >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white ${getPlatformColors(platform.id)}`}>
-                        <IconComponent className="w-4 h-4" />
-                      </div>
+                      <IconComponent 
+                        className={`w-5 h-5 ${isSelected ? platform.color : 'text-gray-500'}`} 
+                      />
                       <span className={`text-sm font-medium ${isSelected ? platform.color : 'text-gray-700'}`}>
                         {platform.name}
                       </span>
@@ -726,19 +708,6 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           contentText={formData.prompt}
           selectedPlatforms={formData.selectedPlatforms}
           onClose={() => setShowAIGenerator(false)}
-        />
-      )}
-
-      {/* Post Preview Modal */}
-      {showPreview && generatedResults && (
-        <PostPreview
-          posts={generatedResults}
-          onBack={() => setShowPreview(false)}
-          onEdit={() => setShowPreview(false)}
-          onPublish={() => {
-            // Navigate to publish page
-            if (onNext) onNext(generatedResults[0]); // Pass the first generated post for publishing
-          }}
         />
       )}
     </div>
