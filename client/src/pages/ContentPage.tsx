@@ -48,10 +48,9 @@ export const ContentPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen">
-      <div className="animated-bg"></div>
-      <div className="relative z-10 min-h-screen">
-        <div className="max-w-6xl mx-auto py-4 space-y-6">
+    <div className="min-h-screen animated-bg">
+      <div className="min-h-screen bg-white/10 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto py-8 space-y-8">
           <div className="text-center floating-element">
             <h1 className="text-4xl font-bold text-white mb-4 drop-shadow-lg">
               AI Content Generator

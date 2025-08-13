@@ -159,10 +159,9 @@ export const DashboardPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen">
-      <div className="animated-bg"></div>
-      <div className="relative z-10 min-h-screen">
-        <div className="container mx-auto px-6 py-4 space-y-6">
+    <div className="min-h-screen animated-bg">
+      <div className="min-h-screen bg-white/10 backdrop-blur-sm">
+        <div className="container mx-auto px-6 py-8 space-y-8">
           <div className="flex justify-between items-center">
             <div className="floating-element">
               <h1 className="text-3xl font-bold text-white drop-shadow-lg">Dashboard</h1>
