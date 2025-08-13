@@ -12,6 +12,7 @@ import { SchedulePage } from './pages/SchedulePage';
 import { SettingsPage } from './pages/SettingsPage';
 import { OAuthCallback } from './components/OAuthCallback';
 import { LandingPage } from './pages/LandingPage';
+import { CompaniesPage } from './pages/CompaniesPage';
 
 function App() {
   return (
