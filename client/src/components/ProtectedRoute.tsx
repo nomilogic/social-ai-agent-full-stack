@@ -44,5 +44,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/dashboard" replace />;
   }
 
+  // If user is authenticated and has no plan, redirect to pricing
+  if (state.user && !state.userPlan && location.pathname !== '/pricing' && location.pathname !== '/onboarding') {
+    return <Navigate to="/pricing" replace />;
+  }
+
   return <>{children}</>;
 };

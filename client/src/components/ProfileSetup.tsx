@@ -75,7 +75,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ userType, selectedPl
 
       // Save profile to backend
       const response = await fetch('/api/auth/profile', {
-        method: 'POST',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },

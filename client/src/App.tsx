@@ -13,7 +13,7 @@ import { SchedulePage } from './pages/SchedulePage';
 import { SettingsPage } from './pages/SettingsPage';
 import { OAuthCallback } from './components/OAuthCallback';
 import { LandingPage } from './pages/LandingPage';
-import { CompaniesPage } from './pages/CompaniesPage';
+import { ProfilePage } from './pages/ProfilePage'; // Import ProfilePage
 import { themeManager } from './lib/theme';
 
 function App() {
@@ -55,6 +55,14 @@ function App() {
           </ProtectedRoute>
         } />
 
+        <Route path="/profile/*" element={ // Changed from /companies/* to /profile/*
+          <ProtectedRoute>
+            <AppLayout>
+              <ProfilePage /> {/* Changed from CompaniesPage to ProfilePage */}
+            </AppLayout>
+          </ProtectedRoute>
+        } />
+
         <Route path="/content/*" element={
           <ProtectedRoute>
             <AppLayout>
@@ -67,14 +75,6 @@ function App() {
           <ProtectedRoute>
             <AppLayout>
               <SchedulePage />
-            </AppLayout>
-          </ProtectedRoute>
-        } />
-
-        <Route path="/companies/*" element={
-          <ProtectedRoute>
-            <AppLayout>
-              <CompaniesPage />
             </AppLayout>
           </ProtectedRoute>
         } />
