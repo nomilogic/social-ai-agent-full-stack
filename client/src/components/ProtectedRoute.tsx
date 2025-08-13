@@ -29,24 +29,22 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // If user is authenticated but hasn't selected a plan, redirect to pricing
+  // If user has completed onboarding, redirect them away from onboarding pages
+  if (state.hasCompletedOnboarding && state.userPlan) {
+    if (location.pathname === '/pricing' || location.pathname === '/onboarding' || location.pathname === '/auth') {
+      return <Navigate to="/dashboard" replace />;
+    }
+    return <>{children}</>;
+  }
+
+  // If user hasn't selected a plan, redirect to pricing (unless already there)
   if (!state.userPlan && location.pathname !== '/pricing') {
     return <Navigate to="/pricing" replace />;
   }
 
-  // If user has plan but hasn't completed onboarding, redirect to profile setup
-  if (state.userPlan && !state.hasCompletedOnboarding && location.pathname !== '/onboarding' && location.pathname !== '/pricing') {
+  // If user has plan but hasn't completed onboarding, redirect to onboarding
+  if (state.userPlan && !state.hasCompletedOnboarding && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
-  }
-
-  // If user completed onboarding but trying to access onboarding pages, redirect to dashboard
-  if (state.hasCompletedOnboarding && (location.pathname === '/onboarding' || location.pathname === '/pricing')) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  // If user is authenticated and has no plan, redirect to pricing
-  if (state.user && !state.userPlan && location.pathname !== '/pricing' && location.pathname !== '/onboarding') {
-    return <Navigate to="/pricing" replace />;
   }
 
   return <>{children}</>;

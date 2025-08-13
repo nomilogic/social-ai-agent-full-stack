@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Building2, User, Upload, MapPin, Globe, Users, Target, Briefcase } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
@@ -18,14 +17,14 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ userType, selectedPl
     location: '',
     website: '',
     profileImage: null as File | null,
-    
+
     // Business-specific fields
     companySize: '',
     industry: '',
     targetAudience: '',
     brandVoice: '',
     businessGoals: [] as string[],
-    
+
     // Individual-specific fields
     contentNiche: '',
     socialGoals: [] as string[],
@@ -82,11 +81,16 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ userType, selectedPl
         body: JSON.stringify(profileData),
       });
 
-      if (response.ok) {
-        dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: true });
-        onComplete();
-      } else {
+      if (!response.ok) {
         throw new Error('Failed to save profile');
+      }
+
+      // Mark onboarding as complete
+      dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: true });
+      dispatch({ type: 'SET_SELECTED_PROFILE', payload: profileData as any });
+
+      if (onComplete) {
+        onComplete();
       }
     } catch (error) {
       console.error('Profile setup error:', error);
