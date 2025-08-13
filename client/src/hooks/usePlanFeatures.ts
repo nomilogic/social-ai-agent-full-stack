@@ -1,72 +1,80 @@
-import { useState, useCallback } from 'react';
-import { ProfileInfo } from '../types';
-import { getPlanLimits, isFeatureAvailable, PlanLimits } from '../utils/planFeatures';
+import { useAppContext } from '../context/AppContext';
 
-export interface UsePlanFeaturesReturn {
-  limits: PlanLimits;
-  checkFeature: (feature: keyof PlanLimits) => boolean;
-  showUpgradeModal: boolean;
-  requestedFeature: string | null;
-  openUpgradeModal: (featureName: string) => void;
-  closeUpgradeModal: () => void;
-  canUseFeature: (feature: keyof PlanLimits) => boolean;
-  getRemainingUsage: (usageType: 'textualPosts' | 'imageGenerations') => number | null;
+type PlanType = 'free' | 'ipro' | 'business';
+
+interface PlanFeatures {
+  canSchedule: boolean;
+  maxPostsPerMonth: number;
+  maxImageGenerations: number;
+  hasAdvancedAI: boolean;
+  hasAnalytics: boolean;
+  hasTeamCollaboration: boolean;
+  hasPrioritySupport: boolean;
+  planName: string;
+  planPrice: string;
 }
 
-export const usePlanFeatures = (
-  profileType: 'individual' | 'business' = 'individual',
-  plan?: string,
-  currentUsage?: { textualPosts?: number; imageGenerations?: number }
-): UsePlanFeaturesReturn => {
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [requestedFeature, setRequestedFeature] = useState<string | null>(null);
+const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
+  free: {
+    canSchedule: false,
+    maxPostsPerMonth: 5,
+    maxImageGenerations: 0,
+    hasAdvancedAI: false,
+    hasAnalytics: false,
+    hasTeamCollaboration: false,
+    hasPrioritySupport: false,
+    planName: 'aiFree',
+    planPrice: 'Free'
+  },
+  ipro: {
+    canSchedule: true,
+    maxPostsPerMonth: 1000,
+    maxImageGenerations: 20,
+    hasAdvancedAI: true,
+    hasAnalytics: true,
+    hasTeamCollaboration: false,
+    hasPrioritySupport: true,
+    planName: 'aiPRO',
+    planPrice: '$39.99/month'
+  },
+  business: {
+    canSchedule: true,
+    maxPostsPerMonth: -1, // unlimited
+    maxImageGenerations: 100,
+    hasAdvancedAI: true,
+    hasAnalytics: true,
+    hasTeamCollaboration: true,
+    hasPrioritySupport: true,
+    planName: 'aiBusiness',
+    planPrice: '$99.99/month'
+  }
+};
 
-  const limits = getPlanLimits(profileType, plan);
+export const usePlanFeatures = () => {
+  const { state } = useAppContext();
+  const currentPlan: PlanType = state.userPlan || 'free';
+  
+  const features = PLAN_FEATURES[currentPlan];
+  
+  const canUseFeature = (requiredPlan: PlanType): boolean => {
+    const planHierarchy = { free: 0, ipro: 1, business: 2 };
+    return planHierarchy[currentPlan] >= planHierarchy[requiredPlan];
+  };
 
-  const checkFeature = useCallback(
-    (feature: keyof PlanLimits) => isFeatureAvailable(profileType, plan, feature),
-    [profileType, plan]
-  );
-
-  const openUpgradeModal = useCallback((featureName: string) => {
-    setRequestedFeature(featureName);
-    setShowUpgradeModal(true);
-  }, []);
-
-  const closeUpgradeModal = useCallback(() => {
-    setShowUpgradeModal(false);
-    setRequestedFeature(null);
-  }, []);
-
-  const canUseFeature = useCallback(
-    (feature: keyof PlanLimits) => {
-      if (profileType === 'business') return true;
-      return checkFeature(feature);
-    },
-    [profileType, checkFeature]
-  );
-
-  const getRemainingUsage = useCallback(
-    (usageType: 'textualPosts' | 'imageGenerations') => {
-      if (profileType === 'business') return null; // Unlimited for business
-      
-      const limit = limits[usageType];
-      const used = currentUsage?.[usageType] || 0;
-      
-      if (limit === 999999) return null; // Unlimited
-      return Math.max(0, limit - used);
-    },
-    [profileType, limits, currentUsage]
-  );
+  const getRequiredPlanForFeature = (feature: keyof PlanFeatures): PlanType | null => {
+    for (const [plan, planFeatures] of Object.entries(PLAN_FEATURES)) {
+      if (planFeatures[feature]) {
+        return plan as PlanType;
+      }
+    }
+    return null;
+  };
 
   return {
-    limits,
-    checkFeature,
-    showUpgradeModal,
-    requestedFeature,
-    openUpgradeModal,
-    closeUpgradeModal,
+    ...features,
+    currentPlan,
     canUseFeature,
-    getRemainingUsage
+    getRequiredPlanForFeature,
+    isUnlimited: (value: number) => value === -1
   };
 };

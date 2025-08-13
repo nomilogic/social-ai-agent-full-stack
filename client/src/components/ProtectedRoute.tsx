@@ -26,8 +26,22 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!state.user) {
-    // Redirect to auth page but remember where they were trying to go
     return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  // New user flow: redirect to pricing if no plan selected
+  if (!state.userPlan && location.pathname !== '/pricing') {
+    return <Navigate to="/pricing" replace />;
+  }
+
+  // If user has plan but hasn't completed onboarding, redirect to onboarding
+  if (state.userPlan && !state.hasCompletedOnboarding && !location.pathname.startsWith('/onboarding') && location.pathname !== '/pricing') {
+    return <Navigate to="/onboarding/profile" replace />;
+  }
+
+  // If user completed onboarding but trying to access onboarding pages, redirect to content
+  if (state.hasCompletedOnboarding && (location.pathname.startsWith('/onboarding') || location.pathname === '/pricing')) {
+    return <Navigate to="/content" replace />;
   }
 
   return <>{children}</>;

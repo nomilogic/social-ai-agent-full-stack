@@ -23,7 +23,6 @@ export const AppLayout: React.FC = () => {
 
   const navigationItems = [
     { path: '/dashboard', icon: Home, label: 'Dashboard' },
-    { path: '/companies', icon: Building2, label: 'Companies' },
     { path: '/content', icon: Plus, label: 'Create Content' },
     { path: '/schedule', icon: Calendar, label: 'Schedule' },
     { path: '/settings', icon: Settings, label: 'Settings' },

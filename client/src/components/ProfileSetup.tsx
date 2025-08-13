@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
-import { Building2, Globe, Target, Palette, Goal, FileText, Linkedin, Twitter, Instagram, Facebook, Music, Youtube, User, Crown, Check, X } from 'lucide-react';
+import { Building2, Globe, Target, Palette, Goal, FileText, Linkedin, Twitter, Instagram, Facebook, Music, Youtube, User, CheckCircle, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { ProfileInfo } from '../types';
+import { useAppContext } from '../context/AppContext';
 
 interface ProfileSetupProps {
-  onNext: (data: ProfileInfo) => void;
+  onNext?: (data: ProfileInfo) => void;
   onBack?: () => void;
   initialData?: Partial<ProfileInfo>;
 }
 
 export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onNext, onBack, initialData }) => {
+  const navigate = useNavigate();
+  const { state, dispatch } = useAppContext();
+  
   const [formData, setFormData] = useState<ProfileInfo>({
     type: initialData?.type || 'individual',
     name: initialData?.name || '',
@@ -19,7 +24,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onNext, onBack, init
     brandTone: initialData?.brandTone || 'professional',
     goals: initialData?.goals || [],
     platforms: initialData?.platforms || [],
-    plan: initialData?.plan || undefined,
+    plan: state.userPlan || 'free',
   });
 
   const [showPlanModal, setShowPlanModal] = useState(false);
@@ -156,13 +161,22 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onNext, onBack, init
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.name && formData.platforms.length > 0) {
-      if (formData.type === 'individual' && !formData.plan) {
-        setShowPlanModal(true);
-      } else {
-        onNext(formData);
+      try {
+        // Complete onboarding and redirect to content creation
+        dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: true });
+        
+        // Call onNext if provided (for backward compatibility)
+        if (onNext) {
+          onNext(formData);
+        } else {
+          // New flow: redirect directly to content creation
+          navigate('/content');
+        }
+      } catch (error) {
+        console.error('Error completing profile setup:', error);
       }
     }
   };
@@ -170,7 +184,15 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onNext, onBack, init
   const handlePlanSelect = (planType: 'free' | 'ipro' | 'business') => {
     setFormData(prev => ({ ...prev, plan: planType }));
     setShowPlanModal(false);
-    onNext({ ...formData, plan: planType });
+    
+    // Complete onboarding and redirect to content creation
+    dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: true });
+    
+    if (onNext) {
+      onNext({ ...formData, plan: planType });
+    } else {
+      navigate('/content');
+    }
   };
 
   const toggleGoal = (goal: string) => {
