@@ -28,6 +28,8 @@
   background-color: var(--theme-bg-primary);
   backdrop-filter: blur(10px);
   border: 1px solid var(--theme-border);
+  height: fit-content;
+  min-height: auto;
 }
 
 .theme-bg-card {
