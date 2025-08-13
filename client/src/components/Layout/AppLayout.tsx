@@ -203,12 +203,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         </div>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto">
-        <div className="min-h-full">
-          {children}
-        </div>
-      </main>
-
+        <main className="py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="theme-bg-primary rounded-xl p-6 backdrop-blur-sm">
+              {children}
+            </div>
+          </div>
+        </main>
 
         {/* Footer */}
         <footer className="theme-bg-card border-t border-white/20 mt-16">
