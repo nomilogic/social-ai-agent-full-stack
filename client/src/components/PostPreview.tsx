@@ -370,15 +370,15 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
   };
 
   return (
-    <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-lg p-8">
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-gradient-to-r from-green-100 to-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Eye className="w-8 h-8 text-green-600" />
+    <div className="max-w-6xl mx-auto theme-bg-card rounded-2xl shadow-2xl p-6 lg:p-8 backdrop-blur-md">
+      <div className="text-center mb-6 lg:mb-8">
+        <div className="w-16 h-16 theme-gradient rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+          <Eye className="w-8 h-8 text-white" />
         </div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+        <h2 className="text-2xl lg:text-3xl font-bold theme-text-primary mb-2">
           Your AI-Generated Posts
         </h2>
-        <p className="text-gray-600">
+        <p className="theme-text-secondary">
           Review, copy, and share your optimized content
         </p>
       </div>
@@ -386,7 +386,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Platform Selector */}
         <div className="lg:col-span-1 space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <h3 className="text-lg font-semibold theme-text-primary mb-4">
             Select Platform
           </h3>
           <div className="flex flex-wrap gap-3">
@@ -470,7 +470,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
 
         {/* Preview */}
         <div className="lg:col-span-2">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Preview</h3>
+          <h3 className="text-lg font-semibold theme-text-primary mb-4">Preview</h3>
 
           {/* Platform Preview */}
           <div className="flex justify-center mb-6">
@@ -557,17 +557,17 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
         </div>
       </div>
 
-      <div className="flex gap-4 pt-8 border-t border-gray-200 mt-8">
+      <div className="flex flex-col lg:flex-row gap-4 pt-6 lg:pt-8 border-t theme-border mt-6 lg:mt-8">
         <button
           onClick={onEdit}
-          className="flex-1 bg-gray-100 text-gray-700 py-4 px-8 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center space-x-2"
+          className="flex-1 theme-button-secondary py-3 lg:py-4 px-6 lg:px-8 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2 hover:shadow-md"
         >
           <Edit className="w-5 h-5" />
           <span>Edit Content</span>
         </button>
         <button
           onClick={onBack}
-          className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-8 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+          className="flex-1 theme-gradient text-white py-3 lg:py-4 px-6 lg:px-8 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
         >
           Back to Generation
         </button>
@@ -576,7 +576,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
       <div className="mt-4">
         <button
           onClick={onPublish}
-          className="w-full bg-green-600 text-white py-4 px-8 rounded-lg font-medium hover:bg-green-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+          className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 lg:py-4 px-6 lg:px-8 rounded-lg font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
         >
           <Share2 className="w-5 h-5" />
           Publish to Platforms

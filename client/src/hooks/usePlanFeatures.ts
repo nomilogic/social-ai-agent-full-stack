@@ -10,6 +10,9 @@ interface PlanFeatures {
   hasAnalytics: boolean;
   hasTeamCollaboration: boolean;
   hasPrioritySupport: boolean;
+  hasCampaigns: boolean;
+  maxCampaigns: number;
+  hasRealTimeAnalytics: boolean;
   planName: string;
   planPrice: string;
 }
@@ -23,6 +26,9 @@ const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     hasAnalytics: false,
     hasTeamCollaboration: false,
     hasPrioritySupport: false,
+    hasCampaigns: false,
+    maxCampaigns: 0,
+    hasRealTimeAnalytics: false,
     planName: 'aiFree',
     planPrice: 'Free'
   },
@@ -34,6 +40,9 @@ const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     hasAnalytics: true,
     hasTeamCollaboration: false,
     hasPrioritySupport: true,
+    hasCampaigns: true,
+    maxCampaigns: 10,
+    hasRealTimeAnalytics: true,
     planName: 'aiPRO',
     planPrice: '$39.99/month'
   },
@@ -45,6 +54,9 @@ const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     hasAnalytics: true,
     hasTeamCollaboration: true,
     hasPrioritySupport: true,
+    hasCampaigns: true,
+    maxCampaigns: -1, // unlimited
+    hasRealTimeAnalytics: true,
     planName: 'aiBusiness',
     planPrice: '$99.99/month'
   }

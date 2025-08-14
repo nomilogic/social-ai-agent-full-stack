@@ -7,6 +7,11 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   password: text('password').notNull(),
   name: text('name').notNull(),
+  plan: text('plan').notNull().default('free'), // free, ipro, business
+  role: text('role').notNull().default('user'), // user, admin, moderator
+  subscription_status: text('subscription_status').default('inactive'), // active, inactive, cancelled, past_due
+  subscription_id: text('subscription_id'), // External payment provider subscription ID
+  trial_ends_at: timestamp('trial_ends_at', { withTimezone: true }),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
