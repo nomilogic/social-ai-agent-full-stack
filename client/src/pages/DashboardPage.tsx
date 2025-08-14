@@ -204,8 +204,8 @@ export const DashboardPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Stats Overview - Single Row */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          {/* Stats Overview - 2 Columns */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-4 floating-element">
               <div className="flex items-center justify-between">
                 <div>
@@ -243,66 +243,6 @@ export const DashboardPage: React.FC = () => {
                 </div>
                 <div className="bg-black/20 p-2 rounded-lg">
                   <Calendar className="w-5 h-5 text-white" />
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-4 floating-element"
-              style={{ animationDelay: "0.4s" }}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-white/80">
-                    Engagement
-                  </h3>
-                  <p className="text-2xl font-bold text-white mt-1 drop-shadow">
-                    94.2%
-                  </p>
-                  <p className="text-purple-200 text-xs">+5.1% increase</p>
-                </div>
-                <div className="bg-black/20 p-2 rounded-lg">
-                  <Settings className="w-5 h-5 text-white" />
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-4 floating-element"
-              style={{ animationDelay: "0.6s" }}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-white/80">
-                    Success Rate
-                  </h3>
-                  <p className="text-2xl font-bold text-white mt-1 drop-shadow">
-                    97.8%
-                  </p>
-                  <p className="text-green-200 text-xs">+2.3% improvement</p>
-                </div>
-                <div className="bg-black/20 p-2 rounded-lg">
-                  <Target className="w-5 h-5 text-white" />
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-4 floating-element"
-              style={{ animationDelay: "0.8s" }}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-white/80">
-                    Total Reach
-                  </h3>
-                  <p className="text-2xl font-bold text-white mt-1 drop-shadow">
-                    12.5K
-                  </p>
-                  <p className="text-blue-200 text-xs">+18% growth</p>
-                </div>
-                <div className="bg-black/20 p-2 rounded-lg">
-                  <Users className="w-5 h-5 text-white" />
                 </div>
               </div>
             </div>
