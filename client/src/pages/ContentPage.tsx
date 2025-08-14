@@ -20,11 +20,11 @@ export const ContentPage: React.FC = () => {
   };
 
   const handleGenerationComplete = async (posts: any[]) => {
-    // Save posts to database if we have company and user data
-    if (state.user && state.selectedCompany && state.contentData) {
+    // Save posts to database if we have profile and user data
+    if (state.user && state.selectedProfile && state.contentData) {
       try {
         await savePost(
-          state.selectedCompany.id,
+          state.selectedProfile.id,
           state.contentData,
           posts,
           state.user.id,
@@ -53,24 +53,25 @@ export const ContentPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen animated-bg ">
-      <div className="min-h-screen bg-white/10 backdrop-blur-sm p-5">
-        <div className="w-full mx-auto py-8 space-y-8">
+    <div className="min-h-screen theme-gradient">
+      <div className="min-h-screen theme-bg-primary backdrop-blur-sm p-4 lg:p-8">
+        <div className="max-w-6xl mx-auto space-y-6">
           <div className="text-center floating-element">
-            <h1 className="text-4xl font-bold text-white mb-4 drop-shadow-lg">
+            <h1 className="text-3xl lg:text-4xl font-bold theme-text-primary mb-3 drop-shadow-lg">
               AI Content Generator
             </h1>
-            <p className="text-xl text-white/80 max-w-2xl mx-auto drop-shadow">
-              Create engaging social media content with the power of artificial
-              intelligence
+            <p className="text-lg lg:text-xl theme-text-secondary max-w-2xl mx-auto drop-shadow">
+              Create engaging social media content with the power of artificial intelligence
             </p>
           </div>
 
-          <ProgressBar
-            currentStep={getCurrentStep()}
-            totalSteps={4}
-            stepLabels={stepLabels}
-          />
+          <div className="max-w-4xl mx-auto">
+            <ProgressBar
+              currentStep={getCurrentStep()}
+              totalSteps={4}
+              stepLabels={stepLabels}
+            />
+          </div>
 
           <Routes>
             <Route

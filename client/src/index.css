@@ -30,10 +30,18 @@
   border: 1px solid var(--theme-border);
 }
 
+.theme-bg-secondary {
+  background-color: var(--theme-bg-secondary);
+}
+
 .theme-bg-card {
   background-color: var(--theme-bg-card);
   backdrop-filter: blur(10px);
   border: 1px solid var(--theme-border);
+}
+
+.theme-border {
+  border-color: var(--theme-border);
 }
 
 .theme-bg-trinary {
