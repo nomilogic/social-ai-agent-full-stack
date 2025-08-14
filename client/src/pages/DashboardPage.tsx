@@ -184,26 +184,28 @@ export const DashboardPage: React.FC = () => {
     <div className="bg-black/10">
       <div className="bg-transparent">
         <div className="container mx-auto px-4 py-4 space-y-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-white drop-shadow-lg">
-                Dashboard
-              </h1>
-              <p className="text-white/80 text-sm drop-shadow">
-                Welcome back! Here's your content overview.
-              </p>
-            </div>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-white drop-shadow-lg">
+              Dashboard
+            </h1>
+            <p className="text-white/80 text-sm drop-shadow">
+              Welcome back! Here's your content overview.
+            </p>
+          </div>
+
+          {/* Create Content Button - Centered */}
+          <div className="flex justify-center">
             <button
               onClick={() => navigate("/content")}
-              className="flex items-center gap-2 bg-black/20 backdrop-blur-sm text-white px-4 py-2 rounded-lg hover:bg-black/30 transition-all duration-200 pulse-glow border border-white/20"
+              className="flex items-center gap-2 bg-black/20 backdrop-blur-sm text-white px-6 py-3 rounded-lg hover:bg-black/30 transition-all duration-200 pulse-glow border border-white/20"
             >
-              <Plus className="w-4 h-4" />
-              <span className="text-sm">Create Content</span>
+              <Plus className="w-5 h-5" />
+              <span className="text-base font-medium">Create Content</span>
             </button>
           </div>
 
-          {/* Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Stats Overview - Single Row */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-4 floating-element">
               <div className="flex items-center justify-between">
                 <div>
@@ -222,9 +224,10 @@ export const DashboardPage: React.FC = () => {
                 </div>
               </div>
             </div>
+            
             <div
               className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-4 floating-element"
-              style={{ animationDelay: "0.5s" }}
+              style={{ animationDelay: "0.2s" }}
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -246,7 +249,7 @@ export const DashboardPage: React.FC = () => {
 
             <div
               className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-4 floating-element"
-              style={{ animationDelay: "1s" }}
+              style={{ animationDelay: "0.4s" }}
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -260,6 +263,46 @@ export const DashboardPage: React.FC = () => {
                 </div>
                 <div className="bg-black/20 p-2 rounded-lg">
                   <Settings className="w-5 h-5 text-white" />
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-4 floating-element"
+              style={{ animationDelay: "0.6s" }}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-white/80">
+                    Success Rate
+                  </h3>
+                  <p className="text-2xl font-bold text-white mt-1 drop-shadow">
+                    97.8%
+                  </p>
+                  <p className="text-green-200 text-xs">+2.3% improvement</p>
+                </div>
+                <div className="bg-black/20 p-2 rounded-lg">
+                  <Target className="w-5 h-5 text-white" />
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-4 floating-element"
+              style={{ animationDelay: "0.8s" }}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-white/80">
+                    Total Reach
+                  </h3>
+                  <p className="text-2xl font-bold text-white mt-1 drop-shadow">
+                    12.5K
+                  </p>
+                  <p className="text-blue-200 text-xs">+18% growth</p>
+                </div>
+                <div className="bg-black/20 p-2 rounded-lg">
+                  <Users className="w-5 h-5 text-white" />
                 </div>
               </div>
             </div>
