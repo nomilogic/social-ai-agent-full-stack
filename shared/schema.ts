@@ -1,277 +1,460 @@
 
-import { pgTable, uuid, text, timestamp, boolean, jsonb, decimal, integer, date, time, pgView } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, boolean, jsonb, decimal, integer, date, time, bigint } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
-// Users table with enhanced features
+// Users table with comprehensive profile and subscription management
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').notNull().unique(),
   password: text('password').notNull(),
   name: text('name').notNull(),
-  plan: text('plan').notNull().default('free'), // free, ipro, business
-  role: text('role').notNull().default('user'), // user, admin, moderator
-  subscription_status: text('subscription_status').default('inactive'), // active, inactive, cancelled, past_due
-  subscription_id: text('subscription_id'),
-  trial_ends_at: timestamp('trial_ends_at', { withTimezone: true }),
-  profile_picture: text('profile_picture'),
+  avatar_url: text('avatar_url'),
+  phone: text('phone'),
+  bio: text('bio'),
   timezone: text('timezone').default('UTC'),
   language: text('language').default('en'),
-  notification_preferences: jsonb('notification_preferences').default(sql`'{}'::jsonb`),
+  
+  // Subscription & Plan Management
+  plan: text('plan').notNull().default('free'), // free, pro, business
+  role: text('role').notNull().default('user'), // user, admin, moderator
+  subscription_status: text('subscription_status').default('inactive'), // active, inactive, cancelled, past_due, trial
+  subscription_id: text('subscription_id'), // External payment provider subscription ID
+  trial_ends_at: timestamp('trial_ends_at', { withTimezone: true }),
+  plan_limits: jsonb('plan_limits').default(sql`'{
+    "companies": 1,
+    "posts_per_month": 10,
+    "campaigns": 1,
+    "scheduled_posts": 5,
+    "ai_generations": 50,
+    "social_accounts": 2
+  }'::jsonb`),
+  
+  // Profile completion tracking
+  profile_completed: boolean('profile_completed').default(false),
   onboarding_completed: boolean('onboarding_completed').default(false),
+  setup_step: integer('setup_step').default(0),
+  
+  // Preferences
+  preferences: jsonb('preferences').default(sql`'{
+    "theme": "light",
+    "notifications": true,
+    "email_notifications": true,
+    "push_notifications": false,
+    "auto_publish": false,
+    "ai_suggestions": true
+  }'::jsonb`),
+  
+  // Analytics
   last_login: timestamp('last_login', { withTimezone: true }),
+  total_posts_created: integer('total_posts_created').default(0),
+  total_campaigns_created: integer('total_campaigns_created').default(0),
+  
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
-// Enhanced OAuth tokens table
-export const oauth_tokens = pgTable('oauth_tokens', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  platform: text('platform').notNull(), // 'linkedin', 'facebook', 'twitter', 'instagram', 'tiktok', 'youtube'
-  access_token: text('access_token').notNull(),
-  refresh_token: text('refresh_token'),
-  expires_at: timestamp('expires_at', { withTimezone: true }),
-  token_type: text('token_type'),
-  scope: text('scope'),
-  profile_data: jsonb('profile_data'),
-  account_id: text('account_id'), // Platform-specific account ID
-  account_name: text('account_name'), // Display name/username
-  is_active: boolean('is_active').default(true),
-  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
-
-// Enhanced Companies/Profiles table
+// Companies table with enhanced branding and AI training data
 export const companies = pgTable('companies', {
   id: uuid('id').primaryKey().defaultRandom(),
+  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
-  type: text('type').default('business'), // business, personal, brand
+  
+  // Basic Info
   website: text('website'),
   industry: text('industry'),
   description: text('description'),
+  logo_url: text('logo_url'),
+  banner_url: text('banner_url'),
+  
+  // Branding & Voice
   target_audience: text('target_audience'),
   brand_tone: text('brand_tone').default('professional'),
   brand_voice: text('brand_voice'),
+  brand_colors: jsonb('brand_colors').default(sql`'[]'::jsonb`), // Array of hex colors
+  brand_fonts: jsonb('brand_fonts').default(sql`'[]'::jsonb`),
+  
+  // Business Details
   goals: text('goals').array().default(sql`'{}'::text[]`),
-  platforms: text('platforms').array().default(sql`'{}'::text[]`),
-  logo_url: text('logo_url'),
-  cover_image_url: text('cover_image_url'),
-  brand_colors: jsonb('brand_colors').default(sql`'{}'::jsonb`),
-  content_guidelines: text('content_guidelines'),
-  hashtags: text('hashtags').array().default(sql`'{}'::text[]`),
-  keywords: text('keywords').array().default(sql`'{}'::text[]`),
-  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  is_active: boolean('is_active').default(true),
+  platforms: text('platforms').array().default(sql`'{}'::text[]`), // ['linkedin', 'facebook', 'twitter', 'instagram']
+  business_type: text('business_type'), // B2B, B2C, etc.
+  company_size: text('company_size'), // startup, small, medium, large, enterprise
+  location: text('location'),
+  
+  // AI Training Data
+  content_style_preferences: text('content_style_preferences'),
+  posting_frequency: text('posting_frequency'),
+  content_categories: text('content_categories').array().default(sql`'{}'::text[]`),
+  hashtag_strategy: text('hashtag_strategy'),
+  content_themes: text('content_themes').array().default(sql`'{}'::text[]`),
+  competitor_analysis: text('competitor_analysis'),
+  
+  // Settings
+  auto_schedule: boolean('auto_schedule').default(false),
+  default_posting_times: jsonb('default_posting_times').default(sql`'[]'::jsonb`),
+  content_approval_required: boolean('content_approval_required').default(true),
+  
+  // Analytics
+  total_posts: integer('total_posts').default(0),
+  total_campaigns: integer('total_campaigns').default(0),
+  engagement_score: decimal('engagement_score', { precision: 3, scale: 2 }).default('0'),
+  
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
-// Enhanced Posts table
+// OAuth tokens table for social media platform connections
+export const oauth_tokens = pgTable('oauth_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  company_id: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }),
+  
+  platform: text('platform').notNull(), // 'linkedin', 'facebook', 'twitter', 'instagram', 'tiktok', 'youtube'
+  platform_user_id: text('platform_user_id'),
+  platform_username: text('platform_username'),
+  
+  // Token data
+  access_token: text('access_token').notNull(),
+  refresh_token: text('refresh_token'),
+  expires_at: timestamp('expires_at', { withTimezone: true }),
+  token_type: text('token_type').default('Bearer'),
+  scope: text('scope'),
+  
+  // Platform specific data
+  platform_data: jsonb('platform_data').default(sql`'{}'::jsonb`),
+  
+  // Connection status
+  status: text('status').default('active'), // active, expired, revoked, error
+  last_used_at: timestamp('last_used_at', { withTimezone: true }),
+  error_message: text('error_message'),
+  
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+// Campaigns table with comprehensive campaign management
+export const campaigns = pgTable('campaigns', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  company_id: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  
+  // Basic Info
+  name: text('name').notNull(),
+  description: text('description'),
+  
+  // Campaign Strategy
+  objective: text('objective'), // awareness, engagement, leads, sales, etc.
+  target_audience: text('target_audience'),
+  brand_voice: text('brand_voice'),
+  content_themes: text('content_themes').array().default(sql`'{}'::text[]`),
+  
+  // Scheduling
+  start_date: date('start_date'),
+  end_date: date('end_date'),
+  posting_schedule: jsonb('posting_schedule').default(sql`'{}'::jsonb`), // Day/time preferences
+  
+  // Content Strategy
+  platforms: text('platforms').array().default(sql`'{}'::text[]`),
+  content_types: text('content_types').array().default(sql`'{}'::text[]`), // text, image, video, carousel
+  hashtags: text('hashtags').array().default(sql`'{}'::text[]`),
+  keywords: text('keywords').array().default(sql`'{}'::text[]`),
+  
+  // Budget & Goals
+  budget: decimal('budget', { precision: 10, scale: 2 }),
+  target_metrics: jsonb('target_metrics').default(sql`'{}'::jsonb`),
+  
+  // Status & Progress
+  status: text('status').default('active'), // active, paused, completed, archived
+  progress: decimal('progress', { precision: 3, scale: 2 }).default('0'),
+  
+  // Analytics
+  total_posts: integer('total_posts').default(0),
+  published_posts: integer('published_posts').default(0),
+  scheduled_posts: integer('scheduled_posts').default(0),
+  draft_posts: integer('draft_posts').default(0),
+  
+  // Performance Metrics
+  total_impressions: bigint('total_impressions', { mode: 'number' }).default(0),
+  total_engagement: bigint('total_engagement', { mode: 'number' }).default(0),
+  total_clicks: bigint('total_clicks', { mode: 'number' }).default(0),
+  engagement_rate: decimal('engagement_rate', { precision: 5, scale: 4 }).default('0'),
+  
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+// Posts table with comprehensive content management
 export const posts = pgTable('posts', {
   id: uuid('id').primaryKey().defaultRandom(),
   company_id: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
   campaign_id: uuid('campaign_id').references(() => campaigns.id, { onDelete: 'set null' }),
-  title: text('title'),
+  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  
+  // Content
   prompt: text('prompt').notNull(),
-  content: text('content'),
+  generated_content: jsonb('generated_content'), // Platform-specific content variations
+  final_content: text('final_content'),
+  
+  // Media
+  media_urls: text('media_urls').array().default(sql`'{}'::text[]`),
+  media_types: text('media_types').array().default(sql`'{}'::text[]`), // image, video, gif, document
+  thumbnail_url: text('thumbnail_url'),
+  
+  // Categorization
   tags: text('tags').array().default(sql`'{}'::text[]`),
-  hashtags: text('hashtags').array().default(sql`'{}'::text[]`),
-  media_urls: text('media_urls').array().default(sql`'{}'::text[]`),
-  media_type: text('media_type'), // image, video, carousel, story
-  platforms: text('platforms').array().default(sql`'{}'::text[]`),
-  generated_content: jsonb('generated_content'),
+  category: text('category').default('general'),
+  content_type: text('content_type').default('text'), // text, image, video, carousel, story
+  
+  // AI Generation Data
   ai_model_used: text('ai_model_used'),
-  status: text('status').default('draft'), // draft, scheduled, published, failed
-  performance_metrics: jsonb('performance_metrics').default(sql`'{}'::jsonb`),
-  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
-
-// Enhanced Campaigns table
-export const campaigns = pgTable('campaigns', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  company_id: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }),
-  name: text('name').notNull(),
-  description: text('description'),
-  type: text('type').default('marketing'), // marketing, awareness, engagement, conversion
-  objective: text('objective'),
-  start_date: date('start_date'),
-  end_date: date('end_date'),
-  target_audience: text('target_audience'),
+  generation_prompt: text('generation_prompt'),
+  generation_settings: jsonb('generation_settings').default(sql`'{}'::jsonb`),
+  ai_confidence_score: decimal('ai_confidence_score', { precision: 3, scale: 2 }),
+  
+  // Publishing
   platforms: text('platforms').array().default(sql`'{}'::text[]`),
-  budget: decimal('budget', { precision: 10, scale: 2 }),
-  status: text('status').default('active'), // active, paused, completed, draft
-  priority: text('priority').default('medium'), // low, medium, high, urgent
-  brand_voice: text('brand_voice'),
-  keywords: text('keywords').array(),
-  hashtags: text('hashtags').array(),
-  content_themes: text('content_themes').array(),
-  posting_schedule: jsonb('posting_schedule').default(sql`'{}'::jsonb`),
-  total_posts: integer('total_posts').default(0),
-  published_posts: integer('published_posts').default(0),
-  scheduled_posts: integer('scheduled_posts').default(0),
-  performance_metrics: jsonb('performance_metrics').default(sql`'{}'::jsonb`),
-  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
-
-// Enhanced Scheduled posts table
-export const scheduled_posts = pgTable('scheduled_posts', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  company_id: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }),
-  campaign_id: uuid('campaign_id').references(() => campaigns.id, { onDelete: 'set null' }),
-  post_id: uuid('post_id').references(() => posts.id, { onDelete: 'cascade' }),
-  scheduled_date: timestamp('scheduled_date', { withTimezone: true }).notNull(),
-  content: text('content').notNull(),
-  media_urls: text('media_urls').array().default(sql`'{}'::text[]`),
-  platforms: text('platforms').array().default(sql`'{}'::text[]`),
-  platform_specific_content: jsonb('platform_specific_content').default(sql`'{}'::jsonb`),
-  category: text('category').default('General'),
-  priority: text('priority').default('normal'), // low, normal, high
-  status: text('status').default('scheduled'), // scheduled, publishing, published, failed, cancelled
-  auto_publish: boolean('auto_publish').default(true),
-  approval_required: boolean('approval_required').default(false),
+  status: text('status').default('draft'), // draft, scheduled, published, failed, archived
+  
+  // Scheduling
+  scheduled_for: timestamp('scheduled_for', { withTimezone: true }),
+  published_at: timestamp('published_at', { withTimezone: true }),
+  
+  // Platform Publishing Data
+  platform_post_ids: jsonb('platform_post_ids').default(sql`'{}'::jsonb`), // Store platform-specific post IDs
+  publishing_errors: jsonb('publishing_errors').default(sql`'{}'::jsonb`),
+  
+  // Performance Metrics
+  impressions: bigint('impressions', { mode: 'number' }).default(0),
+  engagement: bigint('engagement', { mode: 'number' }).default(0),
+  clicks: bigint('clicks', { mode: 'number' }).default(0),
+  shares: bigint('shares', { mode: 'number' }).default(0),
+  comments: bigint('comments', { mode: 'number' }).default(0),
+  likes: bigint('likes', { mode: 'number' }).default(0),
+  
+  // Metadata
+  is_live_content: boolean('is_live_content').default(false), // For time-sensitive content
+  priority: text('priority').default('normal'), // low, normal, high, urgent
+  approval_status: text('approval_status').default('pending'), // pending, approved, rejected
   approved_by: uuid('approved_by').references(() => users.id),
   approved_at: timestamp('approved_at', { withTimezone: true }),
-  published_at: timestamp('published_at', { withTimezone: true }),
-  reasoning: text('reasoning'),
-  error_message: text('error_message'),
-  retry_count: integer('retry_count').default(0),
-  published_urls: jsonb('published_urls'),
-  performance_data: jsonb('performance_data').default(sql`'{}'::jsonb`),
-  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
-// Analytics table
-export const analytics = pgTable('analytics', {
+// Scheduled posts table for calendar management
+export const scheduled_posts = pgTable('scheduled_posts', {
   id: uuid('id').primaryKey().defaultRandom(),
-  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  company_id: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }),
+  company_id: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
   campaign_id: uuid('campaign_id').references(() => campaigns.id, { onDelete: 'set null' }),
   post_id: uuid('post_id').references(() => posts.id, { onDelete: 'cascade' }),
-  platform: text('platform').notNull(),
-  metric_type: text('metric_type').notNull(), // impressions, engagement, clicks, shares, etc.
-  metric_value: decimal('metric_value', { precision: 15, scale: 2 }),
-  date: date('date').notNull(),
-  metadata: jsonb('metadata').default(sql`'{}'::jsonb`),
-  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
-});
-
-// AI Training data table
-export const ai_training_data = pgTable('ai_training_data', {
-  id: uuid('id').primaryKey().defaultRandom(),
   user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  company_id: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }),
-  content_type: text('content_type').notNull(), // prompt, response, feedback
-  input_data: text('input_data'),
-  output_data: text('output_data'),
-  feedback_score: integer('feedback_score'), // 1-5 rating
-  feedback_text: text('feedback_text'),
-  ai_model: text('ai_model'),
-  performance_metrics: jsonb('performance_metrics').default(sql`'{}'::jsonb`),
-  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
-});
-
-// Content templates table
-export const content_templates = pgTable('content_templates', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  company_id: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }),
-  name: text('name').notNull(),
-  description: text('description'),
-  category: text('category'), // promotional, educational, entertainment, etc.
-  template_content: text('template_content').notNull(),
-  variables: jsonb('variables').default(sql`'{}'::jsonb`), // placeholder variables
+  
+  // Scheduling Details
+  scheduled_date: date('scheduled_date').notNull(),
+  scheduled_time: time('scheduled_time').notNull(),
+  timezone: text('timezone').default('UTC'),
+  
+  // Content (can override post content)
+  content: text('content').notNull(),
+  image_url: text('image_url'),
+  image_prompt: text('image_prompt'),
+  
+  // Publishing
   platforms: text('platforms').array().default(sql`'{}'::text[]`),
-  tags: text('tags').array().default(sql`'{}'::text[]`),
-  usage_count: integer('usage_count').default(0),
-  is_public: boolean('is_public').default(false),
+  category: text('category').default('General'),
+  
+  // Status Management
+  status: text('status').default('scheduled'), // scheduled, publishing, published, failed, cancelled
+  is_live: boolean('is_live').default(false),
+  
+  // AI Generation
+  reasoning: text('reasoning'), // Why this post was scheduled for this time
+  ai_generated: boolean('ai_generated').default(false),
+  generation_context: text('generation_context'),
+  
+  // Error Handling
+  error_message: text('error_message'),
+  retry_count: integer('retry_count').default(0),
+  max_retries: integer('max_retries').default(3),
+  
+  // Publishing Results
+  published_urls: jsonb('published_urls').default(sql`'{}'::jsonb`),
+  platform_responses: jsonb('platform_responses').default(sql`'{}'::jsonb`),
+  
+  // Performance Tracking
+  expected_reach: integer('expected_reach'),
+  actual_reach: integer('actual_reach'),
+  engagement_prediction: decimal('engagement_prediction', { precision: 3, scale: 2 }),
+  
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
-// Enhanced Notifications table
+// Notifications table for comprehensive notification system
 export const notifications = pgTable('notifications', {
   id: uuid('id').primaryKey().defaultRandom(),
   user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  
+  // Notification Content
   title: text('title').notNull(),
   message: text('message').notNull(),
-  type: text('type').notNull(), // info, success, warning, error, system
-  category: text('category'), // post_published, campaign_completed, system_update, etc.
+  type: text('type').notNull(), // info, success, warning, error, reminder, campaign, post, system
   priority: text('priority').default('normal'), // low, normal, high, urgent
+  
+  // Categorization
+  category: text('category'), // post_published, campaign_reminder, oauth_expired, etc.
+  related_entity_type: text('related_entity_type'), // post, campaign, company, user
+  related_entity_id: uuid('related_entity_id'),
+  
+  // Status
   read: boolean('read').default(false),
   read_at: timestamp('read_at', { withTimezone: true }),
+  dismissed: boolean('dismissed').default(false),
+  dismissed_at: timestamp('dismissed_at', { withTimezone: true }),
+  
+  // Actions
   action_url: text('action_url'),
   action_label: text('action_label'),
-  expires_at: timestamp('expires_at', { withTimezone: true }),
+  
+  // Metadata
   metadata: jsonb('metadata').default(sql`'{}'::jsonb`),
+  
+  // Scheduling
+  scheduled_for: timestamp('scheduled_for', { withTimezone: true }),
+  expires_at: timestamp('expires_at', { withTimezone: true }),
+  
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
-// Enhanced Media table
+// Media table for comprehensive media management
 export const media = pgTable('media', {
   id: uuid('id').primaryKey().defaultRandom(),
   user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   company_id: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }),
-  fileName: text('file_name').notNull(),
-  originalName: text('original_name').notNull(),
-  filePath: text('file_path').notNull(),
-  fileUrl: text('file_url'),
-  mimeType: text('mime_type').notNull(),
-  fileSize: integer('file_size').notNull(),
-  dimensions: jsonb('dimensions'), // width, height for images/videos
-  duration: integer('duration'), // for videos/audio in seconds
-  category: text('category'), // profile, post, campaign, template
-  tags: text('tags').array().default(sql`'{}'::text[]`),
-  alt_text: text('alt_text'), // accessibility
+  
+  // File Information
+  filename: text('filename').notNull(),
+  original_name: text('original_name').notNull(),
+  file_path: text('file_path').notNull(),
+  file_url: text('file_url'),
+  mime_type: text('mime_type').notNull(),
+  file_size: bigint('file_size', { mode: 'number' }).notNull(),
+  
+  // Media Details
+  media_type: text('media_type').notNull(), // image, video, audio, document, gif
+  dimensions: jsonb('dimensions'), // {width: 1920, height: 1080}
+  duration: integer('duration'), // For video/audio in seconds
+  
+  // Processing Status
+  processing_status: text('processing_status').default('completed'), // uploading, processing, completed, failed
+  thumbnail_url: text('thumbnail_url'),
+  compressed_url: text('compressed_url'),
+  
+  // AI Generated Content
+  is_ai_generated: boolean('is_ai_generated').default(false),
+  generation_prompt: text('generation_prompt'),
+  ai_model_used: text('ai_model_used'),
+  
+  // Usage Tracking
   usage_count: integer('usage_count').default(0),
-  is_public: boolean('is_public').default(false),
+  last_used_at: timestamp('last_used_at', { withTimezone: true }),
+  
+  // Organization
+  tags: text('tags').array().default(sql`'{}'::text[]`),
+  folder: text('folder').default('general'),
+  
+  // Metadata
+  alt_text: text('alt_text'),
+  caption: text('caption'),
   metadata: jsonb('metadata').default(sql`'{}'::jsonb`),
+  
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
-// User preferences table
-export const user_preferences = pgTable('user_preferences', {
+// AI Training Data table for improving AI responses
+export const ai_training_data = pgTable('ai_training_data', {
   id: uuid('id').primaryKey().defaultRandom(),
   user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  theme: text('theme').default('ai-revolution'),
-  dashboard_layout: jsonb('dashboard_layout').default(sql`'{}'::jsonb`),
-  notification_settings: jsonb('notification_settings').default(sql`'{}'::jsonb`),
-  auto_publish_settings: jsonb('auto_publish_settings').default(sql`'{}'::jsonb`),
-  ai_preferences: jsonb('ai_preferences').default(sql`'{}'::jsonb`),
-  content_preferences: jsonb('content_preferences').default(sql`'{}'::jsonb`),
+  company_id: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }),
+  
+  // Training Context
+  training_type: text('training_type').notNull(), // content_generation, scheduling, engagement_prediction
+  prompt: text('prompt').notNull(),
+  response: text('response').notNull(),
+  
+  // Quality Metrics
+  user_rating: integer('user_rating'), // 1-5 rating
+  used_as_final: boolean('used_as_final').default(false),
+  effectiveness_score: decimal('effectiveness_score', { precision: 3, scale: 2 }),
+  
+  // Context Data
+  context_data: jsonb('context_data').default(sql`'{}'::jsonb`),
+  platform: text('platform'),
+  content_category: text('content_category'),
+  
+  // Learning Metrics
+  confidence_score: decimal('confidence_score', { precision: 3, scale: 2 }),
+  model_version: text('model_version'),
+  
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
-// Type definitions
+// Analytics summary table for performance tracking
+export const analytics_summary = pgTable('analytics_summary', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  company_id: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }),
+  campaign_id: uuid('campaign_id').references(() => campaigns.id, { onDelete: 'cascade' }),
+  
+  // Time Period
+  period_start: date('period_start').notNull(),
+  period_end: date('period_end').notNull(),
+  period_type: text('period_type').notNull(), // daily, weekly, monthly, quarterly, yearly
+  
+  // Metrics
+  total_posts: integer('total_posts').default(0),
+  total_impressions: bigint('total_impressions', { mode: 'number' }).default(0),
+  total_engagement: bigint('total_engagement', { mode: 'number' }).default(0),
+  total_clicks: bigint('total_clicks', { mode: 'number' }).default(0),
+  total_shares: bigint('total_shares', { mode: 'number' }).default(0),
+  
+  // Rates
+  engagement_rate: decimal('engagement_rate', { precision: 5, scale: 4 }).default('0'),
+  click_through_rate: decimal('click_through_rate', { precision: 5, scale: 4 }).default('0'),
+  conversion_rate: decimal('conversion_rate', { precision: 5, scale: 4 }).default('0'),
+  
+  // Platform Breakdown
+  platform_metrics: jsonb('platform_metrics').default(sql`'{}'::jsonb`),
+  
+  // Content Performance
+  top_performing_content: jsonb('top_performing_content').default(sql`'{}'::jsonb`),
+  content_category_performance: jsonb('content_category_performance').default(sql`'{}'::jsonb`),
+  
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+// Type definitions for TypeScript
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Company = typeof companies.$inferSelect;
 export type NewCompany = typeof companies.$inferInsert;
-export type Post = typeof posts.$inferSelect;
-export type NewPost = typeof posts.$inferInsert;
-export type Campaign = typeof campaigns.$inferSelect;
-export type NewCampaign = typeof campaigns.$inferInsert;
-export type ScheduledPost = typeof scheduled_posts.$inferSelect;
-export type NewScheduledPost = typeof scheduled_posts.$inferInsert;
 export type OAuthToken = typeof oauth_tokens.$inferSelect;
 export type NewOAuthToken = typeof oauth_tokens.$inferInsert;
+export type Campaign = typeof campaigns.$inferSelect;
+export type NewCampaign = typeof campaigns.$inferInsert;
+export type Post = typeof posts.$inferSelect;
+export type NewPost = typeof posts.$inferInsert;
+export type ScheduledPost = typeof scheduled_posts.$inferSelect;
+export type NewScheduledPost = typeof scheduled_posts.$inferInsert;
 export type Notification = typeof notifications.$inferSelect;
 export type NewNotification = typeof notifications.$inferInsert;
 export type Media = typeof media.$inferSelect;
 export type NewMedia = typeof media.$inferInsert;
-export type Analytics = typeof analytics.$inferSelect;
-export type NewAnalytics = typeof analytics.$inferInsert;
 export type AITrainingData = typeof ai_training_data.$inferSelect;
 export type NewAITrainingData = typeof ai_training_data.$inferInsert;
-export type ContentTemplate = typeof content_templates.$inferSelect;
-export type NewContentTemplate = typeof content_templates.$inferInsert;
-export type UserPreferences = typeof user_preferences.$inferSelect;
-export type NewUserPreferences = typeof user_preferences.$inferInsert;
+export type AnalyticsSummary = typeof analytics_summary.$inferSelect;
+export type NewAnalyticsSummary = typeof analytics_summary.$inferInsert;
