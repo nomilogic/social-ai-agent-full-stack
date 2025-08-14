@@ -1,14 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Check, 
-  ExternalLink, 
-  RefreshCw, 
-  Trash2, 
-  AlertCircle
-} from 'lucide-react';
-import { Platform } from '../types';
-import { oauthManager } from '../lib/oauth';
-import { getPlatformIcon, getPlatformDisplayName, getPlatformColors } from '../utils/platformIcons';
+import React, { useState, useEffect } from "react";
+import {
+  Check,
+  ExternalLink,
+  RefreshCw,
+  Trash2,
+  AlertCircle,
+} from "lucide-react";
+import { Platform } from "../types";
+import { oauthManager } from "../lib/oauth";
+import {
+  getPlatformIcon,
+  getPlatformDisplayName,
+  getPlatformColors,
+} from "../utils/platformIcons";
 
 interface SocialMediaManagerProps {
   userId: string;
@@ -32,53 +36,82 @@ interface PlatformInfo {
 
 const platformInfo: Record<Platform, PlatformInfo> = {
   linkedin: {
-    color: 'blue',
-    description: 'Professional networking and business content',
-    features: ['Text posts', 'Image posts', 'Professional networking']
+    color: "blue",
+    description: "Professional networking and business content",
+    features: ["Text posts", "Image posts", "Professional networking"],
   },
   facebook: {
-    color: 'blue',
-    description: 'Social networking and community engagement',
-    features: ['Text posts', 'Image posts', 'Page management', 'Community building']
+    color: "blue",
+    description: "Social networking and community engagement",
+    features: [
+      "Text posts",
+      "Image posts",
+      "Page management",
+      "Community building",
+    ],
   },
   instagram: {
-    color: 'pink',
-    description: 'Visual storytelling and lifestyle content',
-    features: ['Image posts', 'Carousel posts', 'Stories', 'Business accounts']
+    color: "pink",
+    description: "Visual storytelling and lifestyle content",
+    features: ["Image posts", "Carousel posts", "Stories", "Business accounts"],
   },
   twitter: {
-    color: 'sky',
-    description: 'Real-time news and microblogging',
-    features: ['Text tweets', 'Image tweets', 'Thread creation', 'Real-time updates']
+    color: "sky",
+    description: "Real-time news and microblogging",
+    features: [
+      "Text tweets",
+      "Image tweets",
+      "Thread creation",
+      "Real-time updates",
+    ],
   },
   tiktok: {
-    color: 'black',
-    description: 'Short-form video content creation',
-    features: ['Video posts', 'Trending content', 'Creative tools', 'Music integration']
+    color: "black",
+    description: "Short-form video content creation",
+    features: [
+      "Video posts",
+      "Trending content",
+      "Creative tools",
+      "Music integration",
+    ],
   },
   youtube: {
-    color: 'red',
-    description: 'Long-form video content and education',
-    features: ['Video uploads', 'Channel management', 'Monetization', 'Analytics']
-  }
+    color: "red",
+    description: "Long-form video content and education",
+    features: [
+      "Video uploads",
+      "Channel management",
+      "Monetization",
+      "Analytics",
+    ],
+  },
 };
 
 export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
   userId,
   onCredentialsUpdate,
-  selectedPlatforms
+  selectedPlatforms,
 }) => {
-  const [platformStatuses, setPlatformStatuses] = useState<PlatformStatus[]>([]);
+  const [platformStatuses, setPlatformStatuses] = useState<PlatformStatus[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
 
-  const platforms: Platform[] = selectedPlatforms || ['linkedin', 'facebook', 'instagram', 'twitter', 'tiktok', 'youtube'];
+  const platforms: Platform[] = selectedPlatforms || [
+    "linkedin",
+    "facebook",
+    "instagram",
+    "twitter",
+    "tiktok",
+    "youtube",
+  ];
 
   useEffect(() => {
     checkPlatformStatuses();
   }, [userId]);
 
   const checkPlatformStatuses = async () => {
-    console.log('Checking platform statuses for user:', userId);
+    console.log("Checking platform statuses for user:", userId);
     setLoading(true);
     const statuses: PlatformStatus[] = [];
 
@@ -95,18 +128,18 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
           connected: platformStatus?.connected || false,
           loading: false,
           profile: platformStatus?.profile || null,
-          error: platformStatus?.expired ? 'Token expired' : undefined
+          error: platformStatus?.expired ? "Token expired" : undefined,
         });
       }
     } catch (error) {
-      console.error('Error checking platform statuses:', error);
+      console.error("Error checking platform statuses:", error);
       // Fallback: mark all as disconnected
       for (const platform of platforms) {
         statuses.push({
           platform,
           connected: false,
           loading: false,
-          error: 'Failed to check status'
+          error: "Failed to check status",
         });
       }
     }
@@ -116,82 +149,89 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
   };
 
   const handleConnect = async (platform: Platform) => {
-    console.log('Connecting to platform:', platform);
+    console.log("Connecting to platform:", platform);
     try {
-      setPlatformStatuses(prev =>
-        prev.map(status =>
+      setPlatformStatuses((prev) =>
+        prev.map((status) =>
           status.platform === platform
             ? { ...status, loading: true, error: undefined }
-            : status
-        )
+            : status,
+        ),
       );
 
       // Use the same OAuth flow that's working in OAuthManager
       const authUrl = oauthManager.generateAuthUrl(platform, userId);
-      console.log('Opening OAuth popup with URL:', authUrl);
+      console.log("Opening OAuth popup with URL:", authUrl);
 
       const authWindow = window.open(
         authUrl,
         `${platform}_oauth`,
-        'width=600,height=700,scrollbars=yes,resizable=yes'
+        "width=600,height=700,scrollbars=yes,resizable=yes",
       );
 
       if (!authWindow) {
-        throw new Error('OAuth popup blocked');
+        throw new Error("OAuth popup blocked");
       }
 
       // Listen for messages from the OAuth callback
       const messageListener = (event: MessageEvent) => {
-        if (event.data.type === 'oauth_success' && event.data.platform === platform) {
-          console.log('OAuth success for', platform);
+        if (
+          event.data.type === "oauth_success" &&
+          event.data.platform === platform
+        ) {
+          console.log("OAuth success for", platform);
           setTimeout(checkPlatformStatuses, 1000);
-          window.removeEventListener('message', messageListener);
+          window.removeEventListener("message", messageListener);
           onCredentialsUpdate?.();
-        } else if (event.data.type === 'oauth_error') {
-          setPlatformStatuses(prev =>
-            prev.map(status =>
+        } else if (event.data.type === "oauth_error") {
+          setPlatformStatuses((prev) =>
+            prev.map((status) =>
               status.platform === platform
-                ? { 
-                    ...status, 
-                    loading: false, 
-                    error: event.data.error || 'OAuth failed'
+                ? {
+                    ...status,
+                    loading: false,
+                    error: event.data.error || "OAuth failed",
                   }
-                : status
-            )
+                : status,
+            ),
           );
-          window.removeEventListener('message', messageListener);
+          window.removeEventListener("message", messageListener);
         }
       };
 
-      window.addEventListener('message', messageListener);
+      window.addEventListener("message", messageListener);
 
       // Monitor window closure
       const checkClosed = setInterval(() => {
         if (authWindow?.closed) {
           clearInterval(checkClosed);
-          window.removeEventListener('message', messageListener);
+          window.removeEventListener("message", messageListener);
           setTimeout(checkPlatformStatuses, 1000);
         }
       }, 1000);
-
     } catch (error) {
-      console.error('Error connecting to platform:', error);
-      setPlatformStatuses(prev =>
-        prev.map(status =>
+      console.error("Error connecting to platform:", error);
+      setPlatformStatuses((prev) =>
+        prev.map((status) =>
           status.platform === platform
-            ? { 
-                ...status, 
-                loading: false, 
-                error: error instanceof Error ? error.message : 'Connection failed' 
+            ? {
+                ...status,
+                loading: false,
+                error:
+                  error instanceof Error ? error.message : "Connection failed",
               }
-            : status
-        )
+            : status,
+        ),
       );
     }
   };
 
   const handleDisconnect = async (platform: Platform) => {
-    if (!confirm(`Are you sure you want to disconnect ${getPlatformDisplayName(platform)}?`)) {
+    if (
+      !confirm(
+        `Are you sure you want to disconnect ${getPlatformDisplayName(platform)}?`,
+      )
+    ) {
       return;
     }
 
@@ -199,28 +239,33 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
       // Use the same OAuth manager for disconnecting
       await oauthManager.revokeCredentials(userId, platform);
 
-      setPlatformStatuses(prev =>
-        prev.map(status =>
+      setPlatformStatuses((prev) =>
+        prev.map((status) =>
           status.platform === platform
-            ? { ...status, connected: false, error: undefined, profile: undefined }
-            : status
-        )
+            ? {
+                ...status,
+                connected: false,
+                error: undefined,
+                profile: undefined,
+              }
+            : status,
+        ),
       );
 
       onCredentialsUpdate?.();
     } catch (error) {
-      console.error('Failed to disconnect:', error);
+      console.error("Failed to disconnect:", error);
     }
   };
 
   const handleRefresh = async (platform: Platform) => {
     try {
-      setPlatformStatuses(prev =>
-        prev.map(status =>
+      setPlatformStatuses((prev) =>
+        prev.map((status) =>
           status.platform === platform
             ? { ...status, loading: true, error: undefined }
-            : status
-        )
+            : status,
+        ),
       );
 
       // Use the same OAuth manager for refreshing
@@ -232,16 +277,17 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
       await checkPlatformStatuses();
       onCredentialsUpdate?.();
     } catch (error) {
-      setPlatformStatuses(prev =>
-        prev.map(status =>
+      setPlatformStatuses((prev) =>
+        prev.map((status) =>
           status.platform === platform
-            ? { 
-                ...status, 
-                loading: false, 
-                error: error instanceof Error ? error.message : 'Refresh failed' 
+            ? {
+                ...status,
+                loading: false,
+                error:
+                  error instanceof Error ? error.message : "Refresh failed",
               }
-            : status
-        )
+            : status,
+        ),
       );
     }
   };
@@ -249,7 +295,9 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
   if (loading) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Social Media Connections</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Social Media Connections
+        </h3>
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full"></div>
           <span className="ml-3 text-gray-600">Checking connections...</span>
@@ -260,9 +308,12 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Social Media Connections</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        Social Media Connections
+      </h3>
       <p className="text-sm text-gray-600 mb-6">
-        Connect your social media accounts to enable direct publishing across all platforms.
+        Connect your social media accounts to enable direct publishing across
+        all platforms.
       </p>
 
       <div className="space-y-4">
@@ -276,7 +327,9 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
               className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
             >
               <div className="flex items-center space-x-4 flex-1">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white ${getPlatformColors(status.platform)}`}>
+                <div
+                  className={`w-12 h-12 rounded-lg flex items-center justify-center text-white ${getPlatformColors(status.platform)}`}
+                >
                   {IconComponent && <IconComponent className="w-6 h-6" />}
                 </div>
 
@@ -299,9 +352,9 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
                     </div>
                   </div>
 
-                  <p className="text-sm text-gray-600 mb-2">
+                  {/* <p className="text-sm text-gray-600 mb-2">
                     {info.description}
-                  </p>
+                  </p> */}
 
                   {/* Error Display */}
                   {status.error && (
@@ -347,7 +400,9 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
                       className="p-2 text-gray-500 hover:text-blue-600 disabled:opacity-50 rounded-lg hover:bg-gray-100"
                       title="Refresh connection"
                     >
-                      <RefreshCw className={`w-4 h-4 ${status.loading ? 'animate-spin' : ''}`} />
+                      <RefreshCw
+                        className={`w-4 h-4 ${status.loading ? "animate-spin" : ""}`}
+                      />
                     </button>
                     <button
                       onClick={() => handleDisconnect(status.platform)}
@@ -403,10 +458,11 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
       </div>
 
       {/* Connected Platforms Summary */}
-      {platformStatuses.filter(s => s.connected).length > 0 && (
+      {platformStatuses.filter((s) => s.connected).length > 0 && (
         <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-sm text-green-700">
-            ✅ You have {platformStatuses.filter(s => s.connected).length} of {platforms.length} platform(s) connected and ready for publishing!
+            ✅ You have {platformStatuses.filter((s) => s.connected).length} of{" "}
+            {platforms.length} platform(s) connected and ready for publishing!
           </p>
         </div>
       )}
