@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import {
   Upload,
@@ -332,37 +333,38 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   };
 
   return (
-    <div className="w-full mx-auto theme-bg-trinary rounded-2xl shadow-lg p-8">
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Wand2 className="w-8 h-8 text-purple-600" />
+    <div className="w-full mx-auto theme-bg-card/50 backdrop-blur-sm rounded-xl border border-white/10 p-6">
+      {/* Header */}
+      <div className="text-center mb-6">
+        <div className="w-12 h-12 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">
+          <Wand2 className="w-6 h-6 text-blue-400" />
         </div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+        <h2 className="text-xl font-semibold theme-text-primary mb-1">
           Create Your Content
         </h2>
-        <p className="text-gray-600">
+        <p className="text-sm theme-text-secondary">
           Add your media and describe what you want to share
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column - Media Upload */}
-          <div className="flex flex-col space-y-6">
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-4 flex items-center">
-                <ImageIcon className="w-5 h-5 mr-2 text-blue-600" />
-                Upload Media (Optional)
-                <span className="ml-2 text-xs text-gray-500">
-                  • Images, Videos
+              <label className="block text-sm font-medium theme-text-primary mb-3 flex items-center">
+                <ImageIcon className="w-4 h-4 mr-2 text-blue-400" />
+                Upload Media
+                <span className="ml-2 text-xs theme-text-secondary">
+                  (Optional)
                 </span>
               </label>
             </div>
             <div
-              className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
+              className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 ${
                 dragActive
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-300 hover:border-gray-400"
+                  ? "border-blue-400/50 bg-blue-500/10"
+                  : "border-white/20 hover:border-white/30"
               }`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
@@ -378,7 +380,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
               />
 
               {formData.media || formData.mediaUrl ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="relative">
                     {formData.media?.type.startsWith("image/") ||
                     formData.mediaUrl?.startsWith("image/") ? (
@@ -390,9 +392,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                               : formData.mediaUrl!
                           }
                           alt="Preview"
-                          className="max-h-48 mx-auto rounded-lg shadow-md"
+                          className="max-h-40 mx-auto rounded-lg shadow-sm"
                         />
-                        <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded-md text-xs flex items-center">
+                        <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs flex items-center">
                           <ImageIcon className="w-3 h-3 mr-1" />
                           Image
                         </div>
@@ -405,31 +407,31 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                               ? URL.createObjectURL(formData.media)
                               : formData.mediaUrl!
                           }
-                          className="max-h-48 mx-auto rounded-lg shadow-md"
+                          className="max-h-40 mx-auto rounded-lg shadow-sm"
                           controls
                         />
-                        <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded-md text-xs flex items-center">
+                        <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs flex items-center">
                           <Video className="w-3 h-3 mr-1" />
                           Video
                         </div>
                       </div>
                     )}
                   </div>
-                  <div className="text-sm text-gray-600 space-y-3">
+                  <div className="text-sm theme-text-secondary space-y-2">
                     <div>
-                      <p className="font-medium">
+                      <p className="font-medium theme-text-primary text-sm">
                         {formData.media?.name || "Uploaded Media"}
                       </p>
                       {formData.media && (
-                        <p>
+                        <p className="text-xs">
                           {(formData.media.size / 1024 / 1024).toFixed(2)} MB
                         </p>
                       )}
                     </div>
 
-                    {/* Checkboxes */}
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                    {/* Compact checkboxes */}
+                    <div className="flex gap-2">
+                      <div className="flex items-center space-x-1 p-2 theme-bg-primary/20 rounded text-xs">
                         <input
                           type="checkbox"
                           id="useForAI"
@@ -437,65 +439,48 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           onChange={(e) =>
                             setUseForAIReference(e.target.checked)
                           }
-                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                          className="w-3 h-3 text-blue-600"
                         />
-                        <Brain className="w-4 h-4 text-blue-600" />
+                        <Brain className="w-3 h-3 text-blue-400" />
                         <label
                           htmlFor="useForAI"
-                          className="text-sm text-gray-700 cursor-pointer flex-1"
+                          className="theme-text-secondary cursor-pointer"
                         >
-                          Use for AI reference
+                          AI Reference
                         </label>
                       </div>
 
-                      <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-1 p-2 theme-bg-primary/20 rounded text-xs">
                         <input
                           type="checkbox"
                           id="useInPost"
                           checked={useInPost}
                           onChange={(e) => setUseInPost(e.target.checked)}
-                          className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+                          className="w-3 h-3 text-green-600"
                         />
-                        <Target className="w-4 h-4 text-green-600" />
+                        <Target className="w-3 h-3 text-green-400" />
                         <label
                           htmlFor="useInPost"
-                          className="text-sm text-gray-700 cursor-pointer flex-1"
+                          className="theme-text-secondary cursor-pointer"
                         >
-                          Use it in the post
+                          Use in Post
                         </label>
                       </div>
                     </div>
 
+                    {/* Status indicators */}
                     {analyzingImage && (
-                      <div className="flex items-center justify-center mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                        <Loader className="w-4 h-4 animate-spin mr-2 text-blue-600" />
-                        <Brain className="w-4 h-4 mr-2 text-blue-600" />
-                        <span className="text-blue-700 font-medium">
-                          AI is analyzing your image...
-                        </span>
+                      <div className="flex items-center justify-center p-2 bg-blue-500/10 border border-blue-400/20 rounded text-xs">
+                        <Loader className="w-3 h-3 animate-spin mr-2 text-blue-400" />
+                        <span className="text-blue-300">AI analyzing...</span>
                       </div>
                     )}
                     {uploading && (
-                      <div className="flex items-center justify-center mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
-                        <Loader className="w-4 h-4 animate-spin mr-2 text-amber-600" />
-                        <Upload className="w-4 h-4 mr-2 text-amber-600" />
-                        <span className="text-amber-700">
-                          Uploading file...
-                        </span>
+                      <div className="flex items-center justify-center p-2 bg-amber-500/10 border border-amber-400/20 rounded text-xs">
+                        <Loader className="w-3 h-3 animate-spin mr-2 text-amber-400" />
+                        <span className="text-amber-300">Uploading...</span>
                       </div>
                     )}
-                    {!analyzingImage &&
-                      !uploading &&
-                      (formData.media || formData.mediaUrl) &&
-                      !imageAnalysis && (
-                        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                          <p className="text-green-700 text-xs flex items-center">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Media uploaded successfully! AI analysis will appear
-                            above.
-                          </p>
-                        </div>
-                      )}
 
                     {/* AI Analysis Button */}
                     {(formData.media || formData.mediaUrl) &&
@@ -505,9 +490,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           type="button"
                           onClick={performAIAnalysis}
                           disabled={analyzingImage}
-                          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-2 disabled:opacity-50"
+                          className="w-full bg-gradient-to-r from-blue-500/80 to-indigo-500/80 text-white px-3 py-2 rounded text-xs hover:from-blue-600/80 hover:to-indigo-600/80 transition-all duration-200 flex items-center justify-center space-x-1 disabled:opacity-50"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3 h-3" />
                           <span>AI Analysis</span>
                         </button>
                       )}
@@ -521,82 +506,74 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                         mediaUrl: undefined,
                       }))
                     }
-                    className="text-red-600 hover:text-red-700 text-sm font-medium"
+                    className="text-red-400 hover:text-red-300 text-xs font-medium"
                   >
                     Remove
                   </button>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <Upload className="w-12 h-12 text-gray-400 mx-auto" />
+                <div className="space-y-3">
+                  <Upload className="w-8 h-8 theme-text-secondary mx-auto" />
                   <div>
-                    <p className="text-lg font-medium text-gray-700">
-                      Drop your files here
+                    <p className="font-medium theme-text-primary text-sm">
+                      Drop files here
                     </p>
-                    <p className="text-gray-500 mt-1">or click to browse</p>
+                    <p className="theme-text-secondary text-xs mt-1">or click to browse</p>
                   </div>
-                  <div className="flex gap-3 justify-center flex-col">
+                  <div className="flex gap-2 justify-center">
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2 justify-center"
+                      className="bg-blue-500/80 text-white px-4 py-2 rounded text-xs hover:bg-blue-600/80 transition-colors duration-200 flex items-center space-x-1"
                     >
-                      <Upload className="w-4 h-4" />
+                      <Upload className="w-3 h-3" />
                       <span>Choose Files</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowAIGenerator(true)}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 flex items-center space-x-2 justify-center"
+                      className="bg-gradient-to-r from-purple-500/80 to-pink-500/80 text-white px-4 py-2 rounded text-xs hover:from-purple-600/80 hover:to-pink-600/80 transition-all duration-200 flex items-center space-x-1"
                     >
-                      <Sparkles className="w-4 h-4" />
-                      <span>Generate with AI</span>
+                      <Sparkles className="w-3 h-3" />
+                      <span>Generate AI</span>
                     </button>
                   </div>
-                  <p className="text-xs text-gray-400">
-                    Upload files up to 50MB or generate images with AI
+                  <p className="text-xs theme-text-secondary">
+                    Images, videos up to 50MB
                   </p>
                 </div>
               )}
             </div>
 
-            {/* Image Analysis Results - In left column below media */}
+            {/* Image Analysis Results */}
             {imageAnalysis && (
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 shadow-sm">
-                <div className="space-y-3">
-                  <h4 className="font-semibold text-blue-900 flex items-center text-sm">
-                    <Eye className="w-4 h-4 mr-2" />
-                    🤖 AI Image Analysis Complete
+              <div className="bg-blue-500/10 border border-blue-400/20 rounded-lg p-3">
+                <div className="space-y-2">
+                  <h4 className="font-medium text-blue-300 flex items-center text-xs">
+                    <Eye className="w-3 h-3 mr-1" />
+                    AI Analysis Complete
                   </h4>
-                  <div className="max-h-32 overflow-y-auto">
-                    <p className="text-blue-800 text-xs leading-relaxed">
+                  <div className="max-h-24 overflow-y-auto">
+                    <p className="text-blue-200 text-xs leading-relaxed">
                       {imageAnalysis}
                     </p>
                   </div>
-                  <div className="flex items-center justify-between flex-col">
-                    <div className="flex items-center text-xs text-blue-600">
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      <span className="text-xs">
-                        Click "Add to Description" to use this analysis
-                      </span>
-                    </div>
-                    <button
-                      onClick={useImageAnalysis}
-                      className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center space-x-1"
-                    >
-                      <span>Add to Description</span>
-                      <span>✨</span>
-                    </button>
-                  </div>
+                  <button
+                    onClick={useImageAnalysis}
+                    className="bg-gradient-to-r from-blue-500/80 to-indigo-500/80 text-white px-3 py-1.5 rounded text-xs hover:from-blue-600/80 hover:to-indigo-600/80 transition-all duration-200 flex items-center space-x-1"
+                  >
+                    <span>Add to Description</span>
+                    <Sparkles className="w-3 h-3" />
+                  </button>
                 </div>
               </div>
             )}
           </div>
 
           {/* Right Column - Content Details */}
-          <div className="flex flex-col space-y-6 h-full">
-            <div className="flex-1 flex flex-col">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="space-y-4">
+            <div className="flex-1">
+              <label className="block text-sm font-medium theme-text-primary mb-2">
                 <FileText className="w-4 h-4 inline mr-2" />
                 Content Description *
               </label>
@@ -605,18 +582,18 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, prompt: e.target.value }))
                 }
-                className="flex-1 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 min-h-[200px]"
-                placeholder="Describe what you want to share... (e.g., 'Launch of our new eco-friendly water bottles with 50% recycled materials')"
+                className="w-full px-3 py-2 theme-bg-primary/20 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-200 min-h-[160px] text-sm theme-text-primary placeholder-gray-400"
+                placeholder="Describe what you want to share... (e.g., 'Launch of our new eco-friendly water bottles')"
                 required
               />
-              <p className="text-xs text-gray-500 mt-2">
-                Be specific about your message, key points, and call-to-action
+              <p className="text-xs theme-text-secondary mt-1">
+                Be specific about your message and call-to-action
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Campaign ID (Optional)
+              <label className="block text-sm font-medium theme-text-primary mb-2">
+                Campaign ID
               </label>
               <input
                 type="text"
@@ -627,17 +604,17 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                     campaignId: e.target.value,
                   }))
                 }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                className="w-full px-3 py-2 theme-bg-primary/20 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-200 text-sm theme-text-primary placeholder-gray-400"
                 placeholder="e.g., spring-launch-2024"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium theme-text-primary mb-2">
                 <Tag className="w-4 h-4 inline mr-2" />
                 Tags & Keywords
               </label>
-              <div className="flex gap-2 mb-3">
+              <div className="flex gap-2 mb-2">
                 <input
                   type="text"
                   value={tagInput}
@@ -645,29 +622,29 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                   onKeyPress={(e) =>
                     e.key === "Enter" && (e.preventDefault(), addTag())
                   }
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="flex-1 px-3 py-2 theme-bg-primary/20 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-200 text-sm theme-text-primary placeholder-gray-400"
                   placeholder="Add keywords..."
                 />
                 <button
                   type="button"
                   onClick={addTag}
-                  className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                  className="theme-bg-primary/40 theme-text-primary px-3 py-2 rounded-lg hover:theme-bg-primary/60 transition-colors duration-200 text-sm"
                 >
                   Add
                 </button>
               </div>
               {formData.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1">
                   {formData.tags.map((tag, index) => (
                     <span
                       key={index}
-                      className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2"
+                      className="bg-blue-500/20 text-blue-300 px-2 py-1 rounded-full text-xs flex items-center gap-1"
                     >
                       {tag}
                       <button
                         type="button"
                         onClick={() => removeTag(tag)}
-                        className="text-blue-600 hover:text-blue-800"
+                        className="text-blue-400 hover:text-blue-200"
                       >
                         ×
                       </button>
@@ -678,10 +655,10 @@ export const ContentInput: React.FC<ContentInputProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-4">
-                Target Platforms for This Post
+              <label className="block text-sm font-medium theme-text-primary mb-3">
+                Target Platforms
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 {platformOptions.map((platform) => {
                   const IconComponent = platform.icon;
                   const isSelected = formData.selectedPlatforms?.includes(
@@ -692,19 +669,19 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                       key={platform.id}
                       type="button"
                       onClick={() => togglePlatform(platform.id)}
-                      className={`p-3 rounded-lg border-2 transition-all duration-200 flex items-center space-x-3 ${
+                      className={`p-2 rounded-lg border transition-all duration-200 flex items-center space-x-2 text-sm ${
                         isSelected
-                          ? `${platform.bgColor} ${platform.borderColor} border-2`
-                          : "border-gray-200 hover:border-gray-300 bg-white"
+                          ? `${platform.bgColor}/20 ${platform.borderColor}/50 border`
+                          : "border-white/10 hover:border-white/20 theme-bg-primary/10"
                       }`}
                     >
                       <div
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-white ${getPlatformColors(platform.id)}`}
+                        className={`w-6 h-6 rounded flex items-center justify-center text-white ${getPlatformColors(platform.id)}`}
                       >
-                        <IconComponent className="w-4 h-4" />
+                        <IconComponent className="w-3 h-3" />
                       </div>
                       <span
-                        className={`text-sm font-medium ${isSelected ? platform.color : "text-gray-700"}`}
+                        className={`font-medium ${isSelected ? platform.color : "theme-text-secondary"}`}
                       >
                         {platform.name}
                       </span>
@@ -716,11 +693,11 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           </div>
         </div>
 
-        <div className="flex gap-4 pt-6 border-t border-gray-200">
+        <div className="flex gap-3 pt-4 border-t border-white/10">
           <button
             type="button"
             onClick={onBack}
-            className="flex-1 bg-gray-100 text-gray-700 py-4 px-8 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200"
+            className="flex-1 theme-bg-primary/20 theme-text-secondary py-3 px-6 rounded-lg font-medium hover:theme-bg-primary/30 transition-colors duration-200 text-sm"
           >
             Back
           </button>
@@ -729,7 +706,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
             disabled={
               !formData.prompt.trim() || !formData.selectedPlatforms?.length
             }
-            className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 px-8 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+            className="flex-1 bg-gradient-to-r from-purple-500/80 to-pink-500/80 text-white py-3 px-6 rounded-lg font-medium hover:from-purple-600/80 hover:to-pink-600/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm"
           >
             Generate Posts with AI
           </button>
@@ -748,12 +725,11 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
       {/* Post Preview */}
       {showPreview && generatedResults && generatedResults.length > 0 && (
-        <div className="mt-8">
+        <div className="mt-6">
           <PostPreview
             generatedPosts={generatedResults}
             onBack={() => setShowPreview(false)}
             onNext={() => {
-              // Handle next step - could be publishing or scheduling
               console.log("Moving to next step with posts:", generatedResults);
             }}
             mediaUrl={formData.mediaUrl}
