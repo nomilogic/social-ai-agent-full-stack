@@ -15,6 +15,10 @@ import { OAuthCallback } from './components/OAuthCallback';
 import { LandingPage } from './pages/LandingPage';
 import { ProfilePage } from './pages/ProfilePage'; // Import ProfilePage
 import { CampaignsPage } from './pages/CampaignsPage';
+import { MediaPage } from "./pages/MediaPage";
+import { AITrainingPage } from "./pages/AITrainingPage";
+import { TemplatesPage } from "./pages/TemplatesPage";
+import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { themeManager } from './lib/theme';
 
 function App() {
@@ -88,13 +92,12 @@ function App() {
           </ProtectedRoute>
         } />
 
-        <Route path="/settings/*" element={
-          <ProtectedRoute>
-            <AppLayout>
-              <SettingsPage />
-            </AppLayout>
-          </ProtectedRoute>
-        } />
+        <Route path="/settings/*" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+              <Route path="/campaigns" element={<ProtectedRoute><CampaignsPage /></ProtectedRoute>} />
+              <Route path="/media" element={<ProtectedRoute><MediaPage /></ProtectedRoute>} />
+              <Route path="/ai-training" element={<ProtectedRoute><AITrainingPage /></ProtectedRoute>} />
+              <Route path="/templates" element={<ProtectedRoute><TemplatesPage /></ProtectedRoute>} />
+              <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
 
         {/* Catch all - redirect to auth by default if not logged in, otherwise to dashboard */}
         <Route path="*" element={<Navigate to="/auth" replace />} />
