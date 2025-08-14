@@ -24,11 +24,11 @@ const pricingTiers: PricingTier[] = [
     price: '$0',
     description: 'Perfect for getting started',
     features: [
-      'Basic content creation',
-      'Limited AI generations (5/month)',
-      'Manual posting only',
-      '1 social platform',
-      'Basic templates'
+      'Content creation only',
+      'No scheduling',
+      'No campaigns',
+      'Basic AI assistance',
+      'Manual posting only'
     ],
     icon: Star,
     buttonText: 'Get Started Free',
@@ -40,11 +40,11 @@ const pricingTiers: PricingTier[] = [
     price: '$39.99',
     description: 'Most popular for creators',
     features: [
-      '1000 textual posts per month',
-      '20 AI image generations',
-      'ChatGPT-4 & Gemini Pro access',
-      'Auto post scheduling',
-      'Multi-platform support',
+      '2-3 Campaigns',
+      '1 month scheduling',
+      '10 posts per day',
+      '5 image generations per day',
+      'Good AI bots',
       'Advanced analytics',
       'Priority support'
     ],
@@ -59,12 +59,12 @@ const pricingTiers: PricingTier[] = [
     price: '$99.99',
     description: 'For teams and businesses',
     features: [
-      'Unlimited content creation',
-      'Unlimited AI generations',
-      'All AI models access',
-      'Advanced scheduling',
+      '3-6 months scheduling',
+      'Special bots for everything',
+      'Image, video & content generation',
+      'Unlimited campaigns',
       'Team collaboration',
-      'White-label options',
+      'Advanced bot training',
       'Custom integrations',
       'Dedicated support'
     ],

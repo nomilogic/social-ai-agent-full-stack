@@ -24,7 +24,8 @@ interface AppLayoutProps {
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
-  const { user, logout } = useAppContext();
+  const { state, dispatch } = useAppContext();
+  const user = state.user;
   const { currentTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
@@ -63,17 +64,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   }, []);
 
   const handleLogout = () => {
-    logout();
+    dispatch({ type: 'LOGOUT' });
     navigate("/auth");
     setShowUserMenu(false);
   };
 
   const navigation = [
     { name: "Dashboard", path: "/dashboard", icon: Home },
+    { name: "Campaigns", path: "/campaigns", icon: Target },
     { name: "Create Content", path: "/content", icon: PenTool },
     { name: "Schedule", path: "/schedule", icon: Calendar },
     { name: "Settings", path: "/settings", icon: Settings },
-    { name: "Organizations", path: "/organizations", icon: Building2 },
   ];
 
   return (
@@ -173,6 +174,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 </button>
                 {showNotifications && (
                   <NotificationCenter
+                    isOpen={showNotifications}
                     onClose={() => setShowNotifications(false)}
                     userId={user?.id}
                   />
