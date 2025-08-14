@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Menu,
@@ -11,7 +10,7 @@ import {
   Building2,
   LogOut,
   User,
-  Target,
+  Crosshair,
   Bell,
   BarChart3,
   Zap,
@@ -38,7 +37,7 @@ export const AppLayout: React.FC = () => {
     { path: '/dashboard', label: 'Dashboard', icon: Home },
     { path: '/content', label: 'Create Content', icon: FileText },
     { path: '/schedule', label: 'Schedule', icon: Calendar },
-    { path: '/campaigns', label: 'Campaigns', icon: Target },
+    { path: '/campaigns', label: 'Campaigns', icon: Crosshair },
     { path: '/companies', label: 'Companies', icon: Building2 },
     { path: '/analytics', label: 'Analytics', icon: BarChart3 },
     { path: '/ai-training', label: 'AI Training', icon: Zap },
@@ -240,8 +239,8 @@ export const AppLayout: React.FC = () => {
                 }`}
               >
                 <item.icon className={`mr-3 h-5 w-5 transition-colors ${
-                  isActive(item.path) 
-                    ? 'text-blue-600 dark:text-blue-400' 
+                  isActive(item.path)
+                    ? 'text-blue-600 dark:text-blue-400'
                     : 'text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400'
                 }`} />
                 {item.label}
@@ -327,7 +326,7 @@ export const AppLayout: React.FC = () => {
             >
               <Menu className="w-5 h-5" />
             </button>
-            
+
             {/* Navigation Mode Toggle */}
             <button
               onClick={() => setNavMode(navMode === 'top' ? 'sidebar' : 'top')}
@@ -341,7 +340,7 @@ export const AppLayout: React.FC = () => {
 
           <div className="flex items-center space-x-4">
             <NotificationCenter />
-            
+
             {/* Quick Actions */}
             <button
               onClick={() => navigate('/content')}
