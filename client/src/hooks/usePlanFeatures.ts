@@ -6,6 +6,9 @@ interface PlanFeatures {
   canSchedule: boolean;
   maxPostsPerMonth: number;
   maxImageGenerations: number;
+  schedulingDays: number;
+  postsPerDay: number;
+  imagesPerDay: number;
   hasAdvancedAI: boolean;
   hasAnalytics: boolean;
   hasTeamCollaboration: boolean;
@@ -13,6 +16,9 @@ interface PlanFeatures {
   hasCampaigns: boolean;
   maxCampaigns: number;
   hasRealTimeAnalytics: boolean;
+  hasBotTraining: boolean;
+  hasAdvancedBots: boolean;
+  hasVideoGeneration: boolean;
   planName: string;
   planPrice: string;
 }
@@ -20,8 +26,11 @@ interface PlanFeatures {
 const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
   free: {
     canSchedule: false,
-    maxPostsPerMonth: 5,
+    maxPostsPerMonth: 0,
     maxImageGenerations: 0,
+    schedulingDays: 0,
+    postsPerDay: 0,
+    imagesPerDay: 0,
     hasAdvancedAI: false,
     hasAnalytics: false,
     hasTeamCollaboration: false,
@@ -29,27 +38,39 @@ const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     hasCampaigns: false,
     maxCampaigns: 0,
     hasRealTimeAnalytics: false,
+    hasBotTraining: false,
+    hasAdvancedBots: false,
+    hasVideoGeneration: false,
     planName: 'aiFree',
     planPrice: 'Free'
   },
   ipro: {
     canSchedule: true,
-    maxPostsPerMonth: 1000,
-    maxImageGenerations: 20,
+    maxPostsPerMonth: 300, // 10 posts/day * 30 days
+    maxImageGenerations: 150, // 5 images/day * 30 days
+    schedulingDays: 30,
+    postsPerDay: 10,
+    imagesPerDay: 5,
     hasAdvancedAI: true,
     hasAnalytics: true,
     hasTeamCollaboration: false,
     hasPrioritySupport: true,
     hasCampaigns: true,
-    maxCampaigns: 10,
+    maxCampaigns: 3,
     hasRealTimeAnalytics: true,
+    hasBotTraining: true,
+    hasAdvancedBots: false,
+    hasVideoGeneration: false,
     planName: 'aiPRO',
     planPrice: '$39.99/month'
   },
   business: {
     canSchedule: true,
     maxPostsPerMonth: -1, // unlimited
-    maxImageGenerations: 100,
+    maxImageGenerations: -1, // unlimited
+    schedulingDays: 180, // 6 months
+    postsPerDay: -1, // unlimited
+    imagesPerDay: -1, // unlimited
     hasAdvancedAI: true,
     hasAnalytics: true,
     hasTeamCollaboration: true,
@@ -57,6 +78,9 @@ const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     hasCampaigns: true,
     maxCampaigns: -1, // unlimited
     hasRealTimeAnalytics: true,
+    hasBotTraining: true,
+    hasAdvancedBots: true,
+    hasVideoGeneration: true,
     planName: 'aiBusiness',
     planPrice: '$99.99/month'
   }

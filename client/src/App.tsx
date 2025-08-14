@@ -14,6 +14,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { OAuthCallback } from './components/OAuthCallback';
 import { LandingPage } from './pages/LandingPage';
 import { ProfilePage } from './pages/ProfilePage'; // Import ProfilePage
+import { CampaignsPage } from './pages/CampaignsPage';
 import { themeManager } from './lib/theme';
 
 function App() {
@@ -59,6 +60,14 @@ function App() {
           <ProtectedRoute>
             <AppLayout>
               <ProfilePage /> {/* Changed from CompaniesPage to ProfilePage */}
+            </AppLayout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/campaigns/*" element={
+          <ProtectedRoute>
+            <AppLayout>
+              <CampaignsPage />
             </AppLayout>
           </ProtectedRoute>
         } />
