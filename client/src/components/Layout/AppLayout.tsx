@@ -12,6 +12,7 @@ import {
   Building2,
   LogOut,
   User,
+  Target,
 } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
 import { NotificationCenter } from "../NotificationCenter";
