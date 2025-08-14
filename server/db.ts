@@ -1,7 +1,4 @@
-
 import { createClient } from '@supabase/supabase-js';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
 
 // Supabase configuration
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -20,14 +17,5 @@ export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   }
 });
 
-// For direct SQL operations if needed
-const connectionString = process.env.DATABASE_URL;
-let db: any = null;
-
-if (connectionString) {
-  const client = postgres(connectionString, { prepare: false });
-  db = drizzle(client);
-}
-
-export { db };
+export { supabase as db };
 export default supabase;
