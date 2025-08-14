@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { serverSupabaseAnon as serverSupabase } from '../supabaseClient';
+import { serverSupabase } from '../supabaseClient';
 import { authenticateUser } from '../middleware/auth';
 
 const router = Router();
