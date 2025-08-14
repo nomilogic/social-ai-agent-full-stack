@@ -1,172 +1,235 @@
-export interface ThemeColors {
+export interface ThemeConfig {
   name: string;
+  key: string;
   bgGradient: string;
-  primary: string;
-  secondary: string;
-  accent: string;
-  text: {
+  tailwindClasses: {
+    gradient: string;
     primary: string;
     secondary: string;
-    light: string;
+    accent: string;
   };
-  background: {
+  colors: {
     primary: string;
     secondary: string;
-    card: string;
-  };
-  border: string;
-  button: {
-    primary: string;
-    secondary: string;
-    hover: string;
+    accent: string;
+    text: {
+      primary: string;
+      secondary: string;
+      light: string;
+    };
+    background: {
+      primary: string;
+      secondary: string;
+      card: string;
+    };
+    border: string;
+    button: {
+      primary: string;
+      secondary: string;
+      hover: string;
+    };
   };
 }
 
-export const themes: Record<string, ThemeColors> = {
-  'ai-revolution': {
-    name: 'AI Revolution',
-    bgGradient: 'from-blue-600 via-purple-600 to-indigo-700',
-    primary: '#3B82F6', // blue-500
-    secondary: '#8B5CF6', // violet-500
-    accent: '#6366F1', // indigo-500
-    text: {
-      primary: '#FFFFFF',
-      secondary: 'rgba(255, 255, 255, 0.9)',
-      light: 'rgba(255, 255, 255, 0.7)'
+export const themes: Record<string, ThemeConfig> = {
+  "ai-revolution": {
+    name: "AI Revolution",
+    key: "ai-revolution",
+    bgGradient: "bg-gradient-ai-revolution",
+    tailwindClasses: {
+      gradient: "bg-gradient-ai-revolution",
+      primary: "bg-blue-500",
+      secondary: "bg-violet-500", 
+      accent: "bg-indigo-500",
     },
-    background: {
-      primary: 'rgba(255, 255, 255, 0.1)',
-      secondary: 'rgba(255, 255, 255, 0.05)',
-      card: 'rgba(255, 255, 255, 0.15)'
+    colors: {
+      primary: "#3B82F6", // blue-500
+      secondary: "#8B5CF6", // violet-500
+      accent: "#6366F1", // indigo-500
+      text: {
+        primary: "#FFFFFF",
+        secondary: "rgba(255, 255, 255, 0.9)",
+        light: "rgba(255, 255, 255, 0.7)",
+      },
+      background: {
+        primary: "rgba(255, 255, 255, 0.1)",
+        secondary: "rgba(9, 10, 35, 0.05)",
+        card: "rgba(25, 25, 25, 0.55)",
+      },
+      border: "rgba(255, 255, 255, 0.2)",
+      button: {
+        primary: "#FFFFFF",
+        secondary: "rgba(255, 255, 255, 0.2)",
+        hover: "rgba(255, 255, 255, 0.9)",
+      },
     },
-    border: 'rgba(255, 255, 255, 0.2)',
-    button: {
-      primary: '#FFFFFF',
-      secondary: 'rgba(255, 255, 255, 0.2)',
-      hover: 'rgba(255, 255, 255, 0.9)'
-    }
   },
-  'content-creation': {
-    name: 'Content Creation',
-    bgGradient: 'from-emerald-500 via-teal-600 to-cyan-700',
-    primary: '#10B981', // emerald-500
-    secondary: '#0D9488', // teal-600
-    accent: '#0891B2', // cyan-600
-    text: {
-      primary: '#FFFFFF',
-      secondary: 'rgba(255, 255, 255, 0.9)',
-      light: 'rgba(255, 255, 255, 0.7)'
+  "content-creation": {
+    name: "Content Creation",
+    key: "content-creation",
+    bgGradient: "bg-gradient-content-creation",
+    tailwindClasses: {
+      gradient: "bg-gradient-content-creation",
+      primary: "bg-emerald-500",
+      secondary: "bg-teal-600",
+      accent: "bg-cyan-600",
     },
-    background: {
-      primary: 'rgba(255, 255, 255, 0.1)',
-      secondary: 'rgba(255, 255, 255, 0.05)',
-      card: 'rgba(255, 255, 255, 0.15)'
+    colors: {
+      primary: "#10B981", // emerald-500
+      secondary: "#0D9488", // teal-600
+      accent: "#0891B2", // cyan-600
+      text: {
+        primary: "#FFFFFF",
+        secondary: "rgba(255, 255, 255, 0.9)",
+        light: "rgba(255, 255, 255, 0.7)",
+      },
+      background: {
+        primary: "rgba(255, 255, 255, 0.1)",
+        secondary: "rgba(255, 255, 255, 0.05)",
+        card: "rgba(255, 255, 255, 0.15)",
+      },
+      border: "rgba(255, 255, 255, 0.2)",
+      button: {
+        primary: "#FFFFFF",
+        secondary: "rgba(255, 255, 255, 0.2)",
+        hover: "rgba(255, 255, 255, 0.9)",
+      },
     },
-    border: 'rgba(255, 255, 255, 0.2)',
-    button: {
-      primary: '#FFFFFF',
-      secondary: 'rgba(255, 255, 255, 0.2)',
-      hover: 'rgba(255, 255, 255, 0.9)'
-    }
   },
-  'multi-platform': {
-    name: 'Multi-Platform',
-    bgGradient: 'from-orange-500 via-red-500 to-pink-600',
-    primary: '#F97316', // orange-500
-    secondary: '#EF4444', // red-500
-    accent: '#EC4899', // pink-500
-    text: {
-      primary: '#FFFFFF',
-      secondary: 'rgba(255, 255, 255, 0.9)',
-      light: 'rgba(255, 255, 255, 0.7)'
+  "multi-platform": {
+    name: "Multi-Platform",
+    key: "multi-platform",
+    bgGradient: "bg-gradient-multi-platform",
+    tailwindClasses: {
+      gradient: "bg-gradient-multi-platform",
+      primary: "bg-orange-500",
+      secondary: "bg-red-500",
+      accent: "bg-pink-500",
     },
-    background: {
-      primary: 'rgba(255, 255, 255, 0.1)',
-      secondary: 'rgba(255, 255, 255, 0.05)',
-      card: 'rgba(255, 255, 255, 0.15)'
+    colors: {
+      primary: "#F97316", // orange-500
+      secondary: "#EF4444", // red-500
+      accent: "#EC4899", // pink-500
+      text: {
+        primary: "#FFFFFF",
+        secondary: "rgba(255, 255, 255, 0.9)",
+        light: "rgba(255, 255, 255, 0.7)",
+      },
+      background: {
+        primary: "rgba(255, 255, 255, 0.1)",
+        secondary: "rgba(255, 255, 255, 0.05)",
+        card: "rgba(255, 255, 255, 0.15)",
+      },
+      border: "rgba(255, 255, 255, 0.2)",
+      button: {
+        primary: "#FFFFFF",
+        secondary: "rgba(255, 255, 255, 0.2)",
+        hover: "rgba(255, 255, 255, 0.9)",
+      },
     },
-    border: 'rgba(255, 255, 255, 0.2)',
-    button: {
-      primary: '#FFFFFF',
-      secondary: 'rgba(255, 255, 255, 0.2)',
-      hover: 'rgba(255, 255, 255, 0.9)'
-    }
   },
-  'smart-scheduling': {
-    name: 'Smart Scheduling',
-    bgGradient: 'from-violet-600 via-purple-600 to-fuchsia-700',
-    primary: '#8B5CF6', // violet-500
-    secondary: '#A855F7', // purple-500
-    accent: '#C026D3', // fuchsia-600
-    text: {
-      primary: '#FFFFFF',
-      secondary: 'rgba(255, 255, 255, 0.9)',
-      light: 'rgba(255, 255, 255, 0.7)'
+  "smart-scheduling": {
+    name: "Smart Scheduling",
+    key: "smart-scheduling",
+    bgGradient: "bg-gradient-smart-scheduling",
+    tailwindClasses: {
+      gradient: "bg-gradient-smart-scheduling",
+      primary: "bg-violet-500",
+      secondary: "bg-purple-500",
+      accent: "bg-fuchsia-600",
     },
-    background: {
-      primary: 'rgba(255, 255, 255, 0.1)',
-      secondary: 'rgba(255, 255, 255, 0.05)',
-      card: 'rgba(255, 255, 255, 0.15)'
+    colors: {
+      primary: "#8B5CF6", // violet-500
+      secondary: "#A855F7", // purple-500
+      accent: "#C026D3", // fuchsia-600
+      text: {
+        primary: "#FFFFFF",
+        secondary: "rgba(255, 255, 255, 0.9)",
+        light: "rgba(255, 255, 255, 0.7)",
+      },
+      background: {
+        primary: "rgba(255, 255, 255, 0.1)",
+        secondary: "rgba(255, 255, 255, 0.05)",
+        card: "rgba(255, 255, 255, 0.15)",
+      },
+      border: "rgba(255, 255, 255, 0.2)",
+      button: {
+        primary: "#FFFFFF",
+        secondary: "rgba(255, 255, 255, 0.2)",
+        hover: "rgba(255, 255, 255, 0.9)",
+      },
     },
-    border: 'rgba(255, 255, 255, 0.2)',
-    button: {
-      primary: '#FFFFFF',
-      secondary: 'rgba(255, 255, 255, 0.2)',
-      hover: 'rgba(255, 255, 255, 0.9)'
-    }
   },
-  'analytics': {
-    name: 'Analytics',
-    bgGradient: 'from-amber-500 via-orange-600 to-red-600',
-    primary: '#F59E0B', // amber-500
-    secondary: '#EA580C', // orange-600
-    accent: '#DC2626', // red-600
-    text: {
-      primary: '#FFFFFF',
-      secondary: 'rgba(255, 255, 255, 0.9)',
-      light: 'rgba(255, 255, 255, 0.7)'
+  analytics: {
+    name: "Analytics",
+    key: "analytics", 
+    bgGradient: "bg-gradient-analytics",
+    tailwindClasses: {
+      gradient: "bg-gradient-analytics",
+      primary: "bg-amber-500",
+      secondary: "bg-orange-600",
+      accent: "bg-red-600",
     },
-    background: {
-      primary: 'rgba(255, 255, 255, 0.1)',
-      secondary: 'rgba(255, 255, 255, 0.05)',
-      card: 'rgba(255, 255, 255, 0.15)'
+    colors: {
+      primary: "#F59E0B", // amber-500
+      secondary: "#EA580C", // orange-600
+      accent: "#DC2626", // red-600
+      text: {
+        primary: "#FFFFFF",
+        secondary: "rgba(255, 255, 255, 0.9)",
+        light: "rgba(255, 255, 255, 0.7)",
+      },
+      background: {
+        primary: "rgba(255, 255, 255, 0.1)",
+        secondary: "rgba(255, 255, 255, 0.05)",
+        card: "rgba(255, 255, 255, 0.15)",
+      },
+      border: "rgba(255, 255, 255, 0.2)",
+      button: {
+        primary: "#FFFFFF",
+        secondary: "rgba(255, 255, 255, 0.2)",
+        hover: "rgba(255, 255, 255, 0.9)",
+      },
     },
-    border: 'rgba(255, 255, 255, 0.2)',
-    button: {
-      primary: '#FFFFFF',
-      secondary: 'rgba(255, 255, 255, 0.2)',
-      hover: 'rgba(255, 255, 255, 0.9)'
-    }
   },
-  'enterprise': {
-    name: 'Enterprise',
-    bgGradient: 'from-indigo-600 via-blue-600 to-purple-700',
-    primary: '#4F46E5', // indigo-600
-    secondary: '#2563EB', // blue-600
-    accent: '#7C3AED', // violet-600
-    text: {
-      primary: '#FFFFFF',
-      secondary: 'rgba(255, 255, 255, 0.9)',
-      light: 'rgba(255, 255, 255, 0.7)'
+  enterprise: {
+    name: "Enterprise",
+    key: "enterprise",
+    bgGradient: "bg-gradient-enterprise",
+    tailwindClasses: {
+      gradient: "bg-gradient-enterprise",
+      primary: "bg-indigo-600",
+      secondary: "bg-blue-600",
+      accent: "bg-violet-600",
     },
-    background: {
-      primary: 'rgba(255, 255, 255, 0.1)',
-      secondary: 'rgba(255, 255, 255, 0.05)',
-      card: 'rgba(255, 255, 255, 0.15)'
+    colors: {
+      primary: "#4F46E5", // indigo-600
+      secondary: "#2563EB", // blue-600
+      accent: "#7C3AED", // violet-600
+      text: {
+        primary: "#FFFFFF",
+        secondary: "rgba(255, 255, 255, 0.9)",
+        light: "rgba(255, 255, 255, 0.7)",
+      },
+      background: {
+        primary: "rgba(255, 255, 255, 0.1)",
+        secondary: "rgba(255, 255, 255, 0.05)",
+        card: "rgba(255, 255, 255, 0.15)",
+      },
+      border: "rgba(255, 255, 255, 0.2)",
+      button: {
+        primary: "#FFFFFF",
+        secondary: "rgba(255, 255, 255, 0.2)",
+        hover: "rgba(255, 255, 255, 0.9)",
+      },
     },
-    border: 'rgba(255, 255, 255, 0.2)',
-    button: {
-      primary: '#FFFFFF',
-      secondary: 'rgba(255, 255, 255, 0.2)',
-      hover: 'rgba(255, 255, 255, 0.9)'
-    }
-  }
+  },
 };
 
 export class ThemeManager {
   private static instance: ThemeManager;
-  private currentTheme: string = 'ai-revolution'; // Default to first onboarding theme
-  private listeners: ((theme: ThemeColors) => void)[] = [];
+  private currentTheme: string = "ai-revolution"; // Default to first onboarding theme
+  private listeners: ((theme: ThemeConfig) => void)[] = [];
 
   static getInstance(): ThemeManager {
     if (!ThemeManager.instance) {
@@ -175,8 +238,12 @@ export class ThemeManager {
     return ThemeManager.instance;
   }
 
-  getCurrentTheme(): ThemeColors {
+  getCurrentTheme(): ThemeConfig {
     return themes[this.currentTheme];
+  }
+
+  getCurrentThemeKey(): string {
+    return this.currentTheme;
   }
 
   setTheme(themeName: string) {
@@ -184,7 +251,7 @@ export class ThemeManager {
       this.currentTheme = themeName;
       this.applyTheme();
       this.notifyListeners();
-      localStorage.setItem('app-theme', themeName);
+      localStorage.setItem("app-theme", themeName);
     }
   }
 
@@ -192,36 +259,41 @@ export class ThemeManager {
     const theme = this.getCurrentTheme();
     const root = document.documentElement;
 
-    // Apply CSS custom properties
-    root.style.setProperty('--theme-primary', theme.primary);
-    root.style.setProperty('--theme-secondary', theme.secondary);
-    root.style.setProperty('--theme-accent', theme.accent);
-    root.style.setProperty('--theme-text-primary', theme.text.primary);
-    root.style.setProperty('--theme-text-secondary', theme.text.secondary);
-    root.style.setProperty('--theme-text-light', theme.text.light);
-    root.style.setProperty('--theme-bg-primary', theme.background.primary);
-    root.style.setProperty('--theme-bg-secondary', theme.background.secondary);
-    root.style.setProperty('--theme-bg-card', theme.background.card);
-    root.style.setProperty('--theme-border', theme.border);
-    root.style.setProperty('--theme-button-primary', theme.button.primary);
-    root.style.setProperty('--theme-button-secondary', theme.button.secondary);
-    root.style.setProperty('--theme-button-hover', theme.button.hover);
+    // Apply CSS custom properties for backward compatibility and complex styling
+    root.style.setProperty("--theme-primary", theme.colors.primary);
+    root.style.setProperty("--theme-secondary", theme.colors.secondary);
+    root.style.setProperty("--theme-accent", theme.colors.accent);
+    root.style.setProperty("--theme-text-primary", theme.colors.text.primary);
+    root.style.setProperty("--theme-text-secondary", theme.colors.text.secondary);
+    root.style.setProperty("--theme-text-light", theme.colors.text.light);
+    root.style.setProperty("--theme-bg-primary", theme.colors.background.primary);
+    root.style.setProperty("--theme-bg-secondary", theme.colors.background.secondary);
+    root.style.setProperty("--theme-bg-card", theme.colors.background.card);
+    root.style.setProperty("--theme-border", theme.colors.border);
+    root.style.setProperty("--theme-button-primary", theme.colors.button.primary);
+    root.style.setProperty("--theme-button-secondary", theme.colors.button.secondary);
+    root.style.setProperty("--theme-button-hover", theme.colors.button.hover);
+
+    // Set data attribute for Tailwind theme switching
+    root.setAttribute("data-theme", theme.key);
   }
 
-  subscribe(callback: (theme: ThemeColors) => void) {
+  subscribe(callback: (theme: ThemeConfig) => void) {
     this.listeners.push(callback);
     return () => {
-      this.listeners = this.listeners.filter(listener => listener !== callback);
+      this.listeners = this.listeners.filter(
+        (listener) => listener !== callback,
+      );
     };
   }
 
   private notifyListeners() {
     const theme = this.getCurrentTheme();
-    this.listeners.forEach(listener => listener(theme));
+    this.listeners.forEach((listener) => listener(theme));
   }
 
   initialize() {
-    const savedTheme = localStorage.getItem('app-theme');
+    const savedTheme = localStorage.getItem("app-theme");
     if (savedTheme && themes[savedTheme]) {
       this.currentTheme = savedTheme;
     }
@@ -229,10 +301,24 @@ export class ThemeManager {
   }
 
   getAvailableThemes() {
-    return Object.keys(themes).map(key => ({
-      key,
-      ...themes[key]
-    }));
+    return Object.keys(themes).map((key) => themes[key]);
+  }
+
+  // Utility methods for getting Tailwind classes
+  getCurrentGradientClass(): string {
+    return this.getCurrentTheme().tailwindClasses.gradient;
+  }
+
+  getCurrentPrimaryClass(): string {
+    return this.getCurrentTheme().tailwindClasses.primary;
+  }
+
+  getCurrentSecondaryClass(): string {
+    return this.getCurrentTheme().tailwindClasses.secondary;
+  }
+
+  getCurrentAccentClass(): string {
+    return this.getCurrentTheme().tailwindClasses.accent;
   }
 }
 

@@ -26,7 +26,7 @@ const onboardingSlides: OnboardingSlide[] = [
       "Advanced analytics & insights",
       "Automated content optimization"
     ],
-    bgGradient: "from-blue-600 via-purple-600 to-indigo-700",
+    bgGradient: "bg-gradient-ai-revolution",
     iconColor: "text-yellow-300"
   },
   {
@@ -41,7 +41,7 @@ const onboardingSlides: OnboardingSlide[] = [
       "Intelligent hashtag research",
       "Platform-specific optimization"
     ],
-    bgGradient: "from-emerald-500 via-teal-600 to-cyan-700",
+    bgGradient: "bg-gradient-content-creation",
     iconColor: "text-purple-300"
   },
   {
@@ -56,7 +56,7 @@ const onboardingSlides: OnboardingSlide[] = [
       "Platform-specific features",
       "Real-time connection status"
     ],
-    bgGradient: "from-orange-500 via-red-500 to-pink-600",
+    bgGradient: "bg-gradient-multi-platform",
     iconColor: "text-blue-300"
   },
   {
@@ -71,7 +71,7 @@ const onboardingSlides: OnboardingSlide[] = [
       "Campaign management",
       "Drag-and-drop calendar interface"
     ],
-    bgGradient: "from-violet-600 via-purple-600 to-fuchsia-700",
+    bgGradient: "bg-gradient-smart-scheduling",
     iconColor: "text-green-300"
   },
   {
@@ -86,7 +86,7 @@ const onboardingSlides: OnboardingSlide[] = [
       "Performance analytics",
       "Content optimization insights"
     ],
-    bgGradient: "from-amber-500 via-orange-600 to-red-600",
+    bgGradient: "bg-gradient-analytics",
     iconColor: "text-indigo-300"
   },
   {
@@ -101,7 +101,7 @@ const onboardingSlides: OnboardingSlide[] = [
       "Team collaboration tools",
       "White-label customization"
     ],
-    bgGradient: "from-indigo-600 via-blue-600 to-purple-700",
+    bgGradient: "bg-gradient-enterprise",
     iconColor: "text-yellow-300"
   }
 ];
@@ -145,7 +145,7 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onGetSta
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Animated Background */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${currentSlideData.bgGradient} transition-all duration-1000`}>
+      <div className={`absolute inset-0 ${currentSlideData.bgGradient} transition-all duration-1000`}>
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
       </div>

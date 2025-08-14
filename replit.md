@@ -9,6 +9,7 @@ Social Agent AI Fullstack is a comprehensive social media management platform le
 - Dedicated AI analysis button functionality for manual triggering
 - **Profile-based approach (August 13, 2025):** Replace "Company" terminology with "Profile" to accommodate both individual users and businesses
 - **Tiered pricing system for individuals:** Free, iPro ($39.99/month), and Business Pro ($99.99/month) plans with feature restrictions
+- **Tailwind Theme Migration (August 14, 2025):** Migrated from custom CSS variables and JavaScript theme manager to proper Tailwind CSS theme configuration. Themes now use Tailwind's built-in gradient system and configuration for better maintainability.
 
 ### System Architecture
 The project utilizes a client-server architecture. The frontend is a React Single Page Application (SPA) served by an Express.js backend, which also handles all API requests. PostgreSQL is used for database persistence with Drizzle ORM for type-safe database operations. The system integrates with numerous external social media APIs and AI service providers.
