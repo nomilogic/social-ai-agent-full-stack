@@ -144,7 +144,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               </button>
 
               {/* Search */}
-              <div className="relative ml-4 lg:ml-0">
+              {/* <div className="relative ml-4 lg:ml-0">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Search className="h-5 w-5 theme-text-light" />
                 </div>
@@ -153,7 +153,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   placeholder="Search..."
                   className="block w-full pl-10 pr-3 py-2 theme-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-              </div>
+              </div> */}
             </div>
             {/* Right Side */}
             <div className="flex items-center space-x-4">
@@ -226,20 +226,20 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
         {/* Main Content */}
         <main className="py-0">
-          <div className="max-w-7xl mx-auto sm:px-0 lg:px-0">
+          <div className="max-w-8xl mx-auto sm:px-0 lg:px-0">
             <div className="  p-0 backdrop-blur-sm">{children}</div>
           </div>
         </main>
 
         {/* Footer */}
         <footer className="theme-bg-card border-t border-white/20 mt-0">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-4 py-2">
             <div className="text-center">
-              <p className="theme-text-secondary text-sm">
+              <p className="theme-text-secondary text-xs">
                 © 2025 Social AI Agent. Powered by advanced AI for smarter
                 social media content.
               </p>
-              <div className="mt-4 flex justify-center space-x-6 text-sm theme-text-secondary">
+              <div className="hidden mt-4 flex justify-center space-x-6 text-sm theme-text-secondary">
                 <a
                   href="#"
                   className="hover:theme-text-primary transition-colors duration-200"
