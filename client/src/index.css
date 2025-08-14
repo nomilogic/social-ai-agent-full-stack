@@ -21,7 +21,7 @@
 
 /* Theme Utility Classes */
 .theme-gradient {
-  @apply bg-gradient-theme;
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary), var(--theme-accent));
 }
 
 .theme-bg-primary {
