@@ -1,55 +1,73 @@
+
 import React from "react";
 import { Palette, Check } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
-import { themes } from "../lib/theme";
 
 export const ThemeSelector: React.FC = () => {
   const { currentTheme, changeTheme, availableThemes, currentThemeKey } = useTheme();
 
   return (
     <div className="relative group">
-      <button className="flex items-center space-x-2  px-0 py-0 rounded-lg transition-colors">
+      <button className="flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 theme-bg-secondary hover:theme-bg-primary">
         <div
-          className={`w-4 h-4 border border-white rounded-full bg-gradient-to-r ${currentTheme.bgGradient}`}
+          className={`w-5 h-5 border-2 border-white/30 rounded-full bg-gradient-to-r ${currentTheme.bgGradient} shadow-lg`}
         ></div>
-        {/* <Palette className="w-5 h-5 theme-text-primary" /> */}
-        <span className=" hidden theme-text-primary font-medium">
+        <Palette className="w-4 h-4 theme-text-secondary" />
+        <span className="hidden sm:block theme-text-secondary font-medium text-sm">
           {currentTheme.name}
         </span>
       </button>
 
-      <div className="absolute top-full right-0 mt-2 w-72 theme-bg-card rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
-        <div className="p-4">
-          <h3 className="theme-text-primary font-semibold mb-3 theme-bg-card ">
-            Choose App Theme
-          </h3>
-          <div className="grid grid-cols-1 gap-2">
+      <div className="absolute top-full right-0 mt-3 w-80 theme-bg-card rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border theme-border">
+        <div className="p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Palette className="w-5 h-5 theme-text-primary" />
+            <h3 className="theme-text-primary font-semibold text-lg">
+              Choose Theme
+            </h3>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-3">
             {availableThemes.map((theme) => (
               <button
                 key={theme.key}
                 onClick={() => changeTheme(theme.key)}
-                className={`flex items-center justify-between p-3 rounded-lg transition-colors hover:theme-bg-primary group ${
-                  currentThemeKey === theme.key ? "theme-bg-primary" : ""
+                className={`flex items-center justify-between p-4 rounded-xl transition-all duration-200 group/theme ${
+                  currentThemeKey === theme.key 
+                    ? "theme-bg-primary ring-2 ring-white/30" 
+                    : "theme-bg-secondary hover:theme-bg-primary"
                 }`}
               >
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-4">
                   <div
-                    className={`w-4 h-4 rounded-full bg-gradient-to-r ${theme.bgGradient}`}
+                    className={`w-6 h-6 border-2 border-white/40 rounded-lg bg-gradient-to-r ${theme.bgGradient} shadow-lg group-hover/theme:scale-110 transition-transform duration-200`}
                   ></div>
-                  <span className="theme-text-primary font-medium">
-                    {theme.name}
-                  </span>
+                  <div className="text-left">
+                    <span className="theme-text-primary font-medium block">
+                      {theme.name}
+                    </span>
+                    <span className="theme-text-light text-xs">
+                      {theme.key === "ai-revolution" && "AI & Technology"}
+                      {theme.key === "content-creation" && "Creative & Fresh"}
+                      {theme.key === "multi-platform" && "Dynamic & Bold"}
+                      {theme.key === "smart-scheduling" && "Elegant & Modern"}
+                      {theme.key === "analytics" && "Warm & Professional"}
+                      {theme.key === "enterprise" && "Corporate & Sleek"}
+                    </span>
+                  </div>
                 </div>
                 {currentThemeKey === theme.key && (
-                  <Check className="w-4 h-4 theme-text-primary" />
+                  <div className="flex items-center justify-center w-6 h-6 bg-white/20 rounded-full">
+                    <Check className="w-4 h-4 theme-text-primary" />
+                  </div>
                 )}
               </button>
             ))}
           </div>
-          <div className="mt-3 p-2 theme-bg-primary rounded-lg">
-            <p className="text-xs theme-text-light">
-              Themes are based on the onboarding carousel color schemes. Changes
-              apply instantly across the entire app.
+          
+          <div className="mt-4 p-3 theme-bg-secondary rounded-lg">
+            <p className="text-xs theme-text-light leading-relaxed">
+              ✨ Themes change the entire app appearance instantly. Each theme is inspired by different aspects of social media management.
             </p>
           </div>
         </div>
