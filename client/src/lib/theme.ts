@@ -179,6 +179,10 @@ export class ThemeManager {
     return themes[this.currentTheme];
   }
 
+  getCurrentThemeKey(): string {
+    return this.currentTheme;
+  }
+
   setTheme(themeName: string) {
     if (themes[themeName]) {
       this.currentTheme = themeName;
@@ -231,7 +235,14 @@ export class ThemeManager {
   }
 
   getAvailableThemes() {
-    return Object.keys(themes).map((key) => themes[key]);
+    return Object.keys(themes).map((key) => ({
+      key,
+      ...themes[key]
+    }));
+  }
+
+  getThemeByKey(key: string): ThemeColors | null {
+    return themes[key] || null;
   }
 
   // Utility methods for getting gradient class

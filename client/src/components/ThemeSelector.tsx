@@ -1,9 +1,10 @@
 import React from "react";
 import { Palette, Check } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
+import { themes } from "../lib/theme";
 
 export const ThemeSelector: React.FC = () => {
-  const { currentTheme, changeTheme, availableThemes } = useTheme();
+  const { currentTheme, changeTheme, availableThemes, currentThemeKey } = useTheme();
 
   return (
     <div className="relative group">
@@ -28,7 +29,7 @@ export const ThemeSelector: React.FC = () => {
                 key={theme.key}
                 onClick={() => changeTheme(theme.key)}
                 className={`flex items-center justify-between p-3 rounded-lg transition-colors hover:theme-bg-primary group ${
-                  currentTheme.name === theme.name ? "theme-bg-primary" : ""
+                  currentThemeKey === theme.key ? "theme-bg-primary" : ""
                 }`}
               >
                 <div className="flex items-center space-x-3">
@@ -39,7 +40,7 @@ export const ThemeSelector: React.FC = () => {
                     {theme.name}
                   </span>
                 </div>
-                {currentTheme.name === theme.name && (
+                {currentThemeKey === theme.key && (
                   <Check className="w-4 h-4 theme-text-primary" />
                 )}
               </button>

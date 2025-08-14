@@ -4,9 +4,13 @@ import { themeManager, ThemeColors } from '../lib/theme';
 
 export const useTheme = () => {
   const [currentTheme, setCurrentTheme] = useState<ThemeColors>(themeManager.getCurrentTheme());
+  const [currentThemeKey, setCurrentThemeKey] = useState<string>(themeManager.getCurrentThemeKey());
 
   useEffect(() => {
-    const unsubscribe = themeManager.subscribe(setCurrentTheme);
+    const unsubscribe = themeManager.subscribe((theme) => {
+      setCurrentTheme(theme);
+      setCurrentThemeKey(themeManager.getCurrentThemeKey());
+    });
     return unsubscribe;
   }, []);
 
@@ -18,6 +22,7 @@ export const useTheme = () => {
 
   return {
     currentTheme,
+    currentThemeKey,
     changeTheme,
     availableThemes
   };
