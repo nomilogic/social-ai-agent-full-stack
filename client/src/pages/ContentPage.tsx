@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { ContentInput } from '../components/ContentInput';
-import { AIGenerator } from '../components/AIGenerator';
-import { PostPreview } from '../components/PostPreview';
-import { PublishPosts } from '../components/PublishPosts';
-import { ProgressBar } from '../components/ProgressBar';
-import { useAppContext } from '../context/AppContext';
-import { savePost } from '../lib/database';
+import React, { useState } from "react";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { ContentInput } from "../components/ContentInput";
+import { AIGenerator } from "../components/AIGenerator";
+import { PostPreview } from "../components/PostPreview";
+import { PublishPosts } from "../components/PublishPosts";
+import { ProgressBar } from "../components/ProgressBar";
+import { useAppContext } from "../context/AppContext";
+import { savePost } from "../lib/database";
 
 export const ContentPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
@@ -15,48 +15,54 @@ export const ContentPage: React.FC = () => {
   const [showPublishModal, setShowPublishModal] = useState(false);
 
   const handleContentNext = (contentData: any) => {
-    dispatch({ type: 'SET_CONTENT_DATA', payload: contentData });
-    navigate('/content/generate');
+    dispatch({ type: "SET_CONTENT_DATA", payload: contentData });
+    navigate("/content/generate");
   };
 
   const handleGenerationComplete = async (posts: any[]) => {
     // Save posts to database if we have company and user data
     if (state.user && state.selectedCompany && state.contentData) {
       try {
-        await savePost(state.selectedCompany.id, state.contentData, posts, state.user.id);
+        await savePost(
+          state.selectedCompany.id,
+          state.contentData,
+          posts,
+          state.user.id,
+        );
       } catch (error) {
-        console.error('Error saving post:', error);
+        console.error("Error saving post:", error);
         // Continue anyway - we can still preview the posts
       }
     }
 
-    dispatch({ type: 'SET_GENERATED_POSTS', payload: posts });
-    navigate('/content/preview');
+    dispatch({ type: "SET_GENERATED_POSTS", payload: posts });
+    navigate("/content/preview");
   };
 
   const handleGoToPublish = () => {
     setShowPublishModal(true);
   };
 
-  const stepLabels = ['Content Input', 'AI Generation', 'Preview', 'Publish'];
+  const stepLabels = ["Content Input", "AI Generation", "Preview", "Publish"];
   const getCurrentStep = () => {
     const path = location.pathname;
-    if (path.includes('/generate')) return 1;
-    if (path.includes('/preview')) return 2;
-    if (path.includes('/publish')) return 3;
+    if (path.includes("/generate")) return 1;
+    if (path.includes("/preview")) return 2;
+    if (path.includes("/publish")) return 3;
     return 0;
   };
 
   return (
-    <div className="min-h-screen animated-bg">
-      <div className="min-h-screen bg-white/10 backdrop-blur-sm">
+    <div className="min-h-screen animated-bg ">
+      <div className="min-h-screen bg-white/10 backdrop-blur-sm p-5">
         <div className="max-w-6xl mx-auto py-8 space-y-8">
           <div className="text-center floating-element">
             <h1 className="text-4xl font-bold text-white mb-4 drop-shadow-lg">
               AI Content Generator
             </h1>
             <p className="text-xl text-white/80 max-w-2xl mx-auto drop-shadow">
-              Create engaging social media content with the power of artificial intelligence
+              Create engaging social media content with the power of artificial
+              intelligence
             </p>
           </div>
 
@@ -72,7 +78,7 @@ export const ContentPage: React.FC = () => {
               element={
                 <ContentInput
                   onNext={handleContentNext}
-                  onBack={() => navigate('/dashboard')}
+                  onBack={() => navigate("/dashboard")}
                   initialData={state.contentData}
                   editMode={!!state.contentData}
                 />
@@ -85,13 +91,15 @@ export const ContentPage: React.FC = () => {
                   <AIGenerator
                     contentData={state.contentData}
                     onComplete={handleGenerationComplete}
-                    onBack={() => navigate('/content')}
+                    onBack={() => navigate("/content")}
                   />
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-gray-600">No content data found. Please start from the beginning.</p>
+                    <p className="text-gray-600">
+                      No content data found. Please start from the beginning.
+                    </p>
                     <button
-                      onClick={() => navigate('/content')}
+                      onClick={() => navigate("/content")}
                       className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       Start Over
@@ -106,15 +114,17 @@ export const ContentPage: React.FC = () => {
                 state.generatedPosts && state.generatedPosts.length > 0 ? (
                   <PostPreview
                     posts={state.generatedPosts}
-                    onEdit={() => navigate('/content')}
-                    onBack={() => navigate('/content/generate')}
+                    onEdit={() => navigate("/content")}
+                    onBack={() => navigate("/content/generate")}
                     onPublish={handleGoToPublish}
                   />
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-gray-600">No generated posts found. Please generate content first.</p>
+                    <p className="text-gray-600">
+                      No generated posts found. Please generate content first.
+                    </p>
                     <button
-                      onClick={() => navigate('/content')}
+                      onClick={() => navigate("/content")}
                       className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       Start Content Creation
@@ -132,7 +142,7 @@ export const ContentPage: React.FC = () => {
                 <PublishPosts
                   posts={state.generatedPosts}
                   onBack={() => setShowPublishModal(false)}
-                  userId={state.user?.id || ''}
+                  userId={state.user?.id || ""}
                 />
               </div>
             </div>

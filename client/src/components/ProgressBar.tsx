@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface ProgressBarProps {
   currentStep: number;
@@ -18,27 +18,29 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
           <div
             key={index}
             className={`flex flex-col items-center ${
-              index <= currentStep ? 'text-blue-600' : 'text-gray-400'
+              index <= currentStep ? "text-white" : "text-white-400"
             }`}
           >
             <div
               className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium mb-2 transition-all duration-300 ${
                 index < currentStep
-                  ? 'bg-blue-600 text-white'
+                  ? "bg-blue-600 text-white"
                   : index === currentStep
-                  ? 'bg-blue-100 text-blue-600 border-2 border-blue-600'
-                  : 'bg-gray-200 text-gray-400'
+                    ? "bg-black text-white-600 border-2 border-white-600"
+                    : "bg-white text-black"
               }`}
             >
-              {index < currentStep ? '✓' : index + 1}
+              {index < currentStep ? "✓" : index + 1}
             </div>
-            <span className="text-xs font-medium text-center">{label}</span>
+            <span className="text-xs font-medium text-center text-white">
+              {label}
+            </span>
           </div>
         ))}
       </div>
       <div className="w-full bg-gray-200 rounded-full h-2">
         <div
-          className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
+          className="bg-gradient-to-r from-orange-500 to-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
           style={{ width: `${((currentStep + 1) / totalSteps) * 100}%` }}
         />
       </div>

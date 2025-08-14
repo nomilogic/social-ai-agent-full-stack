@@ -1,7 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Plus, TrendingUp, Calendar, Settings, ArrowRight, Sparkles, Target, Users, BarChart3 } from 'lucide-react';
-import { useAppContext } from '../context/AppContext';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Plus,
+  TrendingUp,
+  Calendar,
+  Settings,
+  ArrowRight,
+  Sparkles,
+  Target,
+  Users,
+  BarChart3,
+} from "lucide-react";
+import { useAppContext } from "../context/AppContext";
 
 export const DashboardPage: React.FC = () => {
   const { state } = useAppContext();
@@ -14,13 +24,15 @@ export const DashboardPage: React.FC = () => {
     const checkOnboarding = async () => {
       if (state.user && !state.selectedCompany) {
         try {
-          const response = await fetch(`/api/companies?userId=${state.user.id}`);
+          const response = await fetch(
+            `/api/companies?userId=${state.user.id}`,
+          );
           const companies = await response.json();
           if (companies.length === 0) {
             setShowOnboarding(true);
           }
         } catch (error) {
-          console.error('Error checking companies:', error);
+          console.error("Error checking companies:", error);
         }
       }
     };
@@ -30,33 +42,37 @@ export const DashboardPage: React.FC = () => {
 
   const onboardingSteps = [
     {
-      title: 'Welcome to Social AI Agent!',
-      description: 'Your AI-powered social media content creation platform',
+      title: "Welcome to Social AI Agent!",
+      description: "Your AI-powered social media content creation platform",
       icon: Sparkles,
-      content: 'Transform your social media presence with AI-generated content tailored to your brand. Let\'s get you started in just a few simple steps.',
+      content:
+        "Transform your social media presence with AI-generated content tailored to your brand. Let's get you started in just a few simple steps.",
     },
     {
-      title: 'Create Your Company Profile',
-      description: 'Set up your brand identity and voice',
+      title: "Create Your Company Profile",
+      description: "Set up your brand identity and voice",
       icon: Target,
-      content: 'First, we\'ll create your company profile. This helps our AI understand your brand voice, target audience, and content preferences.',
+      content:
+        "First, we'll create your company profile. This helps our AI understand your brand voice, target audience, and content preferences.",
     },
     {
-      title: 'Generate Your First Content',
-      description: 'Let AI create engaging posts for you',
+      title: "Generate Your First Content",
+      description: "Let AI create engaging posts for you",
       icon: Users,
-      content: 'Once your profile is ready, you can start generating AI-powered content. Our system creates posts optimized for different social media platforms.',
+      content:
+        "Once your profile is ready, you can start generating AI-powered content. Our system creates posts optimized for different social media platforms.",
     },
     {
-      title: 'Publish & Schedule',
-      description: 'Share your content across platforms',
+      title: "Publish & Schedule",
+      description: "Share your content across platforms",
       icon: BarChart3,
-      content: 'Review, edit, and publish your content directly to your social media accounts or schedule them for optimal engagement times.',
+      content:
+        "Review, edit, and publish your content directly to your social media accounts or schedule them for optimal engagement times.",
     },
   ];
 
   const handleStartOnboarding = () => {
-    navigate('/companies/new');
+    navigate("/companies/new");
   };
 
   const nextOnboardingStep = () => {
@@ -88,7 +104,9 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <h1 className="text-4xl font-bold text-gray-900">{currentStep.title}</h1>
+            <h1 className="text-4xl font-bold text-gray-900">
+              {currentStep.title}
+            </h1>
             <p className="text-xl text-gray-600">{currentStep.description}</p>
             <p className="text-gray-700 leading-relaxed max-w-lg mx-auto">
               {currentStep.content}
@@ -106,7 +124,11 @@ export const DashboardPage: React.FC = () => {
               onClick={nextOnboardingStep}
               className="flex items-center space-x-2 bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200"
             >
-              <span>{onboardingStep === onboardingSteps.length - 1 ? 'Get Started' : 'Next'}</span>
+              <span>
+                {onboardingStep === onboardingSteps.length - 1
+                  ? "Get Started"
+                  : "Next"}
+              </span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -117,7 +139,7 @@ export const DashboardPage: React.FC = () => {
               <div
                 key={index}
                 className={`w-2 h-2 rounded-full transition-colors duration-200 ${
-                  index === onboardingStep ? 'bg-blue-600' : 'bg-gray-300'
+                  index === onboardingStep ? "bg-blue-600" : "bg-gray-300"
                 }`}
               />
             ))}
@@ -129,50 +151,54 @@ export const DashboardPage: React.FC = () => {
 
   const quickActions = [
     {
-      title: 'Create Content',
-      description: 'Generate AI-powered social media posts',
+      title: "Create Content",
+      description: "Generate AI-powered social media posts",
       icon: Plus,
-      color: 'bg-blue-600',
-      action: () => navigate('/content'),
+      color: "bg-blue-600",
+      action: () => navigate("/content"),
     },
     {
-      title: 'Manage Companies',
-      description: 'Add or edit your company profiles',
+      title: "Manage Companies",
+      description: "Add or edit your company profiles",
       icon: TrendingUp,
-      color: 'bg-green-600',
-      action: () => navigate('/companies'),
+      color: "bg-green-600",
+      action: () => navigate("/companies"),
     },
     {
-      title: 'Schedule Posts',
-      description: 'Plan and schedule your content',
+      title: "Schedule Posts",
+      description: "Plan and schedule your content",
       icon: Calendar,
-      color: 'bg-purple-600',
-      action: () => navigate('/schedule'),
+      color: "bg-purple-600",
+      action: () => navigate("/schedule"),
     },
     {
-      title: 'Settings',
-      description: 'Configure your preferences',
+      title: "Settings",
+      description: "Configure your preferences",
       icon: Settings,
-      color: 'bg-gray-600',
-      action: () => navigate('/settings'),
+      color: "bg-gray-600",
+      action: () => navigate("/settings"),
     },
   ];
 
   return (
-    <div className="min-h-screen animated-bg">
-      <div className="min-h-screen bg-white/10 backdrop-blur-sm">
+    <div className="min-h-screen bg-black/10">
+      <div className="min-h-screen bg-transparent ">
         <div className="container mx-auto px-6 py-8 space-y-8">
-          <div className="flex justify-between items-center">
-            <div className="floating-element">
-              <h1 className="text-3xl font-bold text-white drop-shadow-lg">Dashboard</h1>
-              <p className="text-white/80 mt-2 drop-shadow">Welcome back! Here's your content overview.</p>
+          <div className="flex justify-between items-center flex-col">
+            <div className="">
+              <h1 className="text-3xl font-bold text-white drop-shadow-lg text-center">
+                Dashboard
+              </h1>
+              <p className="text-white/80 mt-1 mb-3 drop-shadow">
+                Welcome back! Here's your content overview.
+              </p>
             </div>
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => navigate('/content')}
-                className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-xl hover:bg-white/30 transition-all duration-200 pulse-glow border border-white/20"
+                onClick={() => navigate("/content")}
+                className="flex items-center bg-black/20 backdrop-blur-sm text-white px-6 py-3 rounded-xl w-[100%] hover:bg-black/30 transition-all duration-200 pulse-glow border border-white/20 "
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-5 h-5 " />
                 <span>Create Content</span>
               </button>
             </div>
@@ -180,39 +206,61 @@ export const DashboardPage: React.FC = () => {
 
           {/* Stats Overview */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white/20 backdrop-blur-sm rounded-2xl border border-white/20 p-6 floating-element">
+            <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/20 p-6 floating-element">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Total Posts</h3>
-                  <p className="text-3xl font-bold text-white mt-2 drop-shadow">24</p>
-                  <p className="text-green-300 text-sm mt-1">+12% from last month</p>
+                  <h3 className="text-lg font-semibold text-white">
+                    Total Posts
+                  </h3>
+                  <p className="text-3xl font-bold text-white mt-2 drop-shadow">
+                    24
+                  </p>
+                  <p className="text-green-300 text-sm mt-1">
+                    +12% from last month
+                  </p>
                 </div>
-                <div className="bg-white/20 p-3 rounded-lg">
+                <div className="bg-black/20 p-3 rounded-lg">
                   <TrendingUp className="w-6 h-6 text-white" />
                 </div>
               </div>
             </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-2xl border border-white/20 p-6 floating-element" style={{ animationDelay: '0.5s' }}>
+            <div
+              className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/20 p-6 floating-element"
+              style={{ animationDelay: "10.5s" }}
+            >
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Scheduled</h3>
-                  <p className="text-3xl font-bold text-white mt-2 drop-shadow">8</p>
-                  <p className="text-orange-200 text-sm mt-1">Next post in 2 hours</p>
+                  <h3 className="text-lg font-semibold text-white">
+                    Scheduled
+                  </h3>
+                  <p className="text-3xl font-bold text-white mt-2 drop-shadow">
+                    8
+                  </p>
+                  <p className="text-orange-200 text-sm mt-1">
+                    Next post in 2 hours
+                  </p>
                 </div>
-                <div className="bg-white/20 p-3 rounded-lg">
+                <div className="bg-black/20 p-3 rounded-lg">
                   <Calendar className="w-6 h-6 text-white" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white/20 backdrop-blur-sm rounded-2xl border border-white/20 p-6 floating-element" style={{ animationDelay: '1s' }}>
+            <div
+              className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/20 p-6 floating-element"
+              style={{ animationDelay: "1s" }}
+            >
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Engagement</h3>
-                  <p className="text-3xl font-bold text-white mt-2 drop-shadow">94.2%</p>
+                  <h3 className="text-lg font-semibold text-white">
+                    Engagement
+                  </h3>
+                  <p className="text-3xl font-bold text-white mt-2 drop-shadow">
+                    94.2%
+                  </p>
                   <p className="text-purple-200 text-sm mt-1">+5.1% increase</p>
                 </div>
-                <div className="bg-white/20 p-3 rounded-lg">
+                <div className="bg-black/20 p-3 rounded-lg">
                   <Settings className="w-6 h-6 text-white" />
                 </div>
               </div>
@@ -227,12 +275,16 @@ export const DashboardPage: React.FC = () => {
                 <div
                   key={index}
                   onClick={action.action}
-                  className="bg-white/20 backdrop-blur-sm rounded-2xl shadow-sm border border-white/20 p-6 cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105 floating-element"
+                  className="bg-black/20 backdrop-blur-sm rounded-2xl shadow-sm border border-white/20 p-6 cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105 floating-element"
                 >
-                  <div className={`w-12 h-12 ${action.color} rounded-xl flex items-center justify-center mb-4`}>
+                  <div
+                    className={`w-12 h-12 ${action.color} rounded-xl flex items-center justify-center mb-4`}
+                  >
                     <Icon className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-lg font-semibold text-white mb-2">{action.title}</h3>
+                  <h3 className="text-lg font-semibold text-white mb-2">
+                    {action.title}
+                  </h3>
                   <p className="text-white/80 text-sm">{action.description}</p>
                 </div>
               );
@@ -241,14 +293,17 @@ export const DashboardPage: React.FC = () => {
 
           {/* Show onboarding again button if no companies */}
           {!state.selectedCompany && (
-            <div className="bg-white/20 backdrop-blur-sm rounded-2xl shadow-sm border border-white/20 p-8 text-center floating-element">
-              <h2 className="text-2xl font-bold text-white mb-4">Get Started with Your First Content</h2>
+            <div className="bg-black/20 backdrop-blur-sm rounded-2xl shadow-sm border border-white/20 p-8 text-center floating-element">
+              <h2 className="text-2xl font-bold text-white mb-4">
+                Get Started with Your First Content
+              </h2>
               <p className="text-white/80 mb-6">
-                Create your company profile to unlock AI-powered content generation tailored to your brand.
+                Create your company profile to unlock AI-powered content
+                generation tailored to your brand.
               </p>
               <button
                 onClick={() => setShowOnboarding(true)}
-                className="bg-white/20 backdrop-blur-sm text-white px-8 py-3 rounded-lg hover:bg-white/30 transition-colors duration-200 border border-white/20"
+                className="bg-black/20 backdrop-blur-sm text-white px-8 py-3 rounded-lg hover:bg-black/30 transition-colors duration-200 border border-white/20"
               >
                 Show Getting Started Guide
               </button>
