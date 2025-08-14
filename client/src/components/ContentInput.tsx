@@ -255,7 +255,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       };
 
       // If onNext callback is provided, use it
-      if (onNext && typeof onNext === 'function') {
+      if (onNext && typeof onNext === "function") {
         onNext(postData);
       } else {
         // Otherwise, simulate generation for preview
@@ -332,7 +332,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-8">
+    <div className="w-full mx-auto theme-bg-trinary rounded-2xl shadow-lg p-8">
       <div className="text-center mb-8">
         <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
           <Wand2 className="w-8 h-8 text-purple-600" />

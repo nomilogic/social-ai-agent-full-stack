@@ -133,7 +133,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           </nav>
         </div>
         {/* Top Navigation */}
-        <div className="sticky top-0 z-10 theme-bg-card backdrop-blur-lg border-b border-white/20 px-4 py-4">
+        <div className="sticky top-0 z-10 backdrop-blur-lg border-b border-white/20 px-4 py-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <button
@@ -226,8 +226,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
         {/* Main Content */}
         <main className="py-0">
-          <div className="max-w-8xl mx-auto sm:px-0 lg:px-0">
-            <div className="  p-0 backdrop-blur-sm">{children}</div>
+          <div className="w-full mx-auto sm:px-0 lg:px-0">
+            <div className="  p-0 backdrop-blur-sm ">{children}</div>
           </div>
         </main>
 

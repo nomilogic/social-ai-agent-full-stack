@@ -36,6 +36,12 @@
   border: 1px solid var(--theme-border);
 }
 
+.theme-bg-trinary {
+  background: linear-gradient(to bottom,
+      rgba(0, 0, 0, 0.05) 100%,
+      rgba(0, 0, 0, 0) 0%);
+}
+
 .theme-text-primary {
   color: var(--theme-text-primary);
 }

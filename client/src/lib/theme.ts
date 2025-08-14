@@ -12,6 +12,7 @@ export interface ThemeColors {
   background: {
     primary: string;
     secondary: string;
+    trinary?: string;
     card: string;
   };
   border: string;
@@ -24,7 +25,7 @@ export interface ThemeColors {
 
 export const themes: Record<string, ThemeColors> = {
   "ai-revolution": {
-    name: "AI Revolution", 
+    name: "AI Revolution",
     bgGradient: "from-blue-600 via-purple-600 to-indigo-700",
     primary: "#3B82F6",
     secondary: "#8B5CF6",
@@ -37,7 +38,8 @@ export const themes: Record<string, ThemeColors> = {
     background: {
       primary: "rgba(255, 255, 255, 0.1)",
       secondary: "rgba(9, 10, 35, 0.05)",
-      card: "rgba(25, 25, 25, 0.55)",
+      trinary: "rgba(25, 25, 25, 0.05)",
+      card: "rgba(25, 25, 25, 0.50)",
     },
     border: "rgba(255, 255, 255, 0.2)",
     button: {
@@ -60,7 +62,7 @@ export const themes: Record<string, ThemeColors> = {
     background: {
       primary: "rgba(255, 255, 255, 0.1)",
       secondary: "rgba(255, 255, 255, 0.05)",
-      card: "rgba(255, 255, 255, 0.15)",
+      card: "rgba(25, 25, 25, 0.50)",
     },
     border: "rgba(255, 255, 255, 0.2)",
     button: {
@@ -83,7 +85,7 @@ export const themes: Record<string, ThemeColors> = {
     background: {
       primary: "rgba(255, 255, 255, 0.1)",
       secondary: "rgba(255, 255, 255, 0.05)",
-      card: "rgba(255, 255, 255, 0.15)",
+      card: "rgba(25, 25, 25, 0.50)",
     },
     border: "rgba(255, 255, 255, 0.2)",
     button: {
@@ -106,7 +108,7 @@ export const themes: Record<string, ThemeColors> = {
     background: {
       primary: "rgba(255, 255, 255, 0.1)",
       secondary: "rgba(255, 255, 255, 0.05)",
-      card: "rgba(255, 255, 255, 0.15)",
+      card: "rgba(25, 25, 25, 0.50)",
     },
     border: "rgba(255, 255, 255, 0.2)",
     button: {
@@ -129,7 +131,7 @@ export const themes: Record<string, ThemeColors> = {
     background: {
       primary: "rgba(255, 255, 255, 0.1)",
       secondary: "rgba(255, 255, 255, 0.05)",
-      card: "rgba(255, 255, 255, 0.15)",
+      card: "rgba(25, 25, 25, 0.50)",
     },
     border: "rgba(255, 255, 255, 0.2)",
     button: {
@@ -152,7 +154,7 @@ export const themes: Record<string, ThemeColors> = {
     background: {
       primary: "rgba(255, 255, 255, 0.1)",
       secondary: "rgba(255, 255, 255, 0.05)",
-      card: "rgba(255, 255, 255, 0.15)",
+      card: "rgba(25, 25, 25, 0.50)",
     },
     border: "rgba(255, 255, 255, 0.2)",
     button: {
@@ -206,6 +208,10 @@ export class ThemeManager {
     root.style.setProperty("--theme-bg-primary", theme.background.primary);
     root.style.setProperty("--theme-bg-secondary", theme.background.secondary);
     root.style.setProperty("--theme-bg-card", theme.background.card);
+    root.style.setProperty(
+      "--theme-bg-trinary",
+      theme.background.trinary ?? theme.background.card,
+    );
     root.style.setProperty("--theme-border", theme.border);
     root.style.setProperty("--theme-button-primary", theme.button.primary);
     root.style.setProperty("--theme-button-secondary", theme.button.secondary);
@@ -237,7 +243,7 @@ export class ThemeManager {
   getAvailableThemes() {
     return Object.keys(themes).map((key) => ({
       key,
-      ...themes[key]
+      ...themes[key],
     }));
   }
 
