@@ -204,8 +204,8 @@ export const DashboardPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Stats Overview - 2 Columns */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Stats Overview - 2 Columns Row */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-4 floating-element">
               <div className="flex items-center justify-between">
                 <div>
