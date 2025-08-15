@@ -74,21 +74,28 @@
   background-color: var(--theme-bg-card);
 }
 
-.theme-input {
-  background-color: var(--theme-bg-primary);
-  border: 1px solid var(--theme-border);
-  color: var(--theme-text-primary);
-}
+.theme-button-hover {
+    background-color: var(--theme-button-hover);
+  }
 
-.theme-input:focus {
-  border-color: var(--theme-accent);
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
+  .theme-input {
+    background-color: var(--theme-bg-primary);
+    border: 1px solid var(--theme-border);
+    color: var(--theme-text-primary);
+  }
 
-.theme-input::placeholder {
-  color: var(--theme-text-light);
-}
+  .theme-input:focus {
+    border-color: var(--theme-accent);
+    box-shadow: 0 0 0 1px var(--theme-accent);
+  }
+
+  .theme-text-accent {
+    color: var(--theme-accent);
+  }
+
+  .theme-bg-gradient {
+    background: var(--theme-bg-gradient);
+  }
 
 /* Custom animations for carousel */
 @keyframes slide-in-from-top {
