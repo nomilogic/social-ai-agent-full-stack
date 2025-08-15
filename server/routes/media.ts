@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express'
 import multer from 'multer'
-import { validateRequestBody } from '../middleware/auth'
+import { authenticateToken, AuthRequest, validateRequestBody } from '../middleware/auth'
 import path from 'path'
 import fs from 'fs'
 import { db } from '../db'
