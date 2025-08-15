@@ -18,8 +18,7 @@ export const FeatureRestriction: React.FC<FeatureRestrictionProps> = ({
   const { state } = useAppContext();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-  const isBusinessAccount = state.selectedProfile?.profile_type === 'business' || 
-                           state.user?.profile_type === 'business' ||
+  const isBusinessAccount = state.selectedProfile?.type === 'business' ||
                            state.userPlan === 'business';
   
   const currentPlan = isBusinessAccount ? 'business' : (state.userPlan || 'free');

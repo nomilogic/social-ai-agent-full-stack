@@ -23,7 +23,7 @@ export const ProfilePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({
     id: state.user?.id || '',
-    name: state.user?.name || '',
+    name: state.user?.user_metadata?.name || '',
     email: state.user?.email || '',
     bio: '',
     website: '',

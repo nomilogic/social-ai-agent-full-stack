@@ -54,10 +54,7 @@ export const usePlanFeatures = () => {
   const { state } = useAppContext();
   
   // Check if user has a business profile/account
-  const isBusinessAccount = state.selectedProfile?.profile_type === 'business' || 
-                           state.selectedProfile?.type === 'business' ||
-                           state.user?.profile_type === 'business' ||
-                           state.user?.plan === 'business' ||
+  const isBusinessAccount = state.selectedProfile?.type === 'business' ||
                            state.userPlan === 'business' ||
                            state.isBusinessAccount ||
                            state.user?.email === 'nomilogic@gmail.com';

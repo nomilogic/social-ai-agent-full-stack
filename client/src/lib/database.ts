@@ -1,6 +1,6 @@
 // Using API calls instead of Supabase client
 import { CompanyInfo, PostContent, GeneratedPost } from '../types';
-import api from './api';
+import { apiRequest } from './api';
 
 // Company operations
 export async function saveCompany(companyInfo: CompanyInfo, userId: string) {
@@ -99,14 +99,17 @@ export async function savePost(
   userId: string
 ) {
   try {
-    const response = await api.post('/posts', {
-      companyId,
-      prompt: contentData.prompt,
-      tags: contentData.tags,
-      campaignId: contentData.campaignId,
-      generatedContent: generatedPosts,
-      userId,
-      created_at: new Date().toISOString()
+    const response = await apiRequest('/posts', {
+      method: 'POST',
+      body: JSON.stringify({
+        companyId,
+        prompt: contentData.prompt,
+        tags: contentData.tags,
+        campaignId: contentData.campaignId,
+        generatedContent: generatedPosts,
+        userId,
+        created_at: new Date().toISOString()
+      })
     });
 
     if (!response.data.success) {
@@ -125,7 +128,7 @@ export async function getPosts(userId: string, companyId?: string) {
     const params = new URLSearchParams({ userId });
     if (companyId) params.append('companyId', companyId);
 
-    const response = await api.get(`/posts?${params.toString()}`);
+    const response = await apiRequest(`/posts?${params.toString()}`);
 
     if (!response.data.success) {
       throw new Error(response.data.error || 'Failed to fetch posts');
@@ -140,8 +143,8 @@ export async function getPosts(userId: string, companyId?: string) {
 
 export async function deletePost(postId: string, userId: string) {
   try {
-    const response = await api.delete(`/posts/${postId}`, {
-      params: { userId }
+    const response = await apiRequest(`/posts/${postId}?userId=${userId}`, {
+      method: 'DELETE'
     });
 
     if (!response.data.success) {

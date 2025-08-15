@@ -316,11 +316,11 @@ export class OAuthManager {
     platform: string,
     credentials: OAuthCredentials,
   ) {
-    const { data: existingRecord } = await supabase
+    const { data: existingRecords } = await supabase
       .from("oauth_tokens")
       .select("id")
-      .eq("user_id", userId)
-      .maybeSingle();
+      .eq("user_id", userId);
+    const existingRecord = existingRecords && existingRecords.length > 0 ? existingRecords[0] : null;
     console.log(
       `Storing credentials for user ${userId} and platform ${platform}`,
       credentials,

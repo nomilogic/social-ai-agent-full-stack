@@ -85,7 +85,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         selectedProfile: action.payload,
         userPlan: action.payload?.plan || state.userPlan,
-        isBusinessAccount: action.payload?.type === 'business' || action.payload?.profile_type === 'business'
+        isBusinessAccount: action.payload?.type === 'business'
       }
     case 'SET_SELECTED_CAMPAIGN':
       return { ...state, selectedCampaign: action.payload };
@@ -120,14 +120,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const currentUser = await getCurrentUser();
-        if (currentUser) {
+        const authResult = await getCurrentUser();
+        if (authResult && authResult.user) {
+          const currentUser = {
+            id: authResult.user.id,
+            email: authResult.user.email,
+            user_metadata: authResult.user.user_metadata
+          };
           dispatch({ type: 'SET_USER', payload: currentUser });
 
           // Check if this is a business account
           const isBusinessUser = currentUser.email === 'nomilogic@gmail.com' || 
-                                currentUser.profile_type === 'business' ||
-                                currentUser.plan === 'business';
+                                authResult.user.profile_type === 'business' ||
+                                authResult.user.plan === 'business';
 
           if (isBusinessUser) {
             dispatch({ type: 'SET_USER_PLAN', payload: 'business' });
