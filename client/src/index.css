@@ -94,7 +94,11 @@
   }
 
   .theme-bg-gradient {
-    background: var(--theme-bg-gradient);
+    background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary), var(--theme-accent));
+  }
+
+  .theme-gradient {
+    background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary), var(--theme-accent));
   }
 
 /* Custom animations for carousel */

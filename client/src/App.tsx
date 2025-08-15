@@ -78,6 +78,13 @@ function App() {
             </AppLayout>
           </ProtectedRoute>
         } />
+        <Route path="/posts/schedule" element={
+          <ProtectedRoute>
+            <AppLayout>
+              <SchedulePage />
+            </AppLayout>
+          </ProtectedRoute>
+        } />
 
         <Route path="/settings/*" element={
           <ProtectedRoute>
