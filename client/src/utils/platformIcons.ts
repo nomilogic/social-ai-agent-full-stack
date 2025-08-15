@@ -23,7 +23,8 @@ export const getPlatformIcon = (platform: Platform) => {
 export const getPlatformColors = (platform: Platform) => {
   const colors = {
     facebook: "bg-blue-600 border-blue-200 text-blue-600",
-    instagram: "bg-gradient-to-r from-purple-500 to-pink-500 border-purple-200 text-purple-600",
+    instagram:
+      "bg-gradient-to-r from-purple-500 to-pink-500 border-purple-200 text-purple-600",
     twitter: "bg-black border-gray-300 text-black",
     linkedin: "bg-blue-700 border-blue-200 text-blue-700",
     tiktok: "bg-black border-gray-300 text-black",
@@ -47,7 +48,7 @@ export const getPlatformBackgroundColors = (platform: Platform) => {
 export const getPlatformDisplayName = (platform: Platform) => {
   const names = {
     facebook: "Facebook",
-    instagram: "Instagram", 
+    instagram: "Instagram",
     twitter: "Twitter",
     linkedin: "LinkedIn",
     tiktok: "TikTok",
@@ -62,7 +63,7 @@ export const platformOptions = [
     name: "Facebook",
     icon: Facebook,
     color: "text-blue-600",
-    bgColor: "bg-blue-50",
+    bgColor: "bg-white",
     borderColor: "border-blue-200",
   },
   {
@@ -86,7 +87,7 @@ export const platformOptions = [
     name: "LinkedIn",
     icon: Linkedin,
     color: "text-blue-700",
-    bgColor: "bg-blue-50",
+    bgColor: "bg-white",
     borderColor: "border-blue-200",
   },
   {
