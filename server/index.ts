@@ -5,6 +5,7 @@ import path from 'path'
 import { registerRoutes } from './routes.ts'
 import { log } from 'console'
 import { serveStatic, setupVite } from './vite.ts'
+import { initializeDatabase } from './db'
 
 // dotenv.config() // Environment variables are handled by Replit
 const app = express()
@@ -18,7 +19,7 @@ app.use((req, res, next) => {
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
+  origin: process.env.NODE_ENV === 'production'
     ? [process.env.CLIENT_URL || 'https://your-production-domain.com']
     : ['http://localhost:5173', 'http://localhost:3000'],
   credentials: true,
@@ -51,14 +52,22 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  server.listen(Number(PORT), '0.0.0.0', () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`)
-    if (process.env.NODE_ENV === "development") {
-      console.log(`Frontend available at: http://0.0.0.0:${PORT}`)
+  // Initialize database and start server
+  async function startServer() {
+    try {
+      await initializeDatabase();
+      server.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server running on http://0.0.0.0:${PORT}`)
+        if (process.env.NODE_ENV === "development") {
+          console.log(`Frontend available at: http://0.0.0.0:${PORT}`)
+        }
+        console.log('Users table initialized successfully')
+      })
+    } catch (error) {
+      console.error('Failed to start server:', error);
+      process.exit(1);
     }
-  });
+  }
+
+  startServer();
 })();
