@@ -5,8 +5,27 @@ import { eq, and, desc } from 'drizzle-orm';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import Anthropic from '@anthropic-ai/sdk';
+import jwt from 'jsonwebtoken';
 
 const router = Router();
+
+// Middleware to verify JWT token
+const authenticateToken = (req: Request, res: Response, next: any) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET || 'dev-secret', (err: any, user: any) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid token' });
+    }
+    (req as any).user = user;
+    next();
+  });
+};
 
 // Initialize AI services conditionally based on available API keys
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
@@ -342,7 +361,7 @@ Generate ${Math.min(parseInt(request.prompt.match(/\d+/)?.[0] || '5'), 20)} post
 /**
  * Save generated schedule to database
  */
-router.post('/schedule/save', async (req: Request, res: Response) => {
+router.post('/schedule/save', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { schedule }: { schedule: GeneratedSchedule[] } = req.body;
 
@@ -384,7 +403,7 @@ router.post('/schedule/save', async (req: Request, res: Response) => {
 /**
  * Get scheduled posts for a company
  */
-router.get('/schedule/posts', async (req: Request, res: Response) => {
+router.get('/schedule/posts', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { companyId, startDate, endDate } = req.query;
 
@@ -439,7 +458,7 @@ router.get('/schedule/posts', async (req: Request, res: Response) => {
 /**
  * Create a new scheduled post
  */
-router.post('/schedule/posts', async (req: Request, res: Response) => {
+router.post('/schedule/posts', authenticateToken, async (req: Request, res: Response) => {
   try {
     const postData = req.body;
 
@@ -489,7 +508,7 @@ router.post('/schedule/posts', async (req: Request, res: Response) => {
 /**
  * Update a scheduled post
  */
-router.patch('/schedule/posts/:postId', async (req: Request, res: Response) => {
+router.patch('/schedule/posts/:postId', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { postId } = req.params;
     const updates = req.body;
@@ -540,7 +559,7 @@ router.patch('/schedule/posts/:postId', async (req: Request, res: Response) => {
 /**
  * Delete a scheduled post
  */
-router.delete('/schedule/posts/:postId', async (req: Request, res: Response) => {
+router.delete('/schedule/posts/:postId', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { postId } = req.params;
 
@@ -563,7 +582,7 @@ router.delete('/schedule/posts/:postId', async (req: Request, res: Response) => 
 /**
  * Get scheduling analytics
  */
-router.get('/schedule/analytics', async (req: Request, res: Response) => {
+router.get('/schedule/analytics', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { companyId, period = 'month' } = req.query;
 
@@ -674,7 +693,7 @@ router.get('/schedule/analytics', async (req: Request, res: Response) => {
 /**
  * Generate live content for a specific date
  */
-router.post('/ai/generate-live-content', async (req: Request, res: Response) => {
+router.post('/ai/generate-live-content', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { companyId, date, category, preferredModel } = req.body;
 
@@ -773,7 +792,7 @@ Generate 1-3 pieces of content as a JSON array with this structure:
 /**
  * Publish a scheduled post immediately
  */
-router.post('/schedule/posts/:postId/publish', async (req: Request, res: Response) => {
+router.post('/schedule/posts/:postId/publish', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { postId } = req.params;
 

@@ -133,16 +133,36 @@ router.post('/logout', (req, res) => {
 // Get current user profile
 router.get('/me', async (req: Request, res: Response) => {
   try {
-    // For now, return a mock user to test the flow
-    // In production, you would validate the session/token here
-    const mockUser = {
-      id: 'f5643ed0-5c7b-45f9-b42f-5ce7c48df6b5',
-      email: 'user@example.com',
-      name: 'Test User',
-      created_at: new Date().toISOString()
-    };
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
 
-    res.json(mockUser);
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret') as any;
+      
+      // Get user from database
+      const userResults = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, decoded.id))
+        .limit(1);
+
+      if (userResults.length === 0) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+
+      const user = userResults[0];
+      res.json({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        created_at: user.created_at
+      });
+    } catch (jwtError) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
   } catch (error) {
     console.error('Error fetching user:', error);
     res.status(500).json({ error: 'Failed to fetch user' });

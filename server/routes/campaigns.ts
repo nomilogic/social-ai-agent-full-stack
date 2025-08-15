@@ -334,3 +334,199 @@ router.get('/:id/posts', async (req: Request, res: Response) => {
 });
 
 export default router;
+import express, { Request, Response } from 'express'
+import { db } from '../db'
+import { campaigns } from '../../shared/schema'
+import { eq, and, desc } from 'drizzle-orm'
+import jwt from 'jsonwebtoken'
+
+const router = express.Router()
+
+// Middleware to verify JWT token
+const authenticateToken = (req: Request, res: Response, next: any) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET || 'dev-secret', (err: any, user: any) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid token' });
+    }
+    (req as any).user = user;
+    next();
+  });
+};
+
+// GET /api/campaigns - Get all campaigns for a company
+router.get('/', authenticateToken, async (req: Request, res: Response) => {
+  const { companyId, userId } = req.query
+
+  if (!companyId || !userId) {
+    return res.status(400).json({ error: 'Company ID and User ID are required' })
+  }
+
+  try {
+    console.log('Fetching campaigns for companyId:', companyId, 'userId:', userId)
+    const data = await db
+      .select()
+      .from(campaigns)
+      .where(and(eq(campaigns.company_id, companyId as string), eq(campaigns.user_id, userId as string)))
+      .orderBy(desc(campaigns.created_at))
+
+    console.log('Found campaigns:', data.length)
+    res.json({ success: true, data: data || [] })
+  } catch (err: any) {
+    console.error('Server error fetching campaigns:', err)
+    res.status(500).json({ error: 'Internal server error', details: err.message })
+  }
+})
+
+// POST /api/campaigns - Create a new campaign
+router.post('/', authenticateToken, async (req: Request, res: Response) => {
+  const {
+    name,
+    description,
+    objective,
+    budget,
+    startDate,
+    endDate,
+    targetAudience,
+    platforms,
+    keywords,
+    companyId,
+    userId
+  } = req.body
+
+  if (!name || !companyId || !userId) {
+    return res.status(400).json({ error: 'Name, company ID, and user ID are required' })
+  }
+
+  try {
+    console.log('Creating campaign with data:', {
+      name,
+      description,
+      objective,
+      budget,
+      startDate,
+      endDate,
+      targetAudience,
+      platforms,
+      keywords,
+      companyId,
+      userId
+    });
+
+    const insertResults = await db
+      .insert(campaigns)
+      .values({
+        name,
+        description: description || null,
+        objective: objective || 'engagement',
+        budget: budget || null,
+        start_date: startDate ? new Date(startDate) : null,
+        end_date: endDate ? new Date(endDate) : null,
+        target_audience: targetAudience || null,
+        platforms: platforms || [],
+        keywords: keywords || [],
+        company_id: companyId,
+        user_id: userId,
+        status: 'draft'
+      })
+      .returning()
+
+    const data = insertResults[0];
+    console.log('Campaign created successfully:', data.id);
+
+    res.status(201).json({ success: true, data })
+  } catch (err: any) {
+    console.error('Server error creating campaign:', err)
+    res.status(500).json({ error: 'Internal server error', details: err.message })
+  }
+})
+
+// PUT /api/campaigns/:id - Update a campaign
+router.put('/:id', authenticateToken, async (req: Request, res: Response) => {
+  const campaignId = req.params.id
+  const {
+    name,
+    description,
+    objective,
+    budget,
+    startDate,
+    endDate,
+    targetAudience,
+    platforms,
+    keywords,
+    status,
+    userId
+  } = req.body
+
+  if (!userId) {
+    return res.status(400).json({ error: 'User ID is required' })
+  }
+
+  try {
+    console.log('Updating campaign:', campaignId, 'for user:', userId);
+
+    const updateResults = await db
+      .update(campaigns)
+      .set({
+        name,
+        description,
+        objective,
+        budget,
+        start_date: startDate ? new Date(startDate) : null,
+        end_date: endDate ? new Date(endDate) : null,
+        target_audience: targetAudience,
+        platforms,
+        keywords,
+        status,
+        updated_at: new Date()
+      })
+      .where(and(eq(campaigns.id, campaignId), eq(campaigns.user_id, userId)))
+      .returning()
+
+    if (updateResults.length === 0) {
+      return res.status(404).json({ error: 'Campaign not found or unauthorized' })
+    }
+
+    const data = updateResults[0];
+    console.log('Campaign updated successfully:', data.id);
+
+    res.json({ success: true, data })
+  } catch (err: any) {
+    console.error('Server error updating campaign:', err)
+    res.status(500).json({ error: 'Internal server error', details: err.message })
+  }
+})
+
+// DELETE /api/campaigns/:id - Delete a campaign
+router.delete('/:id', authenticateToken, async (req: Request, res: Response) => {
+  const campaignId = req.params.id
+  const userId = req.query.userId as string
+
+  if (!userId) {
+    return res.status(400).json({ error: 'User ID is required' })
+  }
+
+  try {
+    const result = await db
+      .delete(campaigns)
+      .where(and(eq(campaigns.id, campaignId), eq(campaigns.user_id, userId)))
+      .returning({ id: campaigns.id })
+
+    if (result.length === 0) {
+      return res.status(404).json({ error: 'Campaign not found or unauthorized' })
+    }
+
+    res.json({ success: true, message: 'Campaign deleted successfully' })
+  } catch (err: any) {
+    console.error('Server error deleting campaign:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+export default router
