@@ -1,11 +1,13 @@
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
-import * as schema from '../shared/schema';
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+import * as schema from "../shared/schema";
 
 // Use Supabase PostgreSQL database with pooler
-const connectionString = process.env.DATABASE_URL || 'postgresql://postgres.kdaxthclqiodvetumxpn:Taz9ABMZH0L9TBvb@aws-0-us-west-1.pooler.supabase.com:6543/postgres';
+const connectionString =
+  process.env.DATABASE_URL ||
+  "postgresql://postgres.kdaxthclqiodvetumxpn:Cimple%40.123@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres";
 
-if (!connectionString.includes('pooler.supabase.com')) {
+if (!connectionString.includes("pooler.supabase.com")) {
   console.error(`
 🚨 Please set up your Supabase DATABASE_URL!
 
@@ -83,13 +85,13 @@ export async function initializeDatabase() {
         );
       `);
 
-      console.log('Database tables created successfully');
+      console.log("Database tables created successfully");
     }
 
-    console.log('Users table exists or was created successfully');
+    console.log("Users table exists or was created successfully");
     return true;
   } catch (error) {
-    console.error('Database initialization error:', error);
+    console.error("Database initialization error:", error);
     return false;
   }
 }
