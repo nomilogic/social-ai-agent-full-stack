@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 
 // Supabase configuration
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -13,7 +15,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   process.exit(1);
 }
 
-// Create Supabase client for server-side operations
+// Create Supabase client for auth operations
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: false,
@@ -21,5 +23,19 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-export { supabase as db };
+// Extract PostgreSQL connection string from Supabase URL
+// Convert supabase URL to direct postgres connection
+const postgresUrl = supabaseUrl.replace('https://', 'postgresql://postgres:[YOUR-PASSWORD]@')
+  .replace('.supabase.co', '.supabase.co:5432')
+  + '/postgres';
+
+// For direct database access with Drizzle, we need the DATABASE_URL or construct it
+const databaseUrl = process.env.DATABASE_URL || postgresUrl;
+
+// Create PostgreSQL connection for Drizzle
+const client = postgres(databaseUrl);
+
+// Create Drizzle database instance
+export const db = drizzle(client);
+
 export default supabase;
