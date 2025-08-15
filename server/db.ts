@@ -3,9 +3,9 @@ import { Pool } from 'pg';
 import * as schema from '../shared/schema';
 
 // Use Supabase PostgreSQL database
-const connectionString = process.env.DATABASE_URL || 'postgresql://postgres.kdaxthclqiodvetumxpn:your_password@aws-0-us-west-1.pooler.supabase.com:6543/postgres';
+const connectionString = process.env.DATABASE_URL || 'postgresql://postgres.kdaxthclqiodvetumxpn:Taz9ABMZH0L9TBvb@aws-0-us-west-1.pooler.supabase.com:6543/postgres';
 
-if (!connectionString.includes('supabase.com')) {
+if (!connectionString.includes('pooler.supabase.com')) {
   console.error(`
 🚨 Please set up your Supabase DATABASE_URL!
 
