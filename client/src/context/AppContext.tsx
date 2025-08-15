@@ -84,8 +84,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         selectedProfile: action.payload,
-        userPlan: action.payload.plan,
-        isBusinessAccount: action.payload.type === 'business'
+        userPlan: action.payload?.plan || state.userPlan,
+        isBusinessAccount: action.payload?.type === 'business' || action.payload?.profile_type === 'business'
       }
     case 'SET_SELECTED_CAMPAIGN':
       return { ...state, selectedCampaign: action.payload };
@@ -124,15 +124,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (currentUser) {
           dispatch({ type: 'SET_USER', payload: currentUser });
 
+          // Check if this is a business account
+          const isBusinessUser = currentUser.email === 'nomilogic@gmail.com' || 
+                                currentUser.profile_type === 'business' ||
+                                currentUser.plan === 'business';
+
+          if (isBusinessUser) {
+            dispatch({ type: 'SET_USER_PLAN', payload: 'business' });
+            dispatch({ type: 'SET_BUSINESS_ACCOUNT', payload: true });
+          }
+
           // Check if user has completed onboarding by checking for profile
           try {
-            const response = await fetch(`/api/auth/profile?userId=${currentUser.id}`);
+            const response = await fetch(`/api/auth/profile?userId=${currentUser.id}&email=${currentUser.email}`);
             if (response.ok) {
               const profile = await response.json();
-              if (profile && profile.plan) {
-                dispatch({ type: 'SET_USER_PLAN', payload: profile.plan });
-                dispatch({ type: 'SET_SELECTED_PROFILE', payload: profile });
-                dispatch({ type: 'SET_BUSINESS_ACCOUNT', payload: profile.type === 'business' });
+              if (profile) {
+                const profilePlan = profile.plan || (isBusinessUser ? 'business' : 'free');
+                const profileType = profile.type || profile.profile_type || (isBusinessUser ? 'business' : 'individual');
+                
+                dispatch({ type: 'SET_USER_PLAN', payload: profilePlan });
+                dispatch({ type: 'SET_SELECTED_PROFILE', payload: { ...profile, plan: profilePlan, type: profileType } });
+                dispatch({ type: 'SET_BUSINESS_ACCOUNT', payload: profileType === 'business' });
                 dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: true });
               }
             }
