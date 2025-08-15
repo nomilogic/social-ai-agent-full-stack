@@ -66,7 +66,8 @@ export const PLAN_FEATURES: Record<'free' | 'ipro' | 'business', PlanLimits> = {
 
 export const getPlanLimits = (profileType: 'individual' | 'business', plan?: string): PlanLimits => {
   // Business profiles always get business features regardless of plan field
-  if (profileType === 'business') {
+  // Also check if plan is 'business' regardless of profile type
+  if (profileType === 'business' || plan === 'business') {
     return PLAN_FEATURES.business;
   }
 
@@ -80,6 +81,11 @@ export const isFeatureAvailable = (
   plan: string | undefined, 
   feature: keyof PlanLimits
 ): boolean => {
+  // Business accounts or business plan always have all features
+  if (profileType === 'business' || plan === 'business') {
+    return true;
+  }
+  
   const limits = getPlanLimits(profileType, plan);
   return Boolean(limits[feature]);
 };
@@ -100,8 +106,8 @@ export const getRestrictedFeatures = (
   profileType: 'individual' | 'business', 
   plan: string | undefined
 ): string[] => {
-  if (profileType === 'business') {
-    return []; // Business profiles have all features
+  if (profileType === 'business' || plan === 'business') {
+    return []; // Business profiles/plans have all features
   }
 
   const limits = getPlanLimits(profileType, plan);

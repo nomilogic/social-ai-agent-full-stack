@@ -110,11 +110,16 @@ router.post('/login', async (req: Request, res: Response) => {
 
     console.log('Login successful for user:', user.id);
 
+    // Check if this is a business account
+    const isBusinessAccount = user.email === 'nomilogic@gmail.com';
+
     res.json({
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
+        profile_type: isBusinessAccount ? 'business' : 'individual',
+        plan: isBusinessAccount ? 'business' : 'free',
       },
       token,
     });
@@ -196,22 +201,31 @@ router.put('/profile', async (req: Request, res: Response) => {
 // Get profile
 router.get('/profile', async (req: Request, res: Response) => {
   try {
-    // For now, return a mock profile
-    // In production, you would fetch this from your database based on user ID
-    const mockProfile = {
+    const userId = req.query.userId as string;
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    // Check if this is the business account email
+    const isBusinessEmail = userId === '1b3b343d-c142-418c-8a23-213cc5d7afe9' || 
+                           req.query.email === 'nomilogic@gmail.com';
+
+    const profile = {
       id: 'f5643ed0-5c7b-45f9-b42f-5ce7c48df6b5',
-      name: 'Your Profile',
-      email: 'user@example.com',
+      name: isBusinessEmail ? 'Business Profile' : 'Your Profile',
+      email: isBusinessEmail ? 'nomilogic@gmail.com' : 'user@example.com',
       bio: '',
       website: '',
       location: '',
-      userType: 'individual',
-      plan: 'free',
+      type: isBusinessEmail ? 'business' : 'individual',
+      plan: isBusinessEmail ? 'business' : 'free',
+      profile_type: isBusinessEmail ? 'business' : 'individual',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    res.json(mockProfile);
+    res.json(profile);
   } catch (error) {
     console.error('Error fetching profile:', error);
     res.status(500).json({ error: 'Failed to fetch profile' });
