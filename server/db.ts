@@ -1,25 +1,18 @@
-import { createClient } from '@supabase/supabase-js';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 
-// Supabase configuration
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+// PostgreSQL configuration with Drizzle ORM
+const connectionString = process.env.DATABASE_URL;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase credentials:', {
-    url: !!supabaseUrl,
-    key: !!supabaseAnonKey
-  });
-  console.error('Please set SUPABASE_URL and SUPABASE_ANON_KEY environment variables');
+if (!connectionString) {
+  console.error('Missing DATABASE_URL environment variable');
   process.exit(1);
 }
 
-// Create Supabase client for server-side operations
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-});
+// Create PostgreSQL connection
+const client = postgres(connectionString);
 
-export { supabase as db };
-export default supabase;
+// Create Drizzle database instance
+export const db = drizzle(client);
+
+export default db;
