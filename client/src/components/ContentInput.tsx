@@ -347,7 +347,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Media Upload */}
           <div className="space-y-4">
             <div>
@@ -517,7 +517,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                     <p className="font-medium theme-text-primary text-sm">
                       Drop files here
                     </p>
-                    <p className="theme-text-secondary text-xs mt-1">or click to browse</p>
+                    <p className="theme-text-secondary text-xs mt-1">
+                      or click to browse
+                    </p>
                   </div>
                   <div className="flex gap-2 justify-center">
                     <button
@@ -652,46 +654,44 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                 </div>
               )}
             </div>
-
-            <div>
-              <label className="block text-sm font-medium theme-text-primary mb-3">
-                Target Platforms
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {platformOptions.map((platform) => {
-                  const IconComponent = platform.icon;
-                  const isSelected = formData.selectedPlatforms?.includes(
-                    platform.id,
-                  );
-                  return (
-                    <button
-                      key={platform.id}
-                      type="button"
-                      onClick={() => togglePlatform(platform.id)}
-                      className={`p-2 rounded-lg border transition-all duration-200 flex items-center space-x-2 text-sm ${
-                        isSelected
-                          ? `${platform.bgColor}/20 ${platform.borderColor}/50 border`
-                          : "border-white/10 hover:border-white/20 theme-bg-primary/10"
-                      }`}
+          </div>
+          <div>
+            <label className="block text-sm font-medium theme-text-primary mb-3">
+              Target Platforms
+            </label>
+            <div className="grid lg:grid-cols-1 gap-2 grid-cols-2">
+              {platformOptions.map((platform) => {
+                const IconComponent = platform.icon;
+                const isSelected = formData.selectedPlatforms?.includes(
+                  platform.id,
+                );
+                return (
+                  <button
+                    key={platform.id}
+                    type="button"
+                    onClick={() => togglePlatform(platform.id)}
+                    className={`p-2 rounded-lg border transition-all duration-200 flex items-center space-x-2 text-sm ${
+                      isSelected
+                        ? `bg-[#fff] ${platform.borderColor}/50 border`
+                        : "border-white/10 hover:border-white/20 theme-bg-primary/10"
+                    }`}
+                  >
+                    <div
+                      className={`w-6 h-6 rounded flex items-center justify-center text-white ${getPlatformColors(platform.id)}`}
                     >
-                      <div
-                        className={`w-6 h-6 rounded flex items-center justify-center text-white ${getPlatformColors(platform.id)}`}
-                      >
-                        <IconComponent className="w-3 h-3" />
-                      </div>
-                      <span
-                        className={`font-medium ${isSelected ? platform.color : "theme-text-secondary"}`}
-                      >
-                        {platform.name}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                      <IconComponent className="w-3 h-3" />
+                    </div>
+                    <span
+                      className={`font-medium ${isSelected ? platform.color : "theme-text-secondary"}`}
+                    >
+                      {platform.name}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
-
         <div className="flex gap-3 pt-4 border-t border-white/10">
           <button
             type="button"
