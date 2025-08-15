@@ -15,8 +15,6 @@ import campaignsRouter from './routes/campaigns'
 import scheduleRouter from './routes/schedule'
 import notificationsRouter from './routes/notifications'
 import mediaRouter from './routes/media'
-import analyticsRouter from './routes/analytics'
-import trainingRouter from './routes/training'
 
 export async function registerRoutes(app: Express): Promise<Server> {
     // Static file serving for uploaded media
@@ -36,8 +34,6 @@ app.use('/api/campaigns', campaignsRouter)
 app.use('/api/schedule', scheduleRouter)
 app.use('/api/notifications', notificationsRouter)
 app.use('/api/media', mediaRouter)
-app.use('/api/analytics', analyticsRouter)
-app.use('/api/training', trainingRouter)
 
 // Legacy routes for backwards compatibility
 app.use('/share', linkedinRouter)

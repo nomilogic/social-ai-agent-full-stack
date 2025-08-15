@@ -7,7 +7,7 @@ export const OnboardingPage: React.FC = () => {
   const { state } = useAppContext();
 
   // If user doesn't have a plan selected, redirect to pricing
-  if (!state.user?.plan || state.user.plan === 'free') {
+  if (!state.userPlan) {
     return <Navigate to="/pricing" replace />;
   }
 
@@ -15,7 +15,7 @@ export const OnboardingPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <Routes>
         <Route path="profile" element={<ProfileSetup />} />
-        <Route path="*" element={<Navigate to="profile" replace />} />
+        <Route path="*" element={<Navigate to="/pricing" replace />} />
       </Routes>
     </div>
   );

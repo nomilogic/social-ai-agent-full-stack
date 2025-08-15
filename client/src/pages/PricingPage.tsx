@@ -24,11 +24,11 @@ const pricingTiers: PricingTier[] = [
     price: '$0',
     description: 'Perfect for getting started',
     features: [
-      'Content creation only',
-      'No scheduling',
-      'No campaigns',
-      'Basic AI assistance',
-      'Manual posting only'
+      'Basic content creation',
+      'Limited AI generations (5/month)',
+      'Manual posting only',
+      '1 social platform',
+      'Basic templates'
     ],
     icon: Star,
     buttonText: 'Get Started Free',
@@ -40,11 +40,11 @@ const pricingTiers: PricingTier[] = [
     price: '$39.99',
     description: 'Most popular for creators',
     features: [
-      '2-3 Campaigns',
-      '1 month scheduling',
-      '10 posts per day',
-      '5 image generations per day',
-      'Good AI bots',
+      '1000 textual posts per month',
+      '20 AI image generations',
+      'ChatGPT-4 & Gemini Pro access',
+      'Auto post scheduling',
+      'Multi-platform support',
       'Advanced analytics',
       'Priority support'
     ],
@@ -59,12 +59,12 @@ const pricingTiers: PricingTier[] = [
     price: '$99.99',
     description: 'For teams and businesses',
     features: [
-      '3-6 months scheduling',
-      'Special bots for everything',
-      'Image, video & content generation',
-      'Unlimited campaigns',
+      'Unlimited content creation',
+      'Unlimited AI generations',
+      'All AI models access',
+      'Advanced scheduling',
       'Team collaboration',
-      'Advanced bot training',
+      'White-label options',
       'Custom integrations',
       'Dedicated support'
     ],
@@ -76,7 +76,7 @@ const pricingTiers: PricingTier[] = [
 
 export const PricingPage: React.FC = () => {
   const navigate = useNavigate();
-  const { state, dispatch } = useAppContext();
+  const { dispatch } = useAppContext();
   const [selectedPlan, setSelectedPlan] = useState<'free' | 'ipro' | 'business' | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -85,32 +85,10 @@ export const PricingPage: React.FC = () => {
     setSelectedPlan(planId);
 
     try {
-      // Update the user's plan in the backend
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/auth/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ plan: planId })
-      });
-
-      if (response.ok) {
-        const updatedUser = await response.json();
-        dispatch({ type: 'SET_USER', payload: updatedUser });
-
-        // Navigate based on plan selection
-        if (planId === 'free') {
-          // Free users go directly to dashboard
-          navigate('/dashboard');
-        } else {
-          // Paid users need to complete profile setup
-          navigate('/onboarding/profile');
-        }
-      } else {
-        throw new Error('Failed to update user plan');
-      }
+      // Store the selected plan in context
+      dispatch({ type: 'SET_USER_PLAN', payload: planId });
+      
+      // Don't navigate yet, show the profile setup form
     } catch (error) {
       console.error('Error selecting plan:', error);
     } finally {
@@ -118,7 +96,59 @@ export const PricingPage: React.FC = () => {
     }
   };
 
+  const handleBackToPricing = () => {
+    setSelectedPlan(null);
+    dispatch({ type: 'SET_USER_PLAN', payload: null });
+  };
 
+  const handleProfileComplete = () => {
+    // Navigate to dashboard after profile setup
+    navigate('/dashboard');
+  };
+
+  if (selectedPlan) {
+    const selectedTier = pricingTiers.find(tier => tier.id === selectedPlan);
+    const userType = selectedPlan === 'business' ? 'business' : 'individual';
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-16 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <button
+              onClick={handleBackToPricing}
+              className="flex items-center text-blue-600 hover:text-blue-800 mb-4 mx-auto"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Pricing
+            </button>
+            <div className="mb-6">
+              <div className={`inline-flex items-center px-6 py-3 rounded-full ${selectedTier?.buttonClass}`}>
+                {selectedTier && <selectedTier.icon className="w-6 h-6 mr-2" />}
+                <span className="font-semibold">{selectedTier?.name} Plan Selected</span>
+              </div>
+            </div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              {userType === 'business' ? 'Business Profile Setup' : 'Creator Profile Setup'}
+            </h1>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              {userType === 'business' 
+                ? 'Set up your business profile to unlock team collaboration and enterprise features.'
+                : 'Complete your creator profile to start generating amazing content with AI.'
+              }
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <ProfileSetup 
+              userType={userType}
+              selectedPlan={selectedPlan}
+              onComplete={handleProfileComplete}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-16 px-4">

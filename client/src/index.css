@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -11,14 +10,13 @@
   --theme-text-primary: #FFFFFF;
   --theme-text-secondary: rgba(255, 255, 255, 0.9);
   --theme-text-light: rgba(255, 255, 255, 0.7);
-  --theme-bg-primary: rgba(255, 255, 255, 0.15);
-  --theme-bg-secondary: rgba(255, 255, 255, 0.10);
-  --theme-bg-card: rgba(255, 255, 255, 0.12);
-  --theme-bg-trinary: rgba(255, 255, 255, 0.05);
-  --theme-border: rgba(255, 255, 255, 0.25);
+  --theme-bg-primary: rgba(255, 255, 255, 0.1);
+  --theme-bg-secondary: rgba(255, 255, 255, 0.05);
+  --theme-bg-card: rgb(26, 25, 25, 15);
+  --theme-border: rgba(255, 255, 255, 0.2);
   --theme-button-primary: #FFFFFF;
-  --theme-button-secondary: rgba(255, 255, 255, 0.20);
-  --theme-button-hover: rgba(255, 255, 255, 0.95);
+  --theme-button-secondary: rgba(255, 255, 255, 0.2);
+  --theme-button-hover: rgba(255, 255, 255, 0.9);
 }
 
 /* Theme Utility Classes */
@@ -28,29 +26,20 @@
 
 .theme-bg-primary {
   background-color: var(--theme-bg-primary);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(10px);
   border: 1px solid var(--theme-border);
-}
-
-.theme-bg-secondary {
-  background-color: var(--theme-bg-secondary);
-  backdrop-filter: blur(8px);
 }
 
 .theme-bg-card {
   background-color: var(--theme-bg-card);
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(10px);
   border: 1px solid var(--theme-border);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.theme-border {
-  border-color: var(--theme-border);
 }
 
 .theme-bg-trinary {
-  background-color: var(--theme-bg-trinary);
-  backdrop-filter: blur(6px);
+  background: linear-gradient(to bottom,
+      rgba(0, 0, 0, 0.05) 100%,
+      rgba(0, 0, 0, 0) 0%);
 }
 
 .theme-text-primary {
@@ -69,53 +58,45 @@
   background-color: var(--theme-button-primary);
   color: var(--theme-primary);
   border: 1px solid var(--theme-border);
-  font-weight: 600;
-  transition: all 0.2s ease;
 }
 
 .theme-button-primary:hover {
   background-color: var(--theme-button-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .theme-button-secondary {
   background-color: var(--theme-button-secondary);
   color: var(--theme-text-primary);
   border: 1px solid var(--theme-border);
-  transition: all 0.2s ease;
 }
 
 .theme-button-secondary:hover {
   background-color: var(--theme-bg-card);
-  transform: translateY(-1px);
 }
 
 .theme-input {
   background-color: var(--theme-bg-primary);
   border: 1px solid var(--theme-border);
   color: var(--theme-text-primary);
-  backdrop-filter: blur(8px);
-  transition: all 0.2s ease;
 }
 
 .theme-input:focus {
   border-color: var(--theme-accent);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-  background-color: var(--theme-bg-card);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .theme-input::placeholder {
   color: var(--theme-text-light);
 }
 
-/* Enhanced animations for carousel */
+/* Custom animations for carousel */
 @keyframes slide-in-from-top {
   0% {
     opacity: 0;
-    transform: translateY(-30px);
+    transform: translateY(-20px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);
@@ -125,8 +106,9 @@
 @keyframes slide-in-from-bottom {
   0% {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(20px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);
@@ -134,9 +116,8 @@
 }
 
 .animate-in {
-  animation-duration: 0.8s;
+  animation-duration: 0.7s;
   animation-fill-mode: both;
-  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .slide-in-from-top {
@@ -147,80 +128,61 @@
   animation-name: slide-in-from-bottom;
 }
 
-/* Enhanced animated background styles */
+/* Animated background styles */
 @keyframes gradient-shift {
   0% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0% 50%;
   }
 }
 
 @keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
+
+  0%,
+  100% {
+    transform: translateY(0);
   }
+
   50% {
-    transform: translateY(-15px);
+    transform: translateY(-10px);
   }
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
   }
+
   50% {
-    box-shadow: 0 0 40px rgba(139, 92, 246, 0.6);
+    box-shadow: 0 0 40px rgb(238, 236, 243, 0.5);
   }
 }
 
 .animated-bg {
-  background: linear-gradient(-45deg, 
-    rgba(59, 130, 246, 0.1), 
-    rgba(139, 92, 246, 0.1), 
-    rgba(99, 102, 241, 0.1), 
-    rgba(16, 185, 129, 0.1), 
-    rgba(249, 115, 22, 0.1), 
-    rgba(239, 68, 68, 0.1)
-  );
+  background: linear-gradient(-45deg, #04166722, #38056b22, #69067411, #db142f11, #0767bb11, #01919811);
   background-size: 400% 400%;
-  animation: gradient-shift 8s ease infinite;
+  animation: gradient-shift 5s ease infinite;
+
 }
 
 .floating-element {
-  animation: float 6s ease-in-out infinite;
+  animation: float 8s ease-in-out infinite;
 }
 
 .pulse-glow {
-  animation: pulse-glow 4s ease-in-out infinite;
+  animation: pulse-glow 12s ease-in-out infinite;
 }
 
-/* Improved glassmorphism effects */
-.glass-card {
-  background: var(--theme-bg-card);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--theme-border);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.glass-button {
-  background: var(--theme-button-secondary);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--theme-border);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.glass-button:hover {
-  background: var(--theme-bg-card);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-/* Theme-aware CSS variables for data attributes */
+/* Theme-aware CSS variables for data attributes - used by components that need data-theme approach */
 :root {
   --primary: #3b82f6;
   --primary-hover: #2563eb;
@@ -245,15 +207,4 @@
   --border: #334155;
   --card: #1e293b;
   --card-hover: #334155;
-}
-
-/* Enhanced responsiveness */
-@media (max-width: 768px) {
-  .theme-bg-card {
-    backdrop-filter: blur(12px);
-  }
-  
-  .floating-element {
-    animation: float 4s ease-in-out infinite;
-  }
 }
