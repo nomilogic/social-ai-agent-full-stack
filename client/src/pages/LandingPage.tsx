@@ -35,9 +35,6 @@ export const LandingPage: React.FC = () => {
               >
                 ← Back to Overview
               </button>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Join Social AI Agent
-              </h2>
               <p className="text-gray-600">
                 Start your AI-powered social media journey
               </p>

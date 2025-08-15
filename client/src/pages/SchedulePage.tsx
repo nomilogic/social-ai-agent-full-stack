@@ -75,42 +75,41 @@ export const SchedulePage: React.FC = () => {
 
   const handleCreatePost = (date: Date) => {
     // Navigate to content creation with pre-filled date
-    console.log('Creating post for date:', date);
+    console.log("Creating post for date:", date);
     // Implementation to navigate to content page with scheduled date
   };
 
   const handleEditPost = (postId: string) => {
-    console.log('Editing post:', postId);
+    console.log("Editing post:", postId);
     // Implementation to edit existing post
   };
 
   const handleDeletePost = async (postId: string) => {
     try {
       const response = await fetch(`/api/schedule/posts/${postId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
       if (response.ok) {
-        setScheduledPosts(prev => prev.filter(post => post.id !== postId));
+        setScheduledPosts((prev) => prev.filter((post) => post.id !== postId));
       }
     } catch (error) {
-      console.error('Error deleting post:', error);
+      console.error("Error deleting post:", error);
     }
   };
 
   const handleViewPost = (postId: string) => {
-    console.log('Viewing post:', postId);
+    console.log("Viewing post:", postId);
     // Implementation to view post details
   };
 
   if (!canSchedulePosts) {
     return (
-      <FeatureRestriction
-        feature="Schedule Posts"
-        requiredPlan="ipro"
-      >
+      <FeatureRestriction feature="Schedule Posts" requiredPlan="ipro">
         <div className="p-8 text-center">
-          <h2 className="text-2xl font-bold mb-4">Schedule Posts</h2>
-          <p className="text-gray-600">Schedule your content across multiple platforms with AI-powered optimal timing</p>
+          <p className="text-gray-600">
+            Schedule your content across multiple platforms with AI-powered
+            optimal timing
+          </p>
         </div>
       </FeatureRestriction>
     );
@@ -119,10 +118,6 @@ export const SchedulePage: React.FC = () => {
   return (
     <div className="min-h-screen theme-gradient">
       <div className="p-8">
-        {/* Header */}
-        <div className="mb-8">
-          <p className="text-gray-600">Schedule your content across multiple platforms with AI-powered optimal timing</p>
-        </div>
 
         {/* Tab Navigation */}
         <div className="bg-white rounded-lg shadow-lg mb-6">
@@ -174,11 +169,13 @@ export const SchedulePage: React.FC = () => {
         {/* Content */}
         <div className="space-y-6">
           {activeTab === "dashboard" && (
-            <PostScheduleDashboard companyId={state.selectedProfile?.id || ""} />
+            <PostScheduleDashboard
+              companyId={state.selectedProfile?.id || ""}
+            />
           )}
 
           {activeTab === "calendar" && (
-            <PostCalendar 
+            <PostCalendar
               scheduledPosts={scheduledPosts}
               onCreatePost={handleCreatePost}
               onEditPost={handleEditPost}
@@ -189,7 +186,7 @@ export const SchedulePage: React.FC = () => {
           )}
 
           {activeTab === "ai-generator" && (
-            <AIScheduleGenerator 
+            <AIScheduleGenerator
               onGenerateSchedule={async () => []}
               onApproveSchedule={() => {}}
             />

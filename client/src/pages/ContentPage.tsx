@@ -56,15 +56,6 @@ export const ContentPage: React.FC = () => {
     <div className="min-h-screen animated-bg ">
       <div className="min-h-screen bg-white/10 backdrop-blur-sm p-5">
         <div className="w-full mx-auto py-8 space-y-8">
-          {/* <div className="text-center floating-element">
-            <h1 className="text-4xl font-bold text-white mb-4 drop-shadow-lg">
-              AI Content Generator
-            </h1>
-            <p className="text-xl text-white/80 max-w-2xl mx-auto drop-shadow">
-              Create engaging social media content with the power of artificial
-              intelligence
-            </p>
-          </div> */}
 
           {/* <ProgressBar
             currentStep={getCurrentStep()}
