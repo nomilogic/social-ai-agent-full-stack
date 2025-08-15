@@ -31,7 +31,7 @@ export const db = drizzle(pool, { schema });
 export async function initializeDatabase() {
   try {
     // Check if users table exists
-    const result = await pool.query(`
+    const usersTableExists = await pool.query(`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
         WHERE table_schema = 'public' 
@@ -39,7 +39,7 @@ export async function initializeDatabase() {
       );
     `);
 
-    if (!result.rows[0].exists) {
+    if (!usersTableExists.rows[0].exists) {
       // Create users table
       await pool.query(`
         CREATE TABLE IF NOT EXISTS users (
@@ -51,7 +51,21 @@ export async function initializeDatabase() {
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
+      console.log("Users table created successfully");
+    } else {
+      console.log("Users table already exists.");
+    }
 
+    // Check if companies table exists
+    const companiesTableExists = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'companies'
+      );
+    `);
+
+    if (!companiesTableExists.rows[0].exists) {
       // Create companies table
       await pool.query(`
         CREATE TABLE IF NOT EXISTS companies (
@@ -68,7 +82,21 @@ export async function initializeDatabase() {
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
+      console.log("Companies table created successfully");
+    } else {
+      console.log("Companies table already exists.");
+    }
 
+    // Check if posts table exists
+    const postsTableExists = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_name = 'posts'
+      );
+    `);
+
+    if (!postsTableExists.rows[0].exists) {
       // Create posts table
       await pool.query(`
         CREATE TABLE IF NOT EXISTS posts (
@@ -84,11 +112,12 @@ export async function initializeDatabase() {
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
-
-      console.log("Database tables created successfully");
+      console.log("Posts table created successfully");
+    } else {
+      console.log("Posts table already exists.");
     }
 
-    console.log("Users table exists or was created successfully");
+    console.log("Database initialization complete.");
     return true;
   } catch (error) {
     console.error("Database initialization error:", error);
