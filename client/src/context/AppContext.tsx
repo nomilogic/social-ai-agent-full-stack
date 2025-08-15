@@ -40,6 +40,7 @@ export interface AppState {
   generatedPosts: any[];
   contentData: any;
   hasCompletedOnboarding: boolean;
+  isBusinessAccount: boolean;
 }
 
 // Actions
@@ -53,7 +54,8 @@ type AppAction =
   | { type: 'SET_GENERATED_POSTS'; payload: any[] }
   | { type: 'SET_CONTENT_DATA'; payload: any }
   | { type: 'SET_ONBOARDING_COMPLETE'; payload: boolean }
-  | { type: 'RESET_STATE' };
+  | { type: 'RESET_STATE' }
+  | { type: 'SET_BUSINESS_ACCOUNT'; payload: boolean };
 
 // Initial state
 const initialState: AppState = {
@@ -66,6 +68,7 @@ const initialState: AppState = {
   generatedPosts: [],
   contentData: null,
   hasCompletedOnboarding: false,
+  isBusinessAccount: false,
 };
 
 // Reducer
@@ -78,7 +81,12 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_USER_PLAN':
       return { ...state, userPlan: action.payload };
     case 'SET_SELECTED_PROFILE':
-      return { ...state, selectedProfile: action.payload };
+      return {
+        ...state,
+        selectedProfile: action.payload,
+        userPlan: action.payload.plan,
+        isBusinessAccount: action.payload.type === 'business'
+      }
     case 'SET_SELECTED_CAMPAIGN':
       return { ...state, selectedCampaign: action.payload };
     case 'SET_ERROR':
@@ -91,6 +99,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, hasCompletedOnboarding: action.payload };
     case 'RESET_STATE':
       return { ...initialState, loading: false };
+    case 'SET_BUSINESS_ACCOUNT':
+      return { ...state, isBusinessAccount: action.payload };
     default:
       return state;
   }
@@ -121,6 +131,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               const profile = await response.json();
               if (profile && profile.plan) {
                 dispatch({ type: 'SET_USER_PLAN', payload: profile.plan });
+                dispatch({ type: 'SET_SELECTED_PROFILE', payload: profile });
+                dispatch({ type: 'SET_BUSINESS_ACCOUNT', payload: profile.type === 'business' });
                 dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: true });
               }
             }

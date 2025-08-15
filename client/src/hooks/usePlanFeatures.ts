@@ -52,11 +52,20 @@ const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
 
 export const usePlanFeatures = () => {
   const { state } = useAppContext();
-  const currentPlan: PlanType = state.userPlan || 'free';
+  
+  // Check if user has a business profile/account
+  const isBusinessAccount = state.selectedProfile?.profile_type === 'business' || 
+                           state.user?.profile_type === 'business' ||
+                           state.userPlan === 'business';
+  
+  const currentPlan: PlanType = isBusinessAccount ? 'business' : (state.userPlan || 'free');
   
   const features = PLAN_FEATURES[currentPlan];
   
   const canUseFeature = (requiredPlan: PlanType): boolean => {
+    // Business accounts can use all features
+    if (isBusinessAccount) return true;
+    
     const planHierarchy = { free: 0, ipro: 1, business: 2 };
     return planHierarchy[currentPlan] >= planHierarchy[requiredPlan];
   };
