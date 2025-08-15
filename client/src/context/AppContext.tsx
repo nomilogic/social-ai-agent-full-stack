@@ -33,6 +33,7 @@ export interface Campaign {
 
 export interface AppState {
   user: User | null;
+  userPlan: 'free' | 'ipro' | 'business' | null;
   selectedProfile: Profile | null;
   selectedCampaign: Campaign | null;
   loading: boolean;
@@ -45,6 +46,7 @@ export interface AppState {
 type AppAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_USER'; payload: User | null }
+  | { type: 'SET_USER_PLAN'; payload: 'free' | 'ipro' | 'business' | null }
   | { type: 'SET_SELECTED_PROFILE'; payload: Profile | null }
   | { type: 'SET_SELECTED_CAMPAIGN'; payload: Campaign | null }
   | { type: 'SET_ERROR'; payload: string | null }
@@ -55,6 +57,7 @@ type AppAction =
 // Initial state
 const initialState: AppState = {
   user: null,
+  userPlan: null,
   selectedProfile: null,
   selectedCampaign: null,
   loading: true,
@@ -69,7 +72,13 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_LOADING':
       return { ...state, loading: action.payload };
     case 'SET_USER':
-      return { ...state, user: action.payload };
+      return { 
+        ...state, 
+        user: action.payload, 
+        userPlan: action.payload?.plan || null 
+      };
+    case 'SET_USER_PLAN':
+      return { ...state, userPlan: action.payload };
     case 'SET_SELECTED_PROFILE':
       return { ...state, selectedProfile: action.payload };
     case 'SET_SELECTED_CAMPAIGN':

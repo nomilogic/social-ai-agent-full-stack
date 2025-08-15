@@ -161,7 +161,7 @@ router.put('/profile', authenticateToken, async (req: AuthRequest, res: Response
     }
 
     const updates = req.body;
-    
+
     // Don't allow updating sensitive fields through this endpoint
     delete updates.id;
     delete updates.email;

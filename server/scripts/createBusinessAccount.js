@@ -34,12 +34,12 @@ async function createBusinessAccount() {
           profile_completed: true,
           onboarding_completed: true,
           plan_limits: {
-            companies: 50,
-            posts_per_month: 1000,
-            campaigns: 100,
-            scheduled_posts: 500,
-            ai_generations: 5000,
-            social_accounts: 20,
+            companies: -1,
+            posts_per_month: -1,
+            campaigns: -1,
+            scheduled_posts: -1,
+            ai_generations: -1,
+            social_accounts: -1,
           },
           preferences: {
             theme: "dark",

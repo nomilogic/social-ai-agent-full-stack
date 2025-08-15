@@ -18,7 +18,7 @@ export const FeatureRestriction: React.FC<FeatureRestrictionProps> = ({
   const { state } = useAppContext();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-  const currentPlan = state.userPlan || 'free';
+  const currentPlan = state.userPlan || state.user?.plan || 'free';
   const hasAccess = () => {
     if (requiredPlan === 'ipro') {
       return currentPlan === 'ipro' || currentPlan === 'business';
