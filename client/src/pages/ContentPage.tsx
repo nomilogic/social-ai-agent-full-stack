@@ -53,10 +53,9 @@ export const ContentPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen animated-bg ">
-      <div className="min-h-screen bg-white/10 backdrop-blur-sm p-5">
-        <div className="w-full mx-auto py-8 space-y-8">
-
+    <div className=" animated-bg ">
+      <div className="">
+        <div className="w-full mx-auto">
           {/* <ProgressBar
             currentStep={getCurrentStep()}
             totalSteps={4}
