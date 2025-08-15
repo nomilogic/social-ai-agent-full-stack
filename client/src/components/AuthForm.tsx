@@ -64,14 +64,14 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen theme-gradient flex items-center justify-center p-4">
-      <div className="max-w-md w-full theme-bg-card backdrop-blur-md rounded-2xl shadow-2xl p-8 theme-border border">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 theme-gradient rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4">
             <Sparkles className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold theme-text-primary mb-2">Social AI Agent</h1>
-          <p className="theme-text-secondary">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Social AI Agent</h1>
+          <p className="text-gray-600">
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
         </div>
@@ -79,7 +79,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {!isLogin && (
             <div>
-              <label className="block text-sm font-medium theme-text-primary mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 <User className="w-4 h-4 inline mr-2" />
                 Full Name
               </label>
@@ -87,7 +87,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                className="theme-input w-full px-4 py-3 rounded-lg transition-all duration-200"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 placeholder="Enter your full name"
                 required={!isLogin}
               />
@@ -95,7 +95,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
           )}
 
           <div>
-            <label className="block text-sm font-medium theme-text-primary mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               <Mail className="w-4 h-4 inline mr-2" />
               Email Address
             </label>
@@ -103,14 +103,14 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
               type="email"
               value={formData.email}
               onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-              className="theme-input w-full px-4 py-3 rounded-lg transition-all duration-200"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               placeholder="Enter your email"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium theme-text-primary mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               <Lock className="w-4 h-4 inline mr-2" />
               Password
             </label>
@@ -118,7 +118,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
               type="password"
               value={formData.password}
               onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-              className="theme-input w-full px-4 py-3 rounded-lg transition-all duration-200"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               placeholder="Enter your password"
               required
               minLength={6}
@@ -126,15 +126,15 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
           </div>
 
           {error && (
-            <div className="theme-bg-secondary border theme-border rounded-lg p-3">
-              <p className="text-red-400 text-sm">{error}</p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-red-600 text-sm">{error}</p>
             </div>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full theme-gradient text-white py-3 px-4 rounded-lg font-medium hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
           >
             {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
           </button>
@@ -143,7 +143,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
         <div className="mt-6 text-center">
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="theme-text-secondary hover:theme-text-primary text-sm font-medium transition-colors duration-200"
+            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
           >
             {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
           </button>

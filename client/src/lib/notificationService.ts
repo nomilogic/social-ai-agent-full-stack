@@ -69,7 +69,7 @@ class NotificationService {
     if (saved) {
       return JSON.parse(saved);
     }
-
+    
     return {
       enablePushNotifications: true,
       enableEmailNotifications: false,
@@ -95,43 +95,28 @@ class NotificationService {
     return { ...this.settings };
   }
 
-  async initializePushNotifications(): Promise<void> {
+  async initializePushNotifications(): Promise<boolean> {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      console.log('Push messaging is not supported');
+      return false;
+    }
+
     try {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        console.log('Push notifications not supported');
-        return;
+      // Register service worker
+      this.registration = await navigator.serviceWorker.register('/sw.js');
+      console.log('Service Worker registered successfully');
+
+      // Request notification permission
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        console.log('Notification permission denied');
+        return false;
       }
 
-      // Check if we're in a secure context
-      if (!window.isSecureContext) {
-        console.log('Push notifications require HTTPS');
-        return;
-      }
-
-      // Check if service worker is already registered
-      const existingRegistration = await navigator.serviceWorker.getRegistration();
-
-      let registration;
-      if (existingRegistration) {
-        registration = existingRegistration;
-      } else {
-        registration = await navigator.serviceWorker.register('/sw.js', {
-          scope: '/',
-        });
-      }
-
-      // Request notification permission only if not already granted
-      if (Notification.permission === 'default') {
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-          console.log('Notification permission denied');
-          return;
-        }
-      }
-
-      console.log('Push notifications initialized successfully');
+      return true;
     } catch (error) {
       console.error('Error initializing push notifications:', error);
+      return false;
     }
   }
 
@@ -238,7 +223,7 @@ class NotificationService {
 
   private async scheduleNotification(notification: NotificationData): Promise<void> {
     const delay = notification.scheduledTime.getTime() - Date.now();
-
+    
     if (delay <= 0) {
       // If the scheduled time has already passed, send immediately
       await this.showNotification(notification);

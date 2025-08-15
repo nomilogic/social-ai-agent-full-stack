@@ -1,61 +1,141 @@
-import express from 'express';
-import { supabase } from '../db';
-import { authenticateToken, AuthRequest } from '../middleware/auth';
+import express, { Request, Response } from 'express'
+import { db } from '../db'
+import { companies } from '../../shared/schema'
+import { eq, and, desc } from 'drizzle-orm'
+import { validateRequestBody } from '../middleware/auth'
 
-const router = express.Router();
+const router = express.Router()
 
-// Simplified companies management using Supabase direct
-router.get('/', authenticateToken, async (req: AuthRequest, res) => {
+// GET /api/companies - Get all companies for a user
+router.get('/', async (req: Request, res: Response) => {
+  const userId = req.query.userId as string
+
+  if (!userId) {
+    console.log('No userId provided in companies request')
+    return res.status(400).json({ error: 'User ID is required' })
+  }
+
   try {
-    const userId = req.user?.id;
-    
-    if (!userId) {
-      return res.status(400).json({ error: 'User ID is required' });
+    console.log('Fetching companies for userId:', userId)
+    const data = await db
+      .select()
+      .from(companies)
+      .where(eq(companies.user_id, userId))
+      .orderBy(desc(companies.created_at))
+
+    console.log('Found companies:', data.length)
+    res.json({ success: true, data: data || [] })
+  } catch (err: any) {
+    console.error('Server error fetching companies:', err)
+    console.error('Error details:', err.message, err.stack)
+    res.status(500).json({ error: 'Internal server error', details: err.message })
+  }
+})
+
+// POST /api/companies - Create a new company
+router.post('/', validateRequestBody(['name', 'userId']), async (req: Request, res: Response) => {
+  const {
+    name,
+    website,
+    industry,
+    description,
+    targetAudience,
+    brandTone,
+    goals,
+    platforms,
+    userId
+  } = req.body
+
+  try {
+    const [data] = await db
+      .insert(companies)
+      .values({
+        name,
+        website: website || null,
+        industry: industry || null,
+        description: description || null,
+        target_audience: targetAudience || null,
+        brand_tone: brandTone || 'professional',
+        goals: goals || [],
+        platforms: platforms || [],
+        user_id: userId
+      })
+      .returning()
+
+    res.status(201).json({ success: true, data })
+  } catch (err: any) {
+    console.error('Server error creating company:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// PUT /api/companies/:id - Update a company
+router.put('/:id', validateRequestBody(['userId']), async (req: Request, res: Response) => {
+  const companyId = req.params.id
+  const {
+    name,
+    website,
+    industry,
+    description,
+    targetAudience,
+    brandTone,
+    goals,
+    platforms,
+    userId
+  } = req.body
+
+  try {
+    const [data] = await db
+      .update(companies)
+      .set({
+        name,
+        website,
+        industry,
+        description,
+        target_audience: targetAudience,
+        brand_tone: brandTone,
+        goals,
+        platforms,
+        updated_at: new Date()
+      })
+      .where(and(eq(companies.id, companyId), eq(companies.user_id, userId)))
+      .returning()
+
+    if (!data) {
+      return res.status(404).json({ error: 'Company not found or unauthorized' })
     }
 
-    // For now, return a mock company since we haven't created tables yet
-    const mockCompanies = [
-      {
-        id: '1',
-        user_id: userId,
-        name: 'My Company',
-        description: 'A sample company for testing',
-        industry: 'Technology',
-        created_at: new Date().toISOString()
-      }
-    ];
-
-    res.json(mockCompanies);
-  } catch (error) {
-    console.error('Error fetching companies:', error);
-    res.status(500).json({ error: 'Failed to fetch companies' });
+    res.json({ success: true, data })
+  } catch (err: any) {
+    console.error('Server error updating company:', err)
+    res.status(500).json({ error: 'Internal server error' })
   }
-});
+})
 
-router.post('/', authenticateToken, async (req: AuthRequest, res) => {
+// DELETE /api/companies/:id - Delete a company
+router.delete('/:id', async (req: Request, res: Response) => {
+  const companyId = req.params.id
+  const userId = req.query.userId as string
+
+  if (!userId) {
+    return res.status(400).json({ error: 'User ID is required' })
+  }
+
   try {
-    const userId = req.user?.id;
-    const { name, description, industry } = req.body;
+    const result = await db
+      .delete(companies)
+      .where(and(eq(companies.id, companyId), eq(companies.user_id, userId)))
+      .returning({ id: companies.id })
 
-    if (!userId) {
-      return res.status(400).json({ error: 'User ID is required' });
+    if (result.length === 0) {
+      return res.status(404).json({ error: 'Company not found or unauthorized' })
     }
 
-    // Mock creation response
-    const newCompany = {
-      id: Date.now().toString(),
-      user_id: userId,
-      name,
-      description,
-      industry,
-      created_at: new Date().toISOString()
-    };
-
-    res.status(201).json(newCompany);
-  } catch (error) {
-    console.error('Error creating company:', error);
-    res.status(500).json({ error: 'Failed to create company' });
+    res.json({ success: true, message: 'Company deleted successfully' })
+  } catch (err: any) {
+    console.error('Server error deleting company:', err)
+    res.status(500).json({ error: 'Internal server error' })
   }
-});
+})
 
-export default router;
+export default router
