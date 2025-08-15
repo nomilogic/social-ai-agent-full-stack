@@ -31,7 +31,10 @@
 }
 
 .theme-bg-card {
-  background-color: var(--theme-bg-card);
+  background: linear-gradient(to bottom,
+      rgba(0, 0, 0, 0.05) 100%,
+      rgba(0, 0, 0, 0) 0%);
+  /* background-color: var(--theme-bg-card); */
   backdrop-filter: blur(10px);
   border: 1px solid var(--theme-border);
 }
@@ -75,31 +78,31 @@
 }
 
 .theme-button-hover {
-    background-color: var(--theme-button-hover);
-  }
+  background-color: var(--theme-button-hover);
+}
 
-  .theme-input {
-    background-color: var(--theme-bg-primary);
-    border: 1px solid var(--theme-border);
-    color: var(--theme-text-primary);
-  }
+.theme-input {
+  background-color: var(--theme-bg-primary);
+  border: 1px solid var(--theme-border);
+  color: var(--theme-text-primary);
+}
 
-  .theme-input:focus {
-    border-color: var(--theme-accent);
-    box-shadow: 0 0 0 1px var(--theme-accent);
-  }
+.theme-input:focus {
+  border-color: var(--theme-accent);
+  box-shadow: 0 0 0 1px var(--theme-accent);
+}
 
-  .theme-text-accent {
-    color: var(--theme-accent);
-  }
+.theme-text-accent {
+  color: var(--theme-accent);
+}
 
-  .theme-bg-gradient {
-    background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary), var(--theme-accent));
-  }
+.theme-bg-gradient {
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary), var(--theme-accent));
+}
 
-  .theme-gradient {
-    background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary), var(--theme-accent));
-  }
+.theme-gradient {
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary), var(--theme-accent));
+}
 
 /* Custom animations for carousel */
 @keyframes slide-in-from-top {

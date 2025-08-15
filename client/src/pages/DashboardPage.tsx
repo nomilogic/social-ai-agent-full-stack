@@ -31,10 +31,34 @@ export const DashboardPage: React.FC = () => {
 
   // Mock recent posts for demonstration
   const recentPosts = [
-    { id: 1, content: "Excited to share our new product!", platform: "Twitter", date: "2 hours ago", status: "published" },
-    { id: 2, content: "Upcoming webinar on AI trends", platform: "LinkedIn", date: "1 day ago", status: "scheduled" },
-    { id: 3, content: "Behind the scenes: Our team at work", platform: "Instagram", date: "3 days ago", status: "published" },
-    { id: 4, content: "New blog post: The Future of Social Media", platform: "Facebook", date: "5 days ago", status: "scheduled" },
+    {
+      id: 1,
+      content: "Excited to share our new product!",
+      platform: "Twitter",
+      date: "2 hours ago",
+      status: "published",
+    },
+    {
+      id: 2,
+      content: "Upcoming webinar on AI trends",
+      platform: "LinkedIn",
+      date: "1 day ago",
+      status: "scheduled",
+    },
+    {
+      id: 3,
+      content: "Behind the scenes: Our team at work",
+      platform: "Instagram",
+      date: "3 days ago",
+      status: "published",
+    },
+    {
+      id: 4,
+      content: "New blog post: The Future of Social Media",
+      platform: "Facebook",
+      date: "5 days ago",
+      status: "scheduled",
+    },
   ];
 
   // Check if user needs onboarding (no companies yet)
@@ -110,10 +134,10 @@ export const DashboardPage: React.FC = () => {
     const Icon = currentStep.icon;
 
     return (
-      <div className="min-h-[50vh] flex items-center justify-center px-4 theme-gradient">
-        <div className="max-w-xl mx-auto text-center space-y-6">
+      <div className="min-h-[50vh] flex items-center justify-center theme-card-bg">
+        <div className="w-full mx-auto text-center space-y-6">
           <div className="relative">
-            <div className="w-16 h-16 theme-bg-primary rounded-xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 theme-bg-card rounded-xl flex items-center justify-center mx-auto mb-4">
               <Icon className="w-8 h-8 theme-text-primary" />
             </div>
             <div className="absolute -top-1 -right-1 theme-bg-secondary theme-text-primary text-xs font-semibold px-2 py-1 rounded-full">
@@ -122,7 +146,9 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            <p className="text-lg theme-text-secondary">{currentStep.description}</p>
+            <p className="text-lg theme-text-secondary">
+              {currentStep.description}
+            </p>
             <p className="theme-text-light text-sm leading-relaxed max-w-md mx-auto">
               {currentStep.content}
             </p>
@@ -154,7 +180,9 @@ export const DashboardPage: React.FC = () => {
               <div
                 key={index}
                 className={`w-2 h-2 rounded-full transition-colors duration-200 ${
-                  index === onboardingStep ? "theme-bg-primary" : "theme-bg-light"
+                  index === onboardingStep
+                    ? "theme-bg-primary"
+                    : "theme-bg-light"
                 }`}
               />
             ))}
@@ -196,9 +224,8 @@ export const DashboardPage: React.FC = () => {
   ];
 
   return (
-    <div className="theme-gradient min-h-screen">
+    <div className="theme-card-bg min-h-screen">
       <div className="container mx-auto px-4 py-4 space-y-4">
-
         {/* Create Content Button - Centered */}
         <div className="flex justify-center">
           <button
@@ -206,7 +233,9 @@ export const DashboardPage: React.FC = () => {
             className="flex items-center gap-2 theme-button-secondary text-white px-6 py-3 rounded-lg hover:theme-button-hover transition-all duration-200 pulse-glow border border-white/20"
           >
             <Plus className="w-5 h-5" />
-            <span className="text-base font-medium">Create Content</span>
+            <span className="w-full text-base font-medium theme-card-bg">
+              Create Content
+            </span>
           </button>
         </div>
 
@@ -221,9 +250,7 @@ export const DashboardPage: React.FC = () => {
                 <p className="text-2xl font-bold theme-text-primary mt-1 drop-shadow">
                   {stats.totalPosts}
                 </p>
-                <p className="text-green-300 text-xs">
-                  +12% from last month
-                </p>
+                <p className="text-green-300 text-xs">+12% from last month</p>
               </div>
               <div className="theme-bg-light p-2 rounded-lg">
                 <TrendingUp className="w-5 h-5 theme-text-primary" />
@@ -243,9 +270,7 @@ export const DashboardPage: React.FC = () => {
                 <p className="text-2xl font-bold theme-text-primary mt-1 drop-shadow">
                   {stats.scheduledPosts}
                 </p>
-                <p className="text-orange-200 text-xs">
-                  Next post in 2 hours
-                </p>
+                <p className="text-orange-200 text-xs">Next post in 2 hours</p>
               </div>
               <div className="theme-bg-light p-2 rounded-lg">
                 <Calendar className="w-5 h-5 theme-text-primary" />
@@ -272,7 +297,9 @@ export const DashboardPage: React.FC = () => {
                 <h3 className="text-sm font-semibold theme-text-primary mb-1">
                   {action.title}
                 </h3>
-                <p className="theme-text-light text-xs leading-tight">{action.description}</p>
+                <p className="theme-text-light text-xs leading-tight">
+                  {action.description}
+                </p>
               </div>
             );
           })}
@@ -281,28 +308,40 @@ export const DashboardPage: React.FC = () => {
         {/* Recent Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="theme-bg-card p-6 rounded-lg backdrop-blur-lg">
-            <h2 className="text-xl font-semibold theme-text-primary mb-4">Recent Posts</h2>
+            <h2 className="text-xl font-semibold theme-text-primary mb-4">
+              Recent Posts
+            </h2>
             <div className="space-y-4">
               {recentPosts.map((post) => (
-                <div key={post.id} className="flex items-start space-x-3 p-3 theme-bg-primary rounded-lg">
+                <div
+                  key={post.id}
+                  className="flex items-start space-x-3 p-3 theme-bg-primary rounded-lg"
+                >
                   <div className="flex-shrink-0">
                     <div className="w-10 h-10 theme-bg-secondary rounded-lg flex items-center justify-center">
-                      <FileText className="w-5 h-5" style={{ color: 'var(--theme-primary)' }} />
+                      <FileText
+                        className="w-5 h-5"
+                        style={{ color: "var(--theme-primary)" }}
+                      />
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium theme-text-primary truncate">
                       {post.content}
                     </p>
-                    <p className="text-sm theme-text-light">{post.platform} • {post.date}</p>
+                    <p className="text-sm theme-text-light">
+                      {post.platform} • {post.date}
+                    </p>
                   </div>
-                  <div className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    post.status === 'published'
-                      ? 'theme-bg-primary theme-text-primary'
-                      : post.status === 'scheduled'
-                      ? 'theme-bg-secondary theme-text-secondary'
-                      : 'theme-bg-primary theme-text-light'
-                  }`}>
+                  <div
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      post.status === "published"
+                        ? "theme-bg-primary theme-text-primary"
+                        : post.status === "scheduled"
+                          ? "theme-bg-secondary theme-text-secondary"
+                          : "theme-bg-primary theme-text-light"
+                    }`}
+                  >
                     {post.status}
                   </div>
                 </div>
@@ -311,23 +350,44 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div className="theme-bg-card p-6 rounded-lg backdrop-blur-lg">
-            <h2 className="text-xl font-semibold theme-text-primary mb-4">Analytics Overview</h2>
+            <h2 className="text-xl font-semibold theme-text-primary mb-4">
+              Analytics Overview
+            </h2>
             <div className="space-y-4">
               <div className="flex justify-between items-center p-3 theme-bg-primary rounded-lg">
-                <span className="text-sm font-medium theme-text-secondary">Impressions</span>
-                <span className="text-sm font-bold theme-text-primary">24.5K</span>
+                <span className="text-sm font-medium theme-text-secondary">
+                  Impressions
+                </span>
+                <span className="text-sm font-bold theme-text-primary">
+                  24.5K
+                </span>
               </div>
               <div className="flex justify-between items-center p-3 theme-bg-primary rounded-lg">
-                <span className="text-sm font-medium theme-text-secondary">Clicks</span>
-                <span className="text-sm font-bold theme-text-primary">1.2K</span>
+                <span className="text-sm font-medium theme-text-secondary">
+                  Clicks
+                </span>
+                <span className="text-sm font-bold theme-text-primary">
+                  1.2K
+                </span>
               </div>
               <div className="flex justify-between items-center p-3 theme-bg-primary rounded-lg">
-                <span className="text-sm font-medium theme-text-secondary">Engagement Rate</span>
-                <span className="text-sm font-bold theme-text-primary">4.8%</span>
+                <span className="text-sm font-medium theme-text-secondary">
+                  Engagement Rate
+                </span>
+                <span className="text-sm font-bold theme-text-primary">
+                  4.8%
+                </span>
               </div>
               <div className="flex justify-between items-center p-3 theme-bg-primary rounded-lg">
-                <span className="text-sm font-medium theme-text-secondary">Followers Growth</span>
-                <span className="text-sm font-bold" style={{ color: 'var(--theme-accent)' }}>+127</span>
+                <span className="text-sm font-medium theme-text-secondary">
+                  Followers Growth
+                </span>
+                <span
+                  className="text-sm font-bold"
+                  style={{ color: "var(--theme-accent)" }}
+                >
+                  +127
+                </span>
               </div>
             </div>
           </div>

@@ -321,6 +321,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     } catch (error) {
       console.error("Error handling AI generated image:", error);
       // Fallback: just use the URL directly
+
       setFormData((prev) => ({ ...prev, mediaUrl: imageUrl }));
     }
   };
@@ -332,10 +333,10 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   };
 
   return (
-    <div className="w-full mx-auto theme-bg-card/50 backdrop-blur-sm rounded-xl border border-white/10 p-6">
+    <div className="w-full mx-auto theme-bg-card backdrop-blur-sm rounded-xl border border-white/10 p-6 m0">
       {/* Header */}
       <div className="text-center mb-6">
-        <div className="w-12 h-12 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">
+        <div className="w-12 h-12 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl flex items-center justify-center mx-auto ">
           <Wand2 className="w-6 h-6 text-blue-400" />
         </div>
         <h2 className="text-xl font-semibold theme-text-primary mb-1">
