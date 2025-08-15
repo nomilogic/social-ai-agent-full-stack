@@ -88,7 +88,7 @@ const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
 
 export const usePlanFeatures = () => {
   const { state } = useAppContext();
-  const currentPlan: PlanType = state.userPlan || 'free';
+  const currentPlan: PlanType = state.userPlan || state.user?.plan || 'free';
   
   const features = PLAN_FEATURES[currentPlan];
   
