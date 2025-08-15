@@ -54,8 +54,7 @@ export const oauthConfigs: Record<string, PlatformOAuthConfig> = {
     redirectUri: `${getBaseUrl()}/oauth/linkedin/callback`,
     scopes: ["w_member_social", "openid", "email", "profile"],
     authUrl: "https://www.linkedin.com/oauth/v2/authorization",
-    tokenUrl:
-      "https://29fad8af-ed08-4697-90cf-a9e9861d4e37-00-22cjx0f1pt4i8.sisko.replit.dev/api/linkedin/access-token",
+    tokenUrl: `${getBaseUrl()}/api/linkedin/access-token`,
   },
   twitter: {
     clientId: import.meta.env.VITE_TWITTER_CLIENT_ID || "",
@@ -317,11 +316,11 @@ export class OAuthManager {
     platform: string,
     credentials: OAuthCredentials,
   ) {
-    const existingRecord = await supabase
+    const { data: existingRecord } = await supabase
       .from("oauth_tokens")
       .select("id")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
     console.log(
       `Storing credentials for user ${userId} and platform ${platform}`,
       credentials,
