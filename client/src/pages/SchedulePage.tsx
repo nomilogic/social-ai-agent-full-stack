@@ -121,7 +121,6 @@ export const SchedulePage: React.FC = () => {
       <div className="p-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Schedule Posts</h1>
           <p className="text-gray-600">Schedule your content across multiple platforms with AI-powered optimal timing</p>
         </div>
 
