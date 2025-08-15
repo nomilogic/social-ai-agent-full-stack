@@ -65,6 +65,7 @@ export const PLAN_FEATURES: Record<'free' | 'ipro' | 'business', PlanLimits> = {
 };
 
 export const getPlanLimits = (profileType: 'individual' | 'business', plan?: string): PlanLimits => {
+  // Business profiles always get business features regardless of plan field
   if (profileType === 'business') {
     return PLAN_FEATURES.business;
   }

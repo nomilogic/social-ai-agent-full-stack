@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Building2, Plus, Edit2, Trash2, Calendar, Sparkles, Target, BarChart3 } from 'lucide-react';
 import { getCompanies, deleteCompany } from '../lib/database';
 import { CompanyInfo } from '../types';
+import { usePlanFeatures } from '../hooks/usePlanFeatures'; // Assuming this is where usePlanFeatures is located
+import { useStateContext } from '../context/StateContext'; // Assuming this is where useStateContext is located
 
 interface CompanySelectorProps {
   userId: string;
@@ -24,6 +26,11 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
 }) => {
   const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { state } = useStateContext(); // Assuming useStateContext provides state with selectedProfile and user
+  const { canSchedule, currentPlan } = usePlanFeatures();
+  const isBusinessAccount = state.selectedProfile?.profile_type === 'business' ||
+                           state.user?.profile_type === 'business' ||
+                           currentPlan === 'business';
 
   useEffect(() => {
     loadCompanies();
@@ -51,6 +58,12 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
       }
     }
   };
+
+  // Placeholder for onNavigate if it's used elsewhere in this component or intended to be part of the props
+  // For now, we'll assume it's not directly used in this snippet based on the provided changes.
+  // If 'onNavigate' is intended to be a prop, it should be added to the CompanySelectorProps interface.
+  // const onNavigate = (view: string) => { console.log(`Navigating to ${view}`); };
+
 
   if (loading) {
     return (
@@ -122,14 +135,14 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-              
+
               <div className="mb-4">
                 <h3 className="font-semibold text-gray-900 text-lg">{company.name}</h3>
                 {company.industry && (
                   <p className="text-sm text-gray-600">{company.industry}</p>
                 )}
               </div>
-              
+
               <div className="space-y-2 text-sm">
                 <div>
                   <span className="text-gray-500">Tone:</span>
@@ -144,7 +157,7 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
                   <span className="ml-2">{company.goals?.length || 0}</span>
                 </div>
               </div>
-              
+
               <div className="mt-4 flex flex-wrap gap-1">
                 {company.platforms?.slice(0, 3).map((platform: string) => (
                   <span
@@ -170,8 +183,8 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
                   <Sparkles className="w-4 h-4" />
                   Create New Post
                 </button>
-                
-                {onScheduleCompany && (
+
+                {(canSchedule || isBusinessAccount) && (
                   <button
                     onClick={() => onScheduleCompany(companyData)}
                     className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-200 flex items-center justify-center gap-2"
@@ -180,7 +193,7 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
                     Schedule Posts
                   </button>
                 )}
-                
+
                 {onCampaignCompany && (
                   <button
                     onClick={() => onCampaignCompany(companyData)}
@@ -190,7 +203,7 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
                     Manage Campaigns
                   </button>
                 )}
-                
+
                 {onDashboardCompany && (
                   <button
                     onClick={() => onDashboardCompany(companyData)}
