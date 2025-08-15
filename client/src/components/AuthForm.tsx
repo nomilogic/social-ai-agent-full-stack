@@ -16,9 +16,16 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
   });
   const [error, setError] = useState('');
 
+  // Placeholder for fetching user data and setting state
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setIsLoading(true); // Use setIsLoading instead of setLoading
     setError('');
 
     try {
@@ -34,7 +41,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
 
         const result = await response.json();
         if (!response.ok) throw new Error(result.error);
-        
+
         // Store the JWT token
         localStorage.setItem('auth_token', result.token);
         onAuthSuccess(result.user);
@@ -51,7 +58,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
 
         const result = await response.json();
         if (!response.ok) throw new Error(result.error);
-        
+
         // Store the JWT token  
         localStorage.setItem('auth_token', result.token);
         onAuthSuccess(result.user);
@@ -59,7 +66,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
     } catch (error: any) {
       setError(error.message);
     } finally {
-      setLoading(false);
+      setIsLoading(false); // Use setIsLoading instead of setLoading
     }
   };
 
@@ -77,66 +84,65 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium theme-text-secondary mb-1">
+              Email Address
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-3 py-2 theme-input rounded-lg focus:outline-none"
+              placeholder="Enter your email"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium theme-text-secondary mb-1">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full px-3 py-2 theme-input rounded-lg focus:outline-none"
+              placeholder="Enter your password"
+            />
+          </div>
+
           {!isLogin && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <User className="w-4 h-4 inline mr-2" />
+              <label htmlFor="name" className="block text-sm font-medium theme-text-secondary mb-1">
                 Full Name
               </label>
               <input
+                id="name"
                 type="text"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="w-full px-3 py-2 theme-input rounded-lg focus:outline-none"
                 placeholder="Enter your full name"
-                required={!isLogin}
               />
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Mail className="w-4 h-4 inline mr-2" />
-              Email Address
-            </label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Lock className="w-4 h-4 inline mr-2" />
-              Password
-            </label>
-            <input
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-              placeholder="Enter your password"
-              required
-              minLength={6}
-            />
-          </div>
-
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-red-600 text-sm">{error}</p>
+            <div className="p-3 theme-bg-primary border rounded-lg" style={{ borderColor: 'var(--theme-accent)' }}>
+              <p className="text-sm theme-text-primary">{error}</p>
             </div>
           )}
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+            disabled={isLoading}
+            className="w-full theme-button-primary py-2 px-4 rounded-lg hover:theme-button-hover focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
+            {isLoading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
           </button>
         </form>
 

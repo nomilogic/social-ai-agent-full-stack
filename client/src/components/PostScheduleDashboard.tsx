@@ -3,7 +3,8 @@ import { PostCalendar } from './PostCalendar';
 import { AIScheduleGenerator } from './AIScheduleGenerator';
 import { ContentInput } from './ContentInput';
 import { scheduleService, scheduleUtils, type ScheduleRequest, type GeneratedSchedule, type ScheduledPost } from '../lib/scheduleService';
-import { Calendar, Plus, BarChart3, Settings, Sparkles, Clock } from 'lucide-react';
+import { Calendar, Plus, BarChart3, Settings, Sparkles, Clock, CheckCircle, Eye, Edit, Trash2 } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface PostScheduleDashboardProps {
   companyId: string;
@@ -22,6 +23,8 @@ export const PostScheduleDashboard: React.FC<PostScheduleDashboardProps> = ({
   const [isGeneratingSchedule, setIsGeneratingSchedule] = useState(false);
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all'); // State for filtering posts
+  const [isLoading, setIsLoading] = useState(true); // State for post list loading
 
   // Load scheduled posts on component mount
   useEffect(() => {
@@ -32,12 +35,14 @@ export const PostScheduleDashboard: React.FC<PostScheduleDashboardProps> = ({
   const loadScheduledPosts = async () => {
     try {
       setLoading(true);
+      setIsLoading(true); // Set loading for post list
       const posts = await scheduleService.getScheduledPosts(companyId);
-      setScheduledPosts(posts);
+      setScheduledPosts(posts.map(post => ({ ...post, scheduledDate: new Date(post.date) }))); // Ensure scheduledDate is a Date object
     } catch (error) {
       console.error('Failed to load scheduled posts:', error);
     } finally {
       setLoading(false);
+      setIsLoading(false); // Unset loading for post list
     }
   };
 
@@ -128,26 +133,32 @@ export const PostScheduleDashboard: React.FC<PostScheduleDashboardProps> = ({
     }
   };
 
+  // Filter posts based on the selected filter
+  const filteredPosts = scheduledPosts.filter(post => {
+    if (filter === 'all') return true;
+    return post.status === filter;
+  });
+
   const NavigationTabs = () => (
-    <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+    <div className="flex space-x-1 theme-bg-secondary p-1 rounded-lg">
       <button
         onClick={() => setActiveView('calendar')}
         className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
           activeView === 'calendar'
-            ? 'bg-white text-blue-600 shadow-sm'
-            : 'text-gray-600 hover:text-gray-900'
+            ? 'theme-bg-primary theme-text-secondary shadow-sm'
+            : 'theme-text-light hover:theme-text-primary'
         }`}
       >
         <Calendar className="w-4 h-4" />
         Calendar
       </button>
-      
+
       <button
         onClick={() => setActiveView('generator')}
         className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
           activeView === 'generator'
-            ? 'bg-white text-purple-600 shadow-sm'
-            : 'text-gray-600 hover:text-gray-900'
+            ? 'theme-bg-accent theme-text-secondary shadow-sm'
+            : 'theme-text-light hover:theme-text-primary'
         }`}
       >
         <Sparkles className="w-4 h-4" />
@@ -158,8 +169,8 @@ export const PostScheduleDashboard: React.FC<PostScheduleDashboardProps> = ({
         onClick={() => setActiveView('analytics')}
         className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
           activeView === 'analytics'
-            ? 'bg-white text-green-600 shadow-sm'
-            : 'text-gray-600 hover:text-gray-900'
+            ? 'theme-bg-accent theme-text-secondary shadow-sm'
+            : 'theme-text-light hover:theme-text-primary'
         }`}
       >
         <BarChart3 className="w-4 h-4" />
@@ -170,8 +181,8 @@ export const PostScheduleDashboard: React.FC<PostScheduleDashboardProps> = ({
         onClick={() => setActiveView('create')}
         className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
           activeView === 'create'
-            ? 'bg-white text-orange-600 shadow-sm'
-            : 'text-gray-600 hover:text-gray-900'
+            ? 'theme-bg-accent theme-text-secondary shadow-sm'
+            : 'theme-text-light hover:theme-text-primary'
         }`}
       >
         <Plus className="w-4 h-4" />
@@ -181,76 +192,90 @@ export const PostScheduleDashboard: React.FC<PostScheduleDashboardProps> = ({
   );
 
   const AnalyticsView = () => {
-    if (!analytics) return <div>Loading analytics...</div>;
+    if (!analytics) return <div className="theme-text-light">Loading analytics...</div>;
+
+    // Mock stats for the example, replace with actual analytics data
+    const stats = {
+      total: analytics.totalScheduled || 0,
+      thisWeek: analytics.thisWeek || 0, // Assuming analytics provides this data
+      published: analytics.totalPublished || 0,
+    };
 
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow-lg border-l-4 border-blue-500">
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Scheduled</h3>
-            <p className="text-3xl font-bold text-gray-900 mt-2">{analytics.totalScheduled}</p>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="theme-bg-card p-6 rounded-lg backdrop-blur-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium theme-text-light">Total Scheduled</p>
+                <p className="text-2xl font-bold theme-text-primary">{stats.total}</p>
+              </div>
+              <Calendar className="w-8 h-8" style={{ color: 'var(--theme-primary)' }} />
+            </div>
           </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-lg border-l-4 border-green-500">
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Published</h3>
-            <p className="text-3xl font-bold text-gray-900 mt-2">{analytics.totalPublished}</p>
+
+          <div className="theme-bg-card p-6 rounded-lg backdrop-blur-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium theme-text-light">This Week</p>
+                <p className="text-2xl font-bold theme-text-primary">{stats.thisWeek}</p>
+              </div>
+              <Clock className="w-8 h-8" style={{ color: 'var(--theme-secondary)' }} />
+            </div>
           </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-lg border-l-4 border-red-500">
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Failed</h3>
-            <p className="text-3xl font-bold text-gray-900 mt-2">{analytics.totalFailed}</p>
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-lg border-l-4 border-purple-500">
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Success Rate</h3>
-            <p className="text-3xl font-bold text-gray-900 mt-2">
-              {analytics.totalPublished + analytics.totalFailed > 0 
-                ? Math.round((analytics.totalPublished / (analytics.totalPublished + analytics.totalFailed)) * 100)
-                : 0}%
-            </p>
+
+          <div className="theme-bg-card p-6 rounded-lg backdrop-blur-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium theme-text-light">Published</p>
+                <p className="text-2xl font-bold theme-text-primary">{stats.published}</p>
+              </div>
+              <CheckCircle className="w-8 h-8" style={{ color: 'var(--theme-accent)' }} />
+            </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Posts by Platform</h3>
+          <div className="theme-bg-card rounded-lg p-6">
+            <h3 className="text-lg font-semibold theme-text-primary mb-4">Posts by Platform</h3>
             <div className="space-y-3">
               {Object.entries(analytics.postsByPlatform || {}).map(([platform, count]) => (
                 <div key={platform} className="flex justify-between items-center">
-                  <span className="capitalize text-gray-700">{platform}</span>
-                  <span className="font-semibold text-gray-900">{count as number}</span>
+                  <span className="capitalize theme-text-light">{platform}</span>
+                  <span className="font-semibold theme-text-primary">{count as number}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Posts by Category</h3>
+          <div className="theme-bg-card rounded-lg p-6">
+            <h3 className="text-lg font-semibold theme-text-primary mb-4">Posts by Category</h3>
             <div className="space-y-3">
               {Object.entries(analytics.postsByCategory || {}).map(([category, count]) => (
                 <div key={category} className="flex justify-between items-center">
-                  <span className="capitalize text-gray-700">{category || 'General'}</span>
-                  <span className="font-semibold text-gray-900">{count as number}</span>
+                  <span className="capitalize theme-text-light">{category || 'General'}</span>
+                  <span className="font-semibold theme-text-primary">{count as number}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Posts</h3>
+        <div className="theme-bg-card rounded-lg p-6">
+          <h3 className="text-lg font-semibold theme-text-primary mb-4">Upcoming Posts</h3>
           <div className="space-y-3">
             {analytics.upcomingPosts?.slice(0, 5).map((post: ScheduledPost) => (
-              <div key={post.id} className="flex justify-between items-start p-3 bg-gray-50 rounded-lg">
+              <div key={post.id} className="flex justify-between items-start p-3 theme-bg-secondary rounded-lg">
                 <div className="flex-1">
-                  <p className="font-medium text-gray-900 truncate">{post.content.slice(0, 60)}...</p>
-                  <p className="text-sm text-gray-600">
+                  <p className="font-medium theme-text-primary truncate">{post.content.slice(0, 60)}...</p>
+                  <p className="text-sm theme-text-light">
                     {new Date(post.date).toLocaleDateString()} at {scheduleUtils.formatTime(post.time)}
                   </p>
                 </div>
                 <div className="flex gap-1">
                   {post.platform.map(platform => (
-                    <span key={platform} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                    <span key={platform} className="px-2 py-1 theme-bg-accent theme-text-secondary text-xs rounded-full">
                       {platform}
                     </span>
                   ))}
@@ -267,8 +292,8 @@ export const PostScheduleDashboard: React.FC<PostScheduleDashboardProps> = ({
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <Clock className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading your post schedule...</p>
+          <Clock className="w-8 h-8 animate-spin theme-text-primary mx-auto mb-4" />
+          <p className="theme-text-light">Loading your post schedule...</p>
         </div>
       </div>
     );
@@ -279,17 +304,17 @@ export const PostScheduleDashboard: React.FC<PostScheduleDashboardProps> = ({
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Post Schedule Manager</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-3xl font-bold theme-text-primary">Post Schedule Manager</h1>
+          <p className="theme-text-light mt-1">
             Plan, schedule, and manage your social media content with AI assistance
           </p>
         </div>
-        
+
         <div className="flex items-center gap-4">
           {analytics && (
             <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">{analytics.totalScheduled}</p>
-              <p className="text-sm text-gray-600">Posts Scheduled</p>
+              <p className="text-2xl font-bold theme-text-primary">{analytics.totalScheduled}</p>
+              <p className="text-sm theme-text-light">Posts Scheduled</p>
             </div>
           )}
         </div>
@@ -323,16 +348,16 @@ export const PostScheduleDashboard: React.FC<PostScheduleDashboardProps> = ({
         {activeView === 'analytics' && <AnalyticsView />}
 
         {activeView === 'create' && (
-          <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="theme-bg-card rounded-lg p-6">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Create Scheduled Post</h2>
+              <h2 className="text-2xl font-bold theme-text-primary mb-2">Create Scheduled Post</h2>
               {selectedDate && (
-                <p className="text-gray-600">
+                <p className="theme-text-light">
                   Scheduled for: {selectedDate.toLocaleDateString()}
                 </p>
               )}
             </div>
-            
+
             <ContentInput
               onGenerate={handleCreateScheduledPost}
               companyData={companyData}
@@ -340,20 +365,91 @@ export const PostScheduleDashboard: React.FC<PostScheduleDashboardProps> = ({
               showScheduling={true}
               scheduledDate={selectedDate}
             />
-            
+
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => {
                   setActiveView('calendar');
                   setSelectedDate(null);
                 }}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 theme-border text-theme-text-light rounded-lg hover:theme-bg-secondary transition-colors"
               >
                 Cancel
               </button>
             </div>
           </div>
         )}
+
+        {/* Scheduled Posts List */}
+        <div className="theme-bg-card rounded-lg backdrop-blur-lg">
+          <div className="p-6" style={{ borderBottom: '1px solid var(--theme-border)' }}>
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold theme-text-primary">Scheduled Posts</h2>
+              <select
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                className="theme-input rounded-md px-3 py-1 text-sm focus:outline-none"
+              >
+                <option value="all">All Posts</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="published">Published</option>
+                <option value="failed">Failed</option>
+              </select>
+            </div>
+          </div>
+          <div style={{ borderColor: 'var(--theme-border)' }}>
+            {isLoading ? (
+              <div className="p-6 text-center">
+                <p className="theme-text-light">Loading scheduled posts...</p>
+              </div>
+            ) : filteredPosts.length === 0 ? (
+              <div className="p-6 text-center">
+                <p className="theme-text-light">No scheduled posts found.</p>
+              </div>
+            ) : (
+              filteredPosts.map((post) => (
+                <div key={post.id} className="p-6" style={{ borderBottom: '1px solid var(--theme-border)' }}>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium theme-text-primary mb-2 line-clamp-2">
+                        {post.content}
+                      </p>
+                      <div className="flex items-center space-x-4 text-sm theme-text-light">
+                        <div className="flex items-center space-x-1">
+                          <Calendar className="w-4 h-4" />
+                          <span>{format(post.scheduledDate, 'MMM d, yyyy')}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Clock className="w-4 h-4" />
+                          <span>{format(post.scheduledDate, 'h:mm a')}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <span>{post.platforms.join(', ')}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3 ml-4">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full theme-bg-primary theme-text-secondary`}>
+                        {post.status}
+                      </span>
+                      <div className="flex space-x-1">
+                        <button className="p-1 theme-text-light hover:theme-text-primary">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button className="p-1 theme-text-light hover:theme-text-primary">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button className="p-1 theme-text-light hover:opacity-80" style={{ color: 'var(--theme-accent)' }}>
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
