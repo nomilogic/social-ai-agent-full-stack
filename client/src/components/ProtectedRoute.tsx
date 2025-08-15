@@ -30,21 +30,25 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   // If user has completed onboarding, redirect them away from onboarding pages
-  if (state.hasCompletedOnboarding && state.userPlan) {
-    if (location.pathname === '/pricing' || location.pathname === '/onboarding' || location.pathname === '/auth') {
+  if (state.user.onboarding_completed) {
+    if (location.pathname === '/pricing' || location.pathname.startsWith('/onboarding')) {
       return <Navigate to="/dashboard" replace />;
     }
     return <>{children}</>;
   }
 
   // If user hasn't selected a plan, redirect to pricing (unless already there)
-  if (!state.userPlan && location.pathname !== '/pricing') {
-    return <Navigate to="/pricing" replace />;
+  if (!state.user.plan || state.user.plan === 'free') {
+    if (location.pathname !== '/pricing') {
+      return <Navigate to="/pricing" replace />;
+    }
   }
 
-  // If user has plan but hasn't completed onboarding, redirect to onboarding
-  if (state.userPlan && !state.hasCompletedOnboarding && location.pathname !== '/onboarding') {
-    return <Navigate to="/onboarding" replace />;
+  // If user has plan but hasn't completed onboarding, redirect to onboarding profile setup
+  if (state.user.plan && state.user.plan !== 'free' && !state.user.profile_completed) {
+    if (!location.pathname.startsWith('/onboarding')) {
+      return <Navigate to="/onboarding/profile" replace />;
+    }
   }
 
   return <>{children}</>;
