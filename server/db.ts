@@ -1,10 +1,20 @@
-
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from '../shared/schema';
 
-// Use Replit's PostgreSQL database
-const connectionString = process.env.DATABASE_URL || 'postgresql://localhost:5432/social_agent';
+// Use Supabase PostgreSQL database
+const connectionString = process.env.DATABASE_URL || 'postgresql://postgres.kdaxthclqiodvetumxpn:your_password@aws-0-us-west-1.pooler.supabase.com:6543/postgres';
+
+if (!connectionString.includes('supabase.com')) {
+  console.error(`
+🚨 Please set up your Supabase DATABASE_URL!
+
+Your DATABASE_URL should look like:
+postgresql://postgres.kdaxthclqiodvetumxpn:YOUR_PASSWORD@aws-0-us-west-1.pooler.supabase.com:6543/postgres
+
+Get your password from: https://supabase.com/dashboard/project/kdaxthclqiodvetumxpn/settings/database
+  `);
+}
 
 const pool = new Pool({
   connectionString,
