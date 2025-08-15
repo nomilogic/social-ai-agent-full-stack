@@ -1,6 +1,6 @@
+
 import React, { useState } from 'react';
 import { Mail, Lock, User, Sparkles } from 'lucide-react';
-// Removed Supabase import - using API calls now
 
 interface AuthFormProps {
   onAuthSuccess: (user: any) => void;
@@ -15,9 +15,6 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
     name: ''
   });
   const [error, setError] = useState('');
-
-  
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +35,6 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
         const result = await response.json();
         if (!response.ok) throw new Error(result.error);
 
-        // Store the JWT token
         localStorage.setItem('auth_token', result.token);
         onAuthSuccess(result.user);
       } else {
@@ -55,7 +51,6 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
         const result = await response.json();
         if (!response.ok) throw new Error(result.error);
 
-        // Store the JWT token  
         localStorage.setItem('auth_token', result.token);
         onAuthSuccess(result.user);
       }
@@ -67,10 +62,10 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen theme-bg-gradient flex items-center justify-center p-4">
+    <div className="min-h-screen w-full animated-bg flex items-center justify-center p-4 overflow-hidden">
       <div className="max-w-md w-full theme-bg-card rounded-2xl shadow-xl p-8 border" style={{ borderColor: 'var(--theme-border)' }}>
         <div className="text-center mb-8">
-          <div className="w-16 h-16 theme-bg-gradient rounded-xl flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 theme-gradient rounded-xl flex items-center justify-center mx-auto mb-4">
             <Sparkles className="w-8 h-8 theme-text-primary" />
           </div>
           <h1 className="text-2xl font-bold theme-text-primary mb-2">Social AI Agent</h1>
