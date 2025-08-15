@@ -1,5 +1,8 @@
-import express from 'express';
-import { supabase } from '../db';
+import express, { Request, Response } from 'express';
+import { supabase, db } from '../db';
+import { users } from '../../shared/schema';
+import { eq } from 'drizzle-orm';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 const router = express.Router();
@@ -15,38 +18,42 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Use Supabase Auth to create user
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name: name || email.split('@')[0]
-        }
-      }
-    });
+    // Check if user exists in our database
+    const existingUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
 
-    if (error) {
-      console.error('Registration error:', error);
-      return res.status(400).json({ error: error.message });
+    if (existingUser.length > 0) {
+      return res.status(400).json({ error: 'User already exists' });
     }
 
-    if (!data.user) {
-      return res.status(400).json({ error: 'Failed to create user' });
-    }
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user in our database using Drizzle
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        email,
+        password: hashedPassword,
+        name: name || email.split('@')[0],
+      })
+      .returning();
 
     // Create JWT token
     const token = jwt.sign(
-      { id: data.user.id, email: data.user.email },
+      { id: newUser.id, email: newUser.email },
       process.env.JWT_SECRET || 'dev-secret',
       { expiresIn: '7d' }
     );
 
     res.json({
       user: {
-        id: data.user.id,
-        email: data.user.email,
-        name: data.user.user_metadata?.name || name || email.split('@')[0],
+        id: newUser.id,
+        email: newUser.email,
+        name: newUser.name,
       },
       token,
     });
@@ -64,33 +71,35 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Use Supabase Auth to sign in user
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    // Find user in our database using Drizzle
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
 
-    if (error) {
-      console.error('Login error:', error);
+    if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    if (!data.user) {
+    // Check password
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Create JWT token
     const token = jwt.sign(
-      { id: data.user.id, email: data.user.email },
+      { id: user.id, email: user.email },
       process.env.JWT_SECRET || 'dev-secret',
       { expiresIn: '7d' }
     );
 
     res.json({
       user: {
-        id: data.user.id,
-        email: data.user.email,
-        name: data.user.user_metadata?.name || data.user.email.split('@')[0],
+        id: user.id,
+        email: user.email,
+        name: user.name,
       },
       token,
     });
