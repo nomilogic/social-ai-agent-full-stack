@@ -122,9 +122,6 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            <h1 className="text-2xl font-bold theme-text-primary">
-              {currentStep.title}
-            </h1>
             <p className="text-lg theme-text-secondary">{currentStep.description}</p>
             <p className="theme-text-light text-sm leading-relaxed max-w-md mx-auto">
               {currentStep.content}
@@ -201,14 +198,6 @@ export const DashboardPage: React.FC = () => {
   return (
     <div className="theme-gradient min-h-screen">
       <div className="container mx-auto px-4 py-4 space-y-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold theme-text-primary drop-shadow-lg">
-            Dashboard
-          </h1>
-          <p className="theme-text-light text-sm drop-shadow">
-            Welcome back! Here's your content overview.
-          </p>
-        </div>
 
         {/* Create Content Button - Centered */}
         <div className="flex justify-center">

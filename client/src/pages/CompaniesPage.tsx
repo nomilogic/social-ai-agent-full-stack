@@ -34,10 +34,6 @@ export const CompaniesPage: React.FC = () => {
         element={
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Companies</h1>
-                <p className="text-gray-600 mt-2">Manage your company profiles and create content for each brand.</p>
-              </div>
               <button
                 onClick={handleCreateCompany}
                 className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200"
@@ -74,10 +70,6 @@ export const CompaniesPage: React.FC = () => {
         path="new" 
         element={
           <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Create New Profile</h1>
-              <p className="text-gray-600 mt-2">Add a new profile to start creating content.</p>
-            </div>
             <ProfileSetup
               onNext={(profileData) => {
                 // Handle profile creation and navigate back
@@ -106,10 +98,6 @@ export const CompaniesPage: React.FC = () => {
         path=":companyId/edit" 
         element={
           <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Edit Profile</h1>
-              <p className="text-gray-600 mt-2">Update your profile information.</p>
-            </div>
             <ProfileSetup
               onNext={(profileData) => {
                 // Convert ProfileInfo to Company format for context compatibility
@@ -146,10 +134,6 @@ export const CompaniesPage: React.FC = () => {
         element={
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Campaigns</h1>
-                <p className="text-gray-600 mt-2">Manage campaigns for {state.selectedCompany?.name}</p>
-              </div>
               <button
                 onClick={() => navigate(`/companies/${state.selectedCompany?.id}/campaigns/new`)}
                 className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200"
@@ -180,10 +164,6 @@ export const CompaniesPage: React.FC = () => {
         path=":companyId/campaigns/new" 
         element={
           <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Create New Campaign</h1>
-              <p className="text-gray-600 mt-2">Set up a new marketing campaign for {state.selectedCompany?.name}</p>
-            </div>
             <CampaignSetup
               companyId={state.selectedCompany?.id || ''}
               onNext={(campaign) => {
@@ -213,10 +193,6 @@ export const CompaniesPage: React.FC = () => {
         path=":companyId/campaigns/:campaignId/edit" 
         element={
           <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Edit Campaign</h1>
-              <p className="text-gray-600 mt-2">Update your campaign information.</p>
-            </div>
             <CampaignSetup
               companyId={state.selectedCompany?.id || ''}
               initialData={state.selectedCampaign ? {
