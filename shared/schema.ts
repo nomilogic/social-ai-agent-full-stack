@@ -8,7 +8,6 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   password: text('password').notNull(),
   name: text('name').notNull(),
-  avatar_url: text('avatar_url'),
   phone: text('phone'),
   bio: text('bio'),
   timezone: text('timezone').default('UTC'),
