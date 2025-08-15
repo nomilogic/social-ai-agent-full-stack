@@ -4,9 +4,13 @@ import api from './api';
 
 // Company operations
 export async function saveCompany(companyInfo: CompanyInfo, userId: string) {
+  const token = localStorage.getItem('auth_token');
   const response = await fetch('/api/companies', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
     body: JSON.stringify({
       ...companyInfo,
       userId: userId
@@ -26,7 +30,12 @@ export async function saveCompany(companyInfo: CompanyInfo, userId: string) {
 export const getCompanies = async (userId: string) => {
   try {
     console.log('Fetching companies for userId:', userId);
-    const response = await fetch(`/api/companies?userId=${userId}`)
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`/api/companies?userId=${userId}`, {
+      headers: { 
+        'Authorization': `Bearer ${token}`
+      }
+    })
     const result = await response.json()
 
     console.log('Companies API response:', response.status, result);
@@ -43,9 +52,13 @@ export const getCompanies = async (userId: string) => {
 }
 
 export async function updateCompany(companyId: string, updates: Partial<CompanyInfo>, userId: string) {
+  const token = localStorage.getItem('auth_token');
   const response = await fetch(`/api/companies/${companyId}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
     body: JSON.stringify({
       ...updates,
       userId: userId
@@ -63,8 +76,12 @@ export async function updateCompany(companyId: string, updates: Partial<CompanyI
 }
 
 export async function deleteCompany(companyId: string, userId: string) {
+  const token = localStorage.getItem('auth_token');
   const response = await fetch(`/api/companies/${companyId}?userId=${userId}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: { 
+      'Authorization': `Bearer ${token}`
+    }
   });
 
   if (!response.ok) {
@@ -178,15 +195,16 @@ export async function getCurrentUser() {
       return null;
     }
 
-    return response.json();
+    const userData = await response.json();
+    return {
+      user: userData,
+      session: { access_token: token },
+      error: null
+    };
   } catch (error) {
     console.error('Error initializing auth:', error);
-    // Return a default user structure to prevent app crashes
-    return {
-      user: null,
-      session: null,
-      error: error instanceof Error ? error.message : 'Auth initialization failed'
-    };
+    localStorage.removeItem('auth_token');
+    return null;
   }
 }
 
@@ -198,5 +216,95 @@ export async function signInAnonymously() {
   } catch (error) {
     console.error('Error in signInAnonymously:', error);
     throw error;
+  }
+}
+
+// Campaign operations
+export async function saveCampaign(campaignData: any, companyId: string, userId: string) {
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch('/api/campaigns', {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      ...campaignData,
+      companyId,
+      userId
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    console.error('Error saving campaign:', error);
+    throw new Error(error.message || 'Failed to save campaign');
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+export async function getCampaigns(companyId: string, userId: string) {
+  try {
+    console.log('Fetching campaigns for companyId:', companyId, 'userId:', userId);
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`/api/campaigns?companyId=${companyId}&userId=${userId}`, {
+      headers: { 
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const result = await response.json();
+
+    console.log('Campaigns API response:', response.status, result);
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to fetch campaigns');
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error('Error fetching campaigns:', error);
+    throw error;
+  }
+}
+
+export async function updateCampaign(campaignId: string, updates: any, userId: string) {
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch(`/api/campaigns/${campaignId}`, {
+    method: 'PUT',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      ...updates,
+      userId
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    console.error('Error updating campaign:', error);
+    throw new Error(error.message || 'Failed to update campaign');
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+export async function deleteCampaign(campaignId: string, userId: string) {
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch(`/api/campaigns/${campaignId}?userId=${userId}`, {
+    method: 'DELETE',
+    headers: { 
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    console.error('Error deleting campaign:', error);
+    throw new Error(error.message || 'Failed to delete campaign');
   }
 }

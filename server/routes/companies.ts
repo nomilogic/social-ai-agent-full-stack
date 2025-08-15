@@ -3,11 +3,30 @@ import { db } from '../db'
 import { companies } from '../../shared/schema'
 import { eq, and, desc } from 'drizzle-orm'
 import { validateRequestBody } from '../middleware/auth'
+import jwt from 'jsonwebtoken'
 
 const router = express.Router()
 
+// Middleware to verify JWT token
+const authenticateToken = (req: Request, res: Response, next: any) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET || 'dev-secret', (err: any, user: any) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid token' });
+    }
+    (req as any).user = user;
+    next();
+  });
+};
+
 // GET /api/companies - Get all companies for a user
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', authenticateToken, async (req: Request, res: Response) => {
   const userId = req.query.userId as string
 
   if (!userId) {
@@ -33,7 +52,7 @@ router.get('/', async (req: Request, res: Response) => {
 })
 
 // POST /api/companies - Create a new company
-router.post('/', validateRequestBody(['name', 'userId']), async (req: Request, res: Response) => {
+router.post('/', authenticateToken, validateRequestBody(['name', 'userId']), async (req: Request, res: Response) => {
   const {
     name,
     website,
@@ -86,7 +105,7 @@ router.post('/', validateRequestBody(['name', 'userId']), async (req: Request, r
 })
 
 // PUT /api/companies/:id - Update a company
-router.put('/:id', validateRequestBody(['userId']), async (req: Request, res: Response) => {
+router.put('/:id', authenticateToken, validateRequestBody(['userId']), async (req: Request, res: Response) => {
   const companyId = req.params.id
   const {
     name,
@@ -135,7 +154,7 @@ router.put('/:id', validateRequestBody(['userId']), async (req: Request, res: Re
 })
 
 // DELETE /api/companies/:id - Delete a company
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', authenticateToken, async (req: Request, res: Response) => {
   const companyId = req.params.id
   const userId = req.query.userId as string
 

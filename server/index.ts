@@ -6,6 +6,8 @@ import { registerRoutes } from './routes.ts'
 import { log } from 'console'
 import { serveStatic, setupVite } from './vite.ts'
 import { initializeDatabase } from './db'
+import companiesRouter from './routes/companies'
+import campaignsRouter from './routes/campaigns'
 
 // dotenv.config() // Environment variables are handled by Replit
 const app = express()
@@ -30,7 +32,8 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
-
+app.use('/api/companies', companiesRouter)
+app.use('/api/campaigns', campaignsRouter)
 
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   const status = err.status || err.statusCode || 500;
