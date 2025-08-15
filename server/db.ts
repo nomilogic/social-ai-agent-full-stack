@@ -23,14 +23,13 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-// Extract PostgreSQL connection string from Supabase URL
-// Convert supabase URL to direct postgres connection
-const postgresUrl = supabaseUrl.replace('https://', 'postgresql://postgres:[YOUR-PASSWORD]@')
-  .replace('.supabase.co', '.supabase.co:5432')
-  + '/postgres';
+// Use the direct DATABASE_URL which should be the Neon database connection
+const databaseUrl = process.env.DATABASE_URL;
 
-// For direct database access with Drizzle, we need the DATABASE_URL or construct it
-const databaseUrl = process.env.DATABASE_URL || postgresUrl;
+if (!databaseUrl) {
+  console.error('Missing DATABASE_URL environment variable');
+  process.exit(1);
+}
 
 // Create PostgreSQL connection for Drizzle
 const client = postgres(databaseUrl);
