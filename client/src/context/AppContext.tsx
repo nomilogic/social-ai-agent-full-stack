@@ -5,9 +5,10 @@ import { getCurrentUser } from '../lib/database';
 export interface User {
   id: string;
   email: string;
-  user_metadata?: {
-    name?: string;
-  };
+  name: string;
+  plan: 'free' | 'ipro' | 'business';
+  profile_completed: boolean;
+  onboarding_completed: boolean;
 }
 
 export interface Profile {
@@ -32,40 +33,34 @@ export interface Campaign {
 
 export interface AppState {
   user: User | null;
-  userPlan: 'free' | 'ipro' | 'business' | null;
   selectedProfile: Profile | null;
   selectedCampaign: Campaign | null;
   loading: boolean;
   error: string | null;
   generatedPosts: any[];
   contentData: any;
-  hasCompletedOnboarding: boolean;
 }
 
 // Actions
 type AppAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_USER'; payload: User | null }
-  | { type: 'SET_USER_PLAN'; payload: 'free' | 'ipro' | 'business' | null }
   | { type: 'SET_SELECTED_PROFILE'; payload: Profile | null }
   | { type: 'SET_SELECTED_CAMPAIGN'; payload: Campaign | null }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_GENERATED_POSTS'; payload: any[] }
   | { type: 'SET_CONTENT_DATA'; payload: any }
-  | { type: 'SET_ONBOARDING_COMPLETE'; payload: boolean }
   | { type: 'RESET_STATE' };
 
 // Initial state
 const initialState: AppState = {
   user: null,
-  userPlan: null,
   selectedProfile: null,
   selectedCampaign: null,
   loading: true,
   error: null,
   generatedPosts: [],
   contentData: null,
-  hasCompletedOnboarding: false,
 };
 
 // Reducer
@@ -75,8 +70,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, loading: action.payload };
     case 'SET_USER':
       return { ...state, user: action.payload };
-    case 'SET_USER_PLAN':
-      return { ...state, userPlan: action.payload };
     case 'SET_SELECTED_PROFILE':
       return { ...state, selectedProfile: action.payload };
     case 'SET_SELECTED_CAMPAIGN':
@@ -87,8 +80,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, generatedPosts: action.payload };
     case 'SET_CONTENT_DATA':
       return { ...state, contentData: action.payload };
-    case 'SET_ONBOARDING_COMPLETE':
-      return { ...state, hasCompletedOnboarding: action.payload };
     case 'RESET_STATE':
       return { ...initialState, loading: false };
     default:
@@ -110,27 +101,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const currentUser = await getCurrentUser();
-        if (currentUser) {
-          dispatch({ type: 'SET_USER', payload: currentUser });
+        // Check if we have a token
+        const token = localStorage.getItem('auth_token');
+        if (!token) {
+          dispatch({ type: 'SET_LOADING', payload: false });
+          return;
+        }
 
-          // Check if user has completed onboarding by checking for profile
-          try {
-            const response = await fetch(`/api/auth/profile?userId=${currentUser.id}`);
-            if (response.ok) {
-              const profile = await response.json();
-              if (profile && profile.plan) {
-                dispatch({ type: 'SET_USER_PLAN', payload: profile.plan });
-                dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: true });
-              }
-            }
-          } catch (profileError) {
-            console.log('No profile found, user needs onboarding');
+        // Get current user from our custom auth system
+        const response = await fetch('/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`
           }
+        });
+
+        if (response.ok) {
+          const user = await response.json();
+          dispatch({ type: 'SET_USER', payload: user });
+        } else {
+          // Invalid token, remove it
+          localStorage.removeItem('auth_token');
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-        dispatch({ type: 'SET_ERROR', payload: 'Failed to initialize authentication' });
+        localStorage.removeItem('auth_token');
       } finally {
         dispatch({ type: 'SET_LOADING', payload: false });
       }

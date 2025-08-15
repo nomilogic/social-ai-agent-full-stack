@@ -11,15 +11,22 @@ export const AuthPage: React.FC = () => {
   // Check if user is already authenticated
   useEffect(() => {
     if (state.user) {
-      const from = (location.state as any)?.from?.pathname || '/pricing';
-      navigate(from, { replace: true });
+      // Determine where to redirect based on user state
+      if (state.user.onboarding_completed) {
+        navigate('/dashboard', { replace: true });
+      } else if (!state.user.plan || state.user.plan === 'free') {
+        navigate('/pricing', { replace: true });
+      } else if (!state.user.profile_completed) {
+        navigate('/onboarding/profile', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     }
-  }, [state.user, navigate, location]);
+  }, [state.user, navigate]);
 
   const handleAuthSuccess = (user: any) => {
     dispatch({ type: 'SET_USER', payload: user });
-    const from = (location.state as any)?.from?.pathname || '/pricing';
-    navigate(from, { replace: true });
+    // Navigation will be handled by the useEffect above
   };
 
   if (state.user) {

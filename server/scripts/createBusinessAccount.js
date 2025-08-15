@@ -19,7 +19,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
 
 async function createBusinessAccount() {
   try {
-    const hashedPassword = await bcrypt.hash("BusinessUser2024!", 10);
+    const hashedPassword = await bcrypt.hash("Cimple.123", 10);
 
     const { data: newUser, error } = await supabase
       .from("users")

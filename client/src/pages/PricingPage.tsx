@@ -76,7 +76,7 @@ const pricingTiers: PricingTier[] = [
 
 export const PricingPage: React.FC = () => {
   const navigate = useNavigate();
-  const { dispatch } = useAppContext();
+  const { state, dispatch } = useAppContext();
   const [selectedPlan, setSelectedPlan] = useState<'free' | 'ipro' | 'business' | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -85,10 +85,32 @@ export const PricingPage: React.FC = () => {
     setSelectedPlan(planId);
 
     try {
-      // Store the selected plan in context
-      dispatch({ type: 'SET_USER_PLAN', payload: planId });
-      
-      // Don't navigate yet, show the profile setup form
+      // Update the user's plan in the backend
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ plan: planId })
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        dispatch({ type: 'SET_USER', payload: updatedUser });
+
+        // Navigate based on plan selection
+        if (planId === 'free') {
+          // Free users go directly to dashboard
+          navigate('/dashboard');
+        } else {
+          // Paid users need to complete profile setup
+          navigate('/onboarding/profile');
+        }
+      } else {
+        throw new Error('Failed to update user plan');
+      }
     } catch (error) {
       console.error('Error selecting plan:', error);
     } finally {
@@ -96,59 +118,7 @@ export const PricingPage: React.FC = () => {
     }
   };
 
-  const handleBackToPricing = () => {
-    setSelectedPlan(null);
-    dispatch({ type: 'SET_USER_PLAN', payload: null });
-  };
 
-  const handleProfileComplete = () => {
-    // Navigate to dashboard after profile setup
-    navigate('/dashboard');
-  };
-
-  if (selectedPlan) {
-    const selectedTier = pricingTiers.find(tier => tier.id === selectedPlan);
-    const userType = selectedPlan === 'business' ? 'business' : 'individual';
-
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-16 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <button
-              onClick={handleBackToPricing}
-              className="flex items-center text-blue-600 hover:text-blue-800 mb-4 mx-auto"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Pricing
-            </button>
-            <div className="mb-6">
-              <div className={`inline-flex items-center px-6 py-3 rounded-full ${selectedTier?.buttonClass}`}>
-                {selectedTier && <selectedTier.icon className="w-6 h-6 mr-2" />}
-                <span className="font-semibold">{selectedTier?.name} Plan Selected</span>
-              </div>
-            </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              {userType === 'business' ? 'Business Profile Setup' : 'Creator Profile Setup'}
-            </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              {userType === 'business' 
-                ? 'Set up your business profile to unlock team collaboration and enterprise features.'
-                : 'Complete your creator profile to start generating amazing content with AI.'
-              }
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <ProfileSetup 
-              userType={userType}
-              selectedPlan={selectedPlan}
-              onComplete={handleProfileComplete}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-16 px-4">
