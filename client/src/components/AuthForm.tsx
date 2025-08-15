@@ -16,16 +16,12 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
   });
   const [error, setError] = useState('');
 
-  // Placeholder for fetching user data and setting state
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  
 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true); // Use setIsLoading instead of setLoading
+    setLoading(true);
     setError('');
 
     try {
@@ -66,19 +62,19 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
     } catch (error: any) {
       setError(error.message);
     } finally {
-      setIsLoading(false); // Use setIsLoading instead of setLoading
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+    <div className="min-h-screen theme-bg-gradient flex items-center justify-center p-4">
+      <div className="max-w-md w-full theme-bg-card rounded-2xl shadow-xl p-8 border" style={{ borderColor: 'var(--theme-border)' }}>
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <Sparkles className="w-8 h-8 text-white" />
+          <div className="w-16 h-16 theme-bg-gradient rounded-xl flex items-center justify-center mx-auto mb-4">
+            <Sparkles className="w-8 h-8 theme-text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Social AI Agent</h1>
-          <p className="text-gray-600">
+          <h1 className="text-2xl font-bold theme-text-primary mb-2">Social AI Agent</h1>
+          <p className="theme-text-secondary">
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
         </div>
@@ -91,8 +87,8 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
             <input
               id="email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
               className="w-full px-3 py-2 theme-input rounded-lg focus:outline-none"
               placeholder="Enter your email"
@@ -106,8 +102,8 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
             <input
               id="password"
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required
               className="w-full px-3 py-2 theme-input rounded-lg focus:outline-none"
               placeholder="Enter your password"
@@ -122,8 +118,8 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
               <input
                 id="name"
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
                 className="w-full px-3 py-2 theme-input rounded-lg focus:outline-none"
                 placeholder="Enter your full name"
@@ -139,17 +135,17 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={loading}
             className="w-full theme-button-primary py-2 px-4 rounded-lg hover:theme-button-hover focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {isLoading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
+            {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
           </button>
         </form>
 
         <div className="mt-6 text-center">
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+            className="theme-text-accent hover:opacity-80 text-sm font-medium"
           >
             {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
           </button>
