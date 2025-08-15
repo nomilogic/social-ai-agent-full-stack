@@ -40,7 +40,7 @@ export const DashboardPage: React.FC = () => {
   // Check if user needs onboarding (no companies yet)
   useEffect(() => {
     const checkOnboarding = async () => {
-      if (state.user && !state.selectedCompany) {
+      if (state.user && !state.selectedProfile) {
         try {
           const response = await fetch(
             `/api/companies?userId=${state.user.id}`,
@@ -56,7 +56,7 @@ export const DashboardPage: React.FC = () => {
     };
 
     checkOnboarding();
-  }, [state.user, state.selectedCompany]);
+  }, [state.user, state.selectedProfile]);
 
   const onboardingSteps = [
     {
@@ -345,7 +345,7 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Show onboarding again button if no companies */}
-        {!state.selectedCompany && (
+        {!state.selectedProfile && (
           <div className="theme-bg-card rounded-xl shadow-sm border border-white/20 p-4 text-center floating-element">
             <h2 className="text-lg font-bold theme-text-primary mb-2">
               Get Started with Your First Content
