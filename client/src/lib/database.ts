@@ -23,24 +23,22 @@ export async function saveCompany(companyInfo: CompanyInfo, userId: string) {
   return result.data;
 }
 
-export async function getCompanies(userId: string) {
+export const getCompanies = async (userId: string) => {
   try {
-    const response = await fetch(`/api/companies?userId=${userId}`);
+    console.log('Fetching companies for userId:', userId);
+    const response = await fetch(`/api/companies?userId=${userId}`)
+    const result = await response.json()
+
+    console.log('Companies API response:', response.status, result);
 
     if (!response.ok) {
-      const error = await response.json();
-      console.error('Error fetching companies:', error);
-      throw new Error(error.error || error.message || 'Failed to fetch companies');
+      throw new Error(result.error || 'Failed to fetch companies')
     }
 
-    const result = await response.json();
-
-    // Ensure we return an array even if data is null/undefined
-    return Array.isArray(result.data) ? result.data : [];
+    return result.data
   } catch (error) {
-    console.error('Error in getCompanies:', error);
-    // Return empty array instead of throwing to prevent app crashes
-    return [];
+    console.error('Error fetching companies:', error)
+    throw error
   }
 }
 

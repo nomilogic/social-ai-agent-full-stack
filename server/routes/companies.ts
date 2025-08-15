@@ -47,7 +47,19 @@ router.post('/', validateRequestBody(['name', 'userId']), async (req: Request, r
   } = req.body
 
   try {
-    const [data] = await db
+    console.log('Creating company with data:', {
+      name,
+      website,
+      industry,
+      description,
+      targetAudience,
+      brandTone,
+      goals,
+      platforms,
+      userId
+    });
+
+    const insertResults = await db
       .insert(companies)
       .values({
         name,
@@ -62,10 +74,14 @@ router.post('/', validateRequestBody(['name', 'userId']), async (req: Request, r
       })
       .returning()
 
+    const data = insertResults[0];
+    console.log('Company created successfully:', data.id);
+
     res.status(201).json({ success: true, data })
   } catch (err: any) {
     console.error('Server error creating company:', err)
-    res.status(500).json({ error: 'Internal server error' })
+    console.error('Error details:', err.message, err.stack)
+    res.status(500).json({ error: 'Internal server error', details: err.message })
   }
 })
 
@@ -85,7 +101,9 @@ router.put('/:id', validateRequestBody(['userId']), async (req: Request, res: Re
   } = req.body
 
   try {
-    const [data] = await db
+    console.log('Updating company:', companyId, 'for user:', userId);
+
+    const updateResults = await db
       .update(companies)
       .set({
         name,
@@ -101,14 +119,18 @@ router.put('/:id', validateRequestBody(['userId']), async (req: Request, res: Re
       .where(and(eq(companies.id, companyId), eq(companies.user_id, userId)))
       .returning()
 
-    if (!data) {
+    if (updateResults.length === 0) {
       return res.status(404).json({ error: 'Company not found or unauthorized' })
     }
+
+    const data = updateResults[0];
+    console.log('Company updated successfully:', data.id);
 
     res.json({ success: true, data })
   } catch (err: any) {
     console.error('Server error updating company:', err)
-    res.status(500).json({ error: 'Internal server error' })
+    console.error('Error details:', err.message, err.stack)
+    res.status(500).json({ error: 'Internal server error', details: err.message })
   }
 })
 

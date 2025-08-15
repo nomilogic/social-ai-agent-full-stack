@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { db } from '../db';
 import { users } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
@@ -10,13 +10,15 @@ const router = express.Router();
 // Simple auth implementation for demonstration
 // In production, use proper authentication libraries
 
-router.post('/register', async (req, res) => {
+router.post('/register', async (req: Request, res: Response) => {
   try {
     const { email, password, name } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
+
+    console.log('Registration attempt for email:', email);
 
     // Check if user exists
     const existingUser = await db
@@ -33,7 +35,7 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
-    const [newUser] = await db
+    const newUserResults = await db
       .insert(users)
       .values({
         email,
@@ -42,12 +44,16 @@ router.post('/register', async (req, res) => {
       })
       .returning();
 
+    const newUser = newUserResults[0];
+
     // Create JWT token
     const token = jwt.sign(
       { id: newUser.id, email: newUser.email },
       process.env.JWT_SECRET || 'dev-secret',
       { expiresIn: '7d' }
     );
+
+    console.log('Registration successful for user:', newUser.id);
 
     res.json({
       user: {
@@ -57,13 +63,14 @@ router.post('/register', async (req, res) => {
       },
       token,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Registration error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error details:', error.message, error.stack);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
@@ -71,16 +78,22 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
+    console.log('Login attempt for email:', email);
+
     // Find user
-    const [user] = await db
+    const userResults = await db
       .select()
       .from(users)
       .where(eq(users.email, email))
       .limit(1);
 
-    if (!user) {
+    console.log('User query results:', userResults.length);
+
+    if (userResults.length === 0) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    const user = userResults[0];
 
     // Check password
     const validPassword = await bcrypt.compare(password, user.password);
@@ -95,6 +108,8 @@ router.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    console.log('Login successful for user:', user.id);
+
     res.json({
       user: {
         id: user.id,
@@ -103,9 +118,10 @@ router.post('/login', async (req, res) => {
       },
       token,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error details:', error.message, error.stack);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 
