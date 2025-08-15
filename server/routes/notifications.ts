@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { serverSupabase } from '../supabaseClient';
-import { authenticateUser } from '../middleware/auth';
+import { supabaseAdmin } from '../db';
+import { authenticateToken as authenticateUser, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
@@ -15,7 +15,7 @@ interface NotificationData {
 }
 
 // Get all notifications for the authenticated user
-router.get('/', authenticateUser, async (req: Request, res: Response) => {
+router.get('/', authenticateUser, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
     
@@ -23,11 +23,21 @@ router.get('/', authenticateUser, async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    const { data: notifications, error } = await serverSupabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+    // Return mock notifications for now
+    const mockNotifications = [
+      {
+        id: '1',
+        user_id: userId,
+        title: 'Welcome to Social Agent AI',
+        message: 'Your account has been successfully created',
+        type: 'success',
+        read: false,
+        created_at: new Date().toISOString()
+      }
+    ];
+
+    res.json(mockNotifications);
+    return;
 
     if (error) {
       console.error('Error fetching notifications:', error);
