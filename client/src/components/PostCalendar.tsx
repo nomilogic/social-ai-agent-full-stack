@@ -1,5 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Edit, Plus, Trash2, Eye, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import {
+  Calendar,
+  Clock,
+  Edit,
+  Plus,
+  Trash2,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  X,
+} from "lucide-react";
 
 interface ScheduledPost {
   id: string;
@@ -8,7 +18,7 @@ interface ScheduledPost {
   content: string;
   imageUrl?: string;
   platform: string[];
-  status: 'scheduled' | 'draft' | 'published' | 'failed';
+  status: "scheduled" | "draft" | "published" | "failed";
   isLive?: boolean; // Posts generated dynamically on that day
   category?: string;
   companyId: string;
@@ -37,80 +47,91 @@ export const PostCalendar: React.FC<PostCalendarProps> = ({
   onEditPost,
   onDeletePost,
   onViewPost,
-  companyId
+  companyId,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedPost, setSelectedPost] = useState<ScheduledPost | null>(null);
   const [showPostModal, setShowPostModal] = useState(false);
 
   const today = new Date();
-  
+
   // Get calendar days for current month
   const getCalendarDays = (): CalendarDay[] => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    
+
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay()); // Start from Sunday
-    
+
     const days: CalendarDay[] = [];
-    
-    for (let i = 0; i < 42; i++) { // 6 weeks * 7 days
+
+    for (let i = 0; i < 42; i++) {
+      // 6 weeks * 7 days
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
-      
-      const dayPosts = scheduledPosts.filter(post => {
+
+      const dayPosts = scheduledPosts.filter((post) => {
         const postDate = new Date(post.date);
         return postDate.toDateString() === date.toDateString();
       });
-      
+
       days.push({
         date,
         posts: dayPosts,
         isCurrentMonth: date.getMonth() === month,
         isToday: date.toDateString() === today.toDateString(),
-        isPast: date < today
+        isPast: date < today,
       });
     }
-    
+
     return days;
   };
 
   const calendarDays = getCalendarDays();
-  
+
   const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    setCurrentDate(prev => {
+  const navigateMonth = (direction: "prev" | "next") => {
+    setCurrentDate((prev) => {
       const newDate = new Date(prev);
-      newDate.setMonth(prev.getMonth() + (direction === 'next' ? 1 : -1));
+      newDate.setMonth(prev.getMonth() + (direction === "next" ? 1 : -1));
       return newDate;
     });
   };
 
-  const getStatusColor = (status: ScheduledPost['status']) => {
+  const getStatusColor = (status: ScheduledPost["status"]) => {
     switch (status) {
-      case 'scheduled':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'draft':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'published':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'failed':
-        return 'bg-red-100 text-red-800 border-red-200';
+      case "scheduled":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "draft":
+        return "bg-gray-100 text-gray-800 border-gray-200";
+      case "published":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "failed":
+        return "bg-red-100 text-red-800 border-red-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
   const PostPreviewModal = ({ post }: { post: ScheduledPost }) => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="theme-primary-bg rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-start mb-4">
             <h3 className="text-xl font-bold text-gray-900">
@@ -124,42 +145,59 @@ export const PostCalendar: React.FC<PostCalendarProps> = ({
               <span className="sr-only">Close</span>
             </button>
           </div>
-          
+
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Status</label>
-              <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(post.status)}`}>
+              <label className="block text-sm font-medium text-gray-700">
+                Status
+              </label>
+              <span
+                className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(post.status)}`}
+              >
                 {post.status.charAt(0).toUpperCase() + post.status.slice(1)}
                 {post.isLive && <span className="ml-1">🔴 Live</span>}
               </span>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700">Scheduled Time</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Scheduled Time
+              </label>
               <p className="text-gray-900">{post.time}</p>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700">Platforms</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Platforms
+              </label>
               <div className="flex gap-2">
-                {post.platform.map(platform => (
-                  <span key={platform} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                {post.platform.map((platform) => (
+                  <span
+                    key={platform}
+                    className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                  >
                     {platform}
                   </span>
                 ))}
               </div>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700">Content</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Content
+              </label>
               <div className="border rounded-lg p-3 bg-gray-50">
                 <p className="whitespace-pre-wrap">{post.content}</p>
                 {post.imageUrl && (
-                  <img src={post.imageUrl} alt="Post image" className="mt-2 max-w-full h-48 object-cover rounded-lg" />
+                  <img
+                    src={post.imageUrl}
+                    alt="Post image"
+                    className="mt-2 max-w-full h-48 object-cover rounded-lg"
+                  />
                 )}
               </div>
             </div>
-            
+
             <div className="flex gap-2 pt-4">
               <button
                 onClick={() => {
@@ -189,29 +227,29 @@ export const PostCalendar: React.FC<PostCalendarProps> = ({
   );
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="theme-bg-primary rounded-lg shadow-lg p-6">
       {/* Calendar Header */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
           <Calendar className="w-6 h-6 text-blue-600" />
-          <h2 className="text-2xl font-bold text-gray-900">Post Calendar</h2>
+          <h2 className="text-2xl font-bold text-white">Post Calendar</h2>
         </div>
-        
+
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigateMonth('prev')}
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            onClick={() => navigateMonth("prev")}
+            className="p-2 text-white hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
-          
-          <h3 className="text-xl font-semibold text-gray-900 min-w-[200px] text-center">
+
+          <h3 className="text-xl font-semibold text-white min-w-[200px] text-center">
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h3>
-          
+
           <button
-            onClick={() => navigateMonth('next')}
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            onClick={() => navigateMonth("next")}
+            className="p-2 text-gray-600 hover:text-white hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -221,39 +259,44 @@ export const PostCalendar: React.FC<PostCalendarProps> = ({
       {/* Calendar Grid */}
       <div className="grid grid-cols-7 gap-1">
         {/* Day Headers */}
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="p-3 text-center font-medium text-gray-700 border-b">
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+          <div
+            key={day}
+            className="p-3 text-center font-medium text-white border-b"
+          >
             {day}
           </div>
         ))}
-        
+
         {/* Calendar Days */}
         {calendarDays.map((day, index) => (
           <div
             key={index}
             className={`min-h-[120px] p-2 border border-gray-200 ${
-              !day.isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'
-            } ${day.isToday ? 'bg-blue-50 border-blue-300' : ''}`}
+              !day.isCurrentMonth ? "theme-bg-card text-white" : "theme-bg-card"
+            } ${day.isToday ? "theme-bg-primary border-blue-300 theme-text-white" : ""}`}
           >
             <div className="flex justify-between items-start mb-2">
-              <span className={`text-sm font-medium ${day.isToday ? 'text-blue-600' : ''}`}>
+              <span
+                className={`text-sm font-medium ${day.isToday ? "theme-text-secondry" : "text-white"}`}
+              >
                 {day.date.getDate()}
               </span>
-              
+
               {day.isCurrentMonth && !day.isPast && (
                 <button
                   onClick={() => onCreatePost(day.date)}
-                  className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                  className="p-1 text-white hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                   title="Add post"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
               )}
             </div>
-            
+
             {/* Posts for this day */}
             <div className="space-y-1">
-              {day.posts.slice(0, 3).map(post => (
+              {day.posts.slice(0, 3).map((post) => (
                 <div
                   key={post.id}
                   onClick={() => setSelectedPost(post)}
@@ -261,14 +304,14 @@ export const PostCalendar: React.FC<PostCalendarProps> = ({
                 >
                   <div className="flex items-center justify-between">
                     <span className="truncate flex-1">
-                      {post.time} {post.isLive ? '🔴' : ''}
+                      {post.time} {post.isLive ? "🔴" : ""}
                     </span>
                     <Eye className="w-3 h-3 ml-1" />
                   </div>
                   <div className="truncate">{post.content.slice(0, 30)}...</div>
                 </div>
               ))}
-              
+
               {day.posts.length > 3 && (
                 <div className="text-xs text-gray-500 text-center py-1">
                   +{day.posts.length - 3} more

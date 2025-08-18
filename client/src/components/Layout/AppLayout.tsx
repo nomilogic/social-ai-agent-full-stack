@@ -9,9 +9,10 @@ import {
   Search,
   Menu,
   X,
-  Building2,
+  Target,
   LogOut,
   User,
+  Building2,
 } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
 import { NotificationCenter } from "../NotificationCenter";
@@ -70,10 +71,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   const navigation = [
     { name: "Dashboard", path: "/dashboard", icon: Home },
+    { name: "Campaigns", path: "/campaigns", icon: Target },
     { name: "Create Content", path: "/content", icon: PenTool },
     { name: "Schedule", path: "/schedule", icon: Calendar },
     { name: "Settings", path: "/settings", icon: Settings },
-    { name: "Organizations", path: "/organizations", icon: Building2 },
   ];
 
   return (
@@ -189,7 +190,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     className="h-8 w-8 rounded-full object-cover border-2 border-white/30"
                     src={
                       user?.avatar_url ||
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || user?.email || "User")}&background=3b82f6&color=fff`
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user_metadata?.name || user?.email || "User")}&background=3b82f6&color=fff`
                     }
                     alt=""
                   />
@@ -198,7 +199,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   <div className="absolute right-0 z-10 mt-2 w-48 theme-bg-card rounded-md shadow-lg py-1 border border-white/20">
                     <div className="px-4 py-2 text-sm border-b border-white/20">
                       <div className="font-medium theme-text-primary">
-                        {user?.full_name || "User"}
+                        {user?.user_metadata?.name || user?.email || "User"}
                       </div>
                       <div className="theme-text-light">{user?.email}</div>
                     </div>

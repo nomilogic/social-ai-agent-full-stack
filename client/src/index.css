@@ -19,6 +19,10 @@
   --theme-button-hover: rgba(255, 255, 255, 0.9);
 }
 
+.theme-text-primary {}
+
+
+
 /* Theme Utility Classes */
 .theme-gradient {
   background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary), var(--theme-accent));

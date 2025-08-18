@@ -3,7 +3,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Star, Zap, Crown, ArrowLeft } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { ProfileSetup } from '../components/ProfileSetup';
+import { ProfileSetupFree } from '../components/ProfileSetupFree';
+import { ProfileSetupPro } from '../components/ProfileSetupPro';
+import { ProfileSetupBusiness } from '../components/ProfileSetupBusiness';
 
 interface PricingTier {
   id: 'free' | 'ipro' | 'business';
@@ -76,7 +78,7 @@ const pricingTiers: PricingTier[] = [
 
 export const PricingPage: React.FC = () => {
   const navigate = useNavigate();
-  const { dispatch } = useAppContext();
+  const { state, dispatch } = useAppContext();
   const [selectedPlan, setSelectedPlan] = useState<'free' | 'ipro' | 'business' | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -88,7 +90,34 @@ export const PricingPage: React.FC = () => {
       // Store the selected plan in context
       dispatch({ type: 'SET_USER_PLAN', payload: planId });
       
-      // Don't navigate yet, show the profile setup form
+      // Check if user already has a profile in the database
+      if (state.user?.id) {
+        const response = await fetch(`/api/auth/profile?userId=${state.user.id}&email=${state.user.email}`);
+        if (response.ok) {
+          const existingProfile = await response.json();
+          if (existingProfile && existingProfile.name) {
+            // User already has a profile, update their plan and go to dashboard
+            const updatedProfile = { ...existingProfile, plan: planId };
+            
+            // Update profile in database with new plan
+            await fetch('/api/auth/profile', {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(updatedProfile),
+            });
+            
+            // Update context and navigate to dashboard
+            dispatch({ type: 'SET_SELECTED_PROFILE', payload: updatedProfile });
+            dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: true });
+            navigate('/dashboard');
+            return;
+          }
+        }
+      }
+      
+      // No existing profile found, show the profile setup form
     } catch (error) {
       console.error('Error selecting plan:', error);
     } finally {
@@ -130,11 +159,15 @@ export const PricingPage: React.FC = () => {
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl p-8">
-            <ProfileSetup 
-              userType={userType}
-              selectedPlan={selectedPlan}
-              onComplete={handleProfileComplete}
-            />
+            {selectedPlan === 'free' && (
+              <ProfileSetupFree onComplete={handleProfileComplete} />
+            )}
+            {selectedPlan === 'ipro' && (
+              <ProfileSetupPro onComplete={handleProfileComplete} />
+            )}
+            {selectedPlan === 'business' && (
+              <ProfileSetupBusiness onComplete={handleProfileComplete} />
+            )}
           </div>
         </div>
       </div>

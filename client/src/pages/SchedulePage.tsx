@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Plus,
-  Eye,
-  Trash2,
-  Edit,
-} from "lucide-react";
+import { Plus, Eye, Trash2, Edit } from "lucide-react";
 import { PostScheduleDashboard } from "../components/PostScheduleDashboard";
 import { PostCalendar } from "../components/PostCalendar";
 import { AIScheduleGenerator } from "../components/AIScheduleGenerator";
@@ -110,15 +105,11 @@ export const SchedulePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen theme-gradient">
-      <div className="p-8">
-
-
+    <div className="min-h-screen theme-card-bg">
+      <div className="">
         {/* Content */}
         <div className="space-y-6">
-          <PostScheduleDashboard
-            companyId={state.selectedProfile?.id || ""}
-          />
+          <PostScheduleDashboard companyId={state.selectedProfile?.id || ""} />
         </div>
       </div>
     </div>

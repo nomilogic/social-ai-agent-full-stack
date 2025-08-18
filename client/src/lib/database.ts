@@ -1,59 +1,75 @@
 // Using API calls instead of Supabase client
-import { CompanyInfo, PostContent, GeneratedPost } from '../types';
+import { CampaignInfo, PostContent, GeneratedPost } from '../types';
 import { apiRequest } from './api';
 
-// Company operations
-export async function saveCompany(companyInfo: CompanyInfo, userId: string) {
+// Campaign operations
+export async function saveCampaign(campaignInfo: CampaignInfo, userId: string) {
+  console.log('saveCampaign called with:', { campaignInfo, userId });
+  
   const token = localStorage.getItem('auth_token');
-  const response = await fetch('/api/companies', {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({
-      ...companyInfo,
-      userId: userId
-    })
-  });
+  console.log('Auth token exists:', !!token);
+  
+  const requestBody = {
+    ...campaignInfo,
+    userId: userId
+  };
+  console.log('Request body:', requestBody);
+  
+  try {
+    const response = await fetch('/api/campaigns', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(requestBody)
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    console.error('Error saving company:', error);
-    throw new Error(error.message || 'Failed to save company');
+    console.log('Response status:', response.status);
+    console.log('Response ok:', response.ok);
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('Error saving campaign:', error);
+      throw new Error(error.error || error.message || 'Failed to save campaign');
+    }
+
+    const result = await response.json();
+    console.log('Campaign save result:', result);
+    return result.data;
+  } catch (error) {
+    console.error('Network or parsing error in saveCampaign:', error);
+    throw error;
   }
-
-  const result = await response.json();
-  return result.data;
 }
 
-export const getCompanies = async (userId: string) => {
+export const getCampaigns = async (userId: string) => {
   try {
-    console.log('Fetching companies for userId:', userId);
+    console.log('Fetching campaigns for userId:', userId);
     const token = localStorage.getItem('auth_token');
-    const response = await fetch(`/api/companies?userId=${userId}`, {
+    const response = await fetch(`/api/campaigns?userId=${userId}`, {
       headers: { 
         'Authorization': `Bearer ${token}`
       }
     })
     const result = await response.json()
 
-    console.log('Companies API response:', response.status, result);
+    console.log('Campaigns API response:', response.status, result);
 
     if (!response.ok) {
-      throw new Error(result.error || 'Failed to fetch companies')
+      throw new Error(result.error || 'Failed to fetch campaigns')
     }
 
     return result.data
   } catch (error) {
-    console.error('Error fetching companies:', error)
+    console.error('Error fetching campaigns:', error)
     throw error
   }
 }
 
-export async function updateCompany(companyId: string, updates: Partial<CompanyInfo>, userId: string) {
+export async function updateCampaign(campaignId: string, updates: Partial<CampaignInfo>, userId: string) {
   const token = localStorage.getItem('auth_token');
-  const response = await fetch(`/api/companies/${companyId}`, {
+  const response = await fetch(`/api/campaigns/${campaignId}`, {
     method: 'PUT',
     headers: { 
       'Content-Type': 'application/json',
@@ -67,17 +83,17 @@ export async function updateCompany(companyId: string, updates: Partial<CompanyI
 
   if (!response.ok) {
     const error = await response.json();
-    console.error('Error updating company:', error);
-    throw new Error(error.message || 'Failed to update company');
+    console.error('Error updating campaign:', error);
+    throw new Error(error.message || 'Failed to update campaign');
   }
 
   const result = await response.json();
   return result.data;
 }
 
-export async function deleteCompany(companyId: string, userId: string) {
+export async function deleteCampaign(campaignId: string, userId: string) {
   const token = localStorage.getItem('auth_token');
-  const response = await fetch(`/api/companies/${companyId}?userId=${userId}`, {
+  const response = await fetch(`/api/campaigns/${campaignId}?userId=${userId}`, {
     method: 'DELETE',
     headers: { 
       'Authorization': `Bearer ${token}`
@@ -86,14 +102,14 @@ export async function deleteCompany(companyId: string, userId: string) {
 
   if (!response.ok) {
     const error = await response.json();
-    console.error('Error deleting company:', error);
-    throw new Error(error.message || 'Failed to delete company');
+    console.error('Error deleting campaign:', error);
+    throw new Error(error.message || 'Failed to delete campaign');
   }
 }
 
 // Post operations
 export async function savePost(
-  companyId: string,
+  campaignId: string,
   contentData: PostContent,
   generatedPosts: GeneratedPost[],
   userId: string
@@ -102,10 +118,9 @@ export async function savePost(
     const response = await apiRequest('/posts', {
       method: 'POST',
       body: JSON.stringify({
-        companyId,
+        campaignId,
         prompt: contentData.prompt,
         tags: contentData.tags,
-        campaignId: contentData.campaignId,
         generatedContent: generatedPosts,
         userId,
         created_at: new Date().toISOString()
@@ -123,10 +138,10 @@ export async function savePost(
   }
 }
 
-export async function getPosts(userId: string, companyId?: string) {
+export async function getPosts(userId: string, campaignId?: string) {
   try {
     const params = new URLSearchParams({ userId });
-    if (companyId) params.append('companyId', companyId);
+    if (campaignId) params.append('campaignId', campaignId);
 
     const response = await apiRequest(`/posts?${params.toString()}`);
 
@@ -222,92 +237,3 @@ export async function signInAnonymously() {
   }
 }
 
-// Campaign operations
-export async function saveCampaign(campaignData: any, companyId: string, userId: string) {
-  const token = localStorage.getItem('auth_token');
-  const response = await fetch('/api/campaigns', {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({
-      ...campaignData,
-      companyId,
-      userId
-    })
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    console.error('Error saving campaign:', error);
-    throw new Error(error.message || 'Failed to save campaign');
-  }
-
-  const result = await response.json();
-  return result.data;
-}
-
-export async function getCampaigns(companyId: string, userId: string) {
-  try {
-    console.log('Fetching campaigns for companyId:', companyId, 'userId:', userId);
-    const token = localStorage.getItem('auth_token');
-    const response = await fetch(`/api/campaigns?companyId=${companyId}&userId=${userId}`, {
-      headers: { 
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    const result = await response.json();
-
-    console.log('Campaigns API response:', response.status, result);
-
-    if (!response.ok) {
-      throw new Error(result.error || 'Failed to fetch campaigns');
-    }
-
-    return result.data;
-  } catch (error) {
-    console.error('Error fetching campaigns:', error);
-    throw error;
-  }
-}
-
-export async function updateCampaign(campaignId: string, updates: any, userId: string) {
-  const token = localStorage.getItem('auth_token');
-  const response = await fetch(`/api/campaigns/${campaignId}`, {
-    method: 'PUT',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({
-      ...updates,
-      userId
-    })
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    console.error('Error updating campaign:', error);
-    throw new Error(error.message || 'Failed to update campaign');
-  }
-
-  const result = await response.json();
-  return result.data;
-}
-
-export async function deleteCampaign(campaignId: string, userId: string) {
-  const token = localStorage.getItem('auth_token');
-  const response = await fetch(`/api/campaigns/${campaignId}?userId=${userId}`, {
-    method: 'DELETE',
-    headers: { 
-      'Authorization': `Bearer ${token}`
-    }
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    console.error('Error deleting campaign:', error);
-    throw new Error(error.message || 'Failed to delete campaign');
-  }
-}

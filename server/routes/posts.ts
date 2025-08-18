@@ -1,15 +1,15 @@
 import express, { Request, Response } from 'express'
 import { db } from '../db'
-import { posts, companies } from '../../shared/schema'
+import { posts, campaigns } from '../../shared/schema'
 import { eq, and, desc } from 'drizzle-orm'
 import { validateRequestBody } from '../middleware/auth'
 
 const router = express.Router()
 
-// GET /api/posts - Get all posts for a user (optionally filtered by company)
+// GET /api/posts - Get all posts for a user (optionally filtered by campaign)
 router.get('/', async (req: Request, res: Response) => {
   const userId = req.query.userId as string
-  const companyId = req.query.companyId as string
+  const campaignId = req.query.campaignId as string
 
   if (!userId) {
     return res.status(400).json({ error: 'User ID is required' })
@@ -18,27 +18,26 @@ router.get('/', async (req: Request, res: Response) => {
   try {
     let whereCondition = eq(posts.user_id, userId)
 
-    if (companyId) {
-      whereCondition = and(eq(posts.user_id, userId), eq(posts.company_id, companyId))!
+    if (campaignId) {
+      whereCondition = and(eq(posts.user_id, userId), eq(posts.campaign_id, campaignId))!
     }
 
     const data = await db
       .select({
         id: posts.id,
-        company_id: posts.company_id,
+        campaign_id: posts.campaign_id,
         prompt: posts.prompt,
         tags: posts.tags,
-        campaign_id: posts.campaign_id,
         media_url: posts.media_url,
         generated_content: posts.generated_content,
         user_id: posts.user_id,
         created_at: posts.created_at,
         updated_at: posts.updated_at,
-        company_name: companies.name,
-        company_brand_tone: companies.brand_tone
+        campaign_name: campaigns.name,
+        campaign_brand_tone: campaigns.brand_tone
       })
       .from(posts)
-      .leftJoin(companies, eq(posts.company_id, companies.id))
+      .leftJoin(campaigns, eq(posts.campaign_id, campaigns.id))
       .where(whereCondition)
       .orderBy(desc(posts.created_at))
 
@@ -50,12 +49,11 @@ router.get('/', async (req: Request, res: Response) => {
 })
 
 // POST /api/posts - Create a new post
-router.post('/', validateRequestBody(['companyId', 'userId']), async (req: Request, res: Response) => {
+router.post('/', validateRequestBody(['campaignId', 'userId']), async (req: Request, res: Response) => {
   const {
-    companyId,
+    campaignId,
     prompt,
     tags,
-    campaignId,
     generatedContent,
     userId
   } = req.body
@@ -64,10 +62,9 @@ router.post('/', validateRequestBody(['companyId', 'userId']), async (req: Reque
     const [data] = await db
       .insert(posts)
       .values({
-        company_id: companyId,
+        campaign_id: campaignId,
         prompt: prompt || '',
         tags: tags || [],
-        campaign_id: campaignId || null,
         generated_content: generatedContent || null,
         user_id: userId
       })

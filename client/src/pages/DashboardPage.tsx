@@ -61,26 +61,13 @@ export const DashboardPage: React.FC = () => {
     },
   ];
 
-  // Check if user needs onboarding (no companies yet)
+  // Check if user needs onboarding (no profile yet)
   useEffect(() => {
-    const checkOnboarding = async () => {
-      if (state.user && !state.selectedProfile) {
-        try {
-          const response = await fetch(
-            `/api/companies?userId=${state.user.id}`,
-          );
-          const companies = await response.json();
-          if (companies.length === 0) {
-            setShowOnboarding(true);
-          }
-        } catch (error) {
-          console.error("Error checking companies:", error);
-        }
-      }
-    };
-
-    checkOnboarding();
-  }, [state.user, state.selectedProfile]);
+    // If user has no selected profile, they need onboarding
+    if (state.user && !state.selectedProfile && !state.loading) {
+      setShowOnboarding(true);
+    }
+  }, [state.user, state.selectedProfile, state.loading]);
 
   const onboardingSteps = [
     {
@@ -91,11 +78,11 @@ export const DashboardPage: React.FC = () => {
         "Transform your social media presence with AI-generated content tailored to your brand. Let's get you started in just a few simple steps.",
     },
     {
-      title: "Create Your Company Profile",
+      title: "Create Your Profile",
       description: "Set up your brand identity and voice",
       icon: Target,
       content:
-        "First, we'll create your company profile. This helps our AI understand your brand voice, target audience, and content preferences.",
+        "First, we'll create your profile. This helps our AI understand your brand voice, target audience, and content preferences.",
     },
     {
       title: "Generate Your First Content",
@@ -114,7 +101,7 @@ export const DashboardPage: React.FC = () => {
   ];
 
   const handleStartOnboarding = () => {
-    navigate("/companies/new");
+    navigate("/pricing");
   };
 
   const nextOnboardingStep = () => {
@@ -201,11 +188,11 @@ export const DashboardPage: React.FC = () => {
       action: () => navigate("/content"),
     },
     {
-      title: "Manage Companies",
-      description: "Add or edit your company profiles",
-      icon: TrendingUp,
+      title: "My Campaigns",
+      description: "View and manage your campaigns",
+      icon: Target,
       color: "theme-bg-secondary",
-      action: () => navigate("/companies"),
+      action: () => navigate("/campaigns"),
     },
     {
       title: "Schedule Posts",
@@ -225,17 +212,15 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="theme-card-bg min-h-screen">
-      <div className="container mx-auto px-4 py-4 space-y-4">
+      <div className="mx-auto px-4 py-4 space-y-4">
         {/* Create Content Button - Centered */}
         <div className="flex justify-center">
           <button
             onClick={() => navigate("/content")}
-            className="flex items-center gap-2 theme-button-secondary text-white px-6 py-3 rounded-lg hover:theme-button-hover transition-all duration-200 pulse-glow border border-white/20"
+            className="flex items-center gap-2 theme-button-secondary text-white px-6 py-3 rounded-lg hover:theme-button-hover transition-all duration-200 pulse-glow border border-white/20 w-full"
           >
             <Plus className="w-5 h-5" />
-            <span className="w-full text-base font-medium theme-card-bg">
-              Create Content
-            </span>
+            <span className="text-base font-medium">Create Content</span>
           </button>
         </div>
 
@@ -393,14 +378,14 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Show onboarding again button if no companies */}
+        {/* Show onboarding again button if no profile */}
         {!state.selectedProfile && (
           <div className="theme-bg-card rounded-xl shadow-sm border border-white/20 p-4 text-center floating-element">
             <h2 className="text-lg font-bold theme-text-primary mb-2">
               Get Started with Your First Content
             </h2>
             <p className="theme-text-light text-sm mb-4">
-              Create your company profile to unlock AI-powered content
+              Create your profile to unlock AI-powered content
               generation tailored to your brand.
             </p>
             <button

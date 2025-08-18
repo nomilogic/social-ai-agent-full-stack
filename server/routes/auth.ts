@@ -11,7 +11,15 @@ const router = express.Router();
 // In production, use proper authentication libraries
 
 router.post('/register', async (req: Request, res: Response) => {
+
   try {
+    const result = await db.select({ id: users.id }).from(users).execute();
+    console.log(result); // Should print [ { '1': 1 } ]
+  } catch (error) {
+    console.error(error);
+  }
+  try {
+
     const { email, password, name } = req.body;
 
     if (!email || !password) {
@@ -20,12 +28,13 @@ router.post('/register', async (req: Request, res: Response) => {
 
     console.log('Registration attempt for email:', email);
 
+
     // Check if user exists
     const existingUser = await db
       .select()
       .from(users)
       .where(eq(users.email, email))
-      .limit(1);
+     
 
     if (existingUser.length > 0) {
       return res.status(400).json({ error: 'User already exists' });
@@ -55,11 +64,16 @@ router.post('/register', async (req: Request, res: Response) => {
 
     console.log('Registration successful for user:', newUser.id);
 
+    // Check if this is a business account
+    const isBusinessAccount = newUser.email === 'nomilogic@gmail.com';
+
     res.json({
       user: {
         id: newUser.id,
         email: newUser.email,
         name: newUser.name,
+        profile_type: isBusinessAccount ? 'business' : 'individual',
+        plan: isBusinessAccount ? 'business' : 'free',
       },
       token,
     });
@@ -94,10 +108,16 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     const user = userResults[0];
+    console.log('Found user:', { id: user.id, email: user.email, name: user.name });
+    console.log('Password provided length:', password.length);
+    console.log('Hashed password in DB exists:', !!user.password);
 
     // Check password
     const validPassword = await bcrypt.compare(password, user.password);
+    console.log('Password validation result:', validPassword);
+    
     if (!validPassword) {
+      console.log('Password validation failed for user:', user.email);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -130,23 +150,30 @@ router.post('/login', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/logout', (req, res) => {
-  // For JWT, logout is handled client-side by removing the token
-  res.json({ message: 'Logged out successfully' });
+router.post('/logout', async (req: Request, res: Response) => {
+  try {
+    // For JWT, logout is handled client-side by removing the token
+    // In a more secure implementation, you might maintain a blacklist of tokens
+    console.log('User logged out successfully');
+    res.json({ success: true, message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ error: 'Internal server error during logout' });
+  }
 });
 
 // Get current user profile
 router.get('/me', async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
-    
+
     if (!token) {
       return res.status(401).json({ error: 'No token provided' });
     }
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret') as any;
-      
+
       // Get user from database
       const userResults = await db
         .select()
@@ -159,11 +186,17 @@ router.get('/me', async (req: Request, res: Response) => {
       }
 
       const user = userResults[0];
+      
+      // Check if this is a business account
+      const isBusinessAccount = user.email === 'nomilogic@gmail.com';
+      
       res.json({
         id: user.id,
         email: user.email,
         name: user.name,
-        created_at: user.created_at
+        created_at: user.created_at,
+        profile_type: isBusinessAccount ? 'business' : 'individual',
+        plan: isBusinessAccount ? 'business' : 'free'
       });
     } catch (jwtError) {
       return res.status(401).json({ error: 'Invalid token' });
@@ -202,27 +235,38 @@ router.put('/profile', async (req: Request, res: Response) => {
 router.get('/profile', async (req: Request, res: Response) => {
   try {
     const userId = req.query.userId as string;
-    
+    const userEmail = req.query.email as string;
+
     if (!userId) {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    // Check if this is the business account email
-    const isBusinessEmail = userId === '1b3b343d-c142-418c-8a23-213cc5d7afe9' || 
-                           req.query.email === 'nomilogic@gmail.com';
+    // Get user from database
+    const userResults = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (userResults.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = userResults[0];
+    const isBusinessEmail = user.email === 'nomilogic@gmail.com';
 
     const profile = {
-      id: 'f5643ed0-5c7b-45f9-b42f-5ce7c48df6b5',
-      name: isBusinessEmail ? 'Business Profile' : 'Your Profile',
-      email: isBusinessEmail ? 'nomilogic@gmail.com' : 'user@example.com',
+      id: user.id,
+      name: user.name || (isBusinessEmail ? 'Business Profile' : 'User Profile'),
+      email: user.email,
       bio: '',
       website: '',
       location: '',
       type: isBusinessEmail ? 'business' : 'individual',
       plan: isBusinessEmail ? 'business' : 'free',
       profile_type: isBusinessEmail ? 'business' : 'individual',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
     };
 
     res.json(profile);

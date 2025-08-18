@@ -24,29 +24,58 @@ export const oauth_tokens = pgTable('oauth_tokens', {
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
-// Companies table
-export const companies = pgTable('companies', {
+// Campaigns table (renamed from companies with merged campaign fields)
+export const campaigns = pgTable('campaigns', {
   id: uuid('id').primaryKey().defaultRandom(),
+  user_id: uuid('user_id').notNull(),
   name: text('name').notNull(),
   website: text('website'),
   industry: text('industry'),
   description: text('description'),
+  logo_url: text('logo_url'),
+  banner_url: text('banner_url'),
   target_audience: text('target_audience'),
-  brand_tone: text('brand_tone').default('professional'),
-  goals: text('goals').array().default(sql`'{}'::text[]`),
-  platforms: text('platforms').array().default(sql`'{}'::text[]`),
-  user_id: uuid('user_id').notNull(),
-  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  brand_tone: text('brand_tone'),
+  brand_voice: text('brand_voice'),
+  brand_colors: jsonb('brand_colors'),
+  brand_fonts: jsonb('brand_fonts'),
+  goals: text('goals').array(),
+  platforms: text('platforms').array(),
+  business_type: text('business_type'),
+  company_size: text('company_size'),
+  location: text('location'),
+  content_style_preferences: text('content_style_preferences'),
+  posting_frequency: text('posting_frequency'),
+  content_categories: text('content_categories').array(),
+  hashtag_strategy: text('hashtag_strategy'),
+  content_themes: text('content_themes').array(),
+  competitor_analysis: text('competitor_analysis'),
+  auto_schedule: boolean('auto_schedule'),
+  default_posting_times: jsonb('default_posting_times'),
+  content_approval_required: boolean('content_approval_required'),
+  total_posts: integer('total_posts'),
+  total_campaigns: integer('total_campaigns'),
+  engagement_score: decimal('engagement_score'),
+  created_at: timestamp('created_at', { withTimezone: true }),
+  updated_at: timestamp('updated_at', { withTimezone: true }),
+  // Merged campaign-specific fields
+  objective: text('objective'),
+  start_date: date('start_date'),
+  end_date: date('end_date'),
+  budget: decimal('budget'),
+  status: text('status'),
+  keywords: text('keywords').array(),
+  hashtags: text('hashtags').array(),
+  published_posts: integer('published_posts'),
+  scheduled_posts: integer('scheduled_posts'),
 });
 
 // Posts table
 export const posts = pgTable('posts', {
   id: uuid('id').primaryKey().defaultRandom(),
-  company_id: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  campaign_id: uuid('campaign_id').notNull().references(() => campaigns.id, { onDelete: 'cascade' }),
   prompt: text('prompt').notNull(),
   tags: text('tags').array().default(sql`'{}'::text[]`),
-  campaign_id: uuid('campaign_id').references(() => campaigns.id, { onDelete: 'set null' }),
   media_url: text('media_url'),
   generated_content: jsonb('generated_content'),
   user_id: uuid('user_id').notNull(),
@@ -54,34 +83,26 @@ export const posts = pgTable('posts', {
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
-// Campaigns table
-export const campaigns = pgTable('campaigns', {
+// Profiles table (for user profiles/brands)
+export const profiles = pgTable('profiles', {
   id: uuid('id').primaryKey().defaultRandom(),
-  company_id: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }),
+  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
+  type: text('type').notNull().default('individual'), // 'individual' | 'business'
+  industry: text('industry'),
   description: text('description'),
-  objective: text('objective'),
-  start_date: date('start_date'),
-  end_date: date('end_date'),
+  tone: text('tone'),
   target_audience: text('target_audience'),
-  platforms: text('platforms').array().default(sql`'{}'::text[]`),
-  budget: decimal('budget', { precision: 10, scale: 2 }),
-  status: text('status').default('active'),
-  brand_voice: text('brand_voice'),
-  keywords: text('keywords').array(),
-  hashtags: text('hashtags').array(),
-  total_posts: integer('total_posts').default(0),
-  published_posts: integer('published_posts').default(0),
-  scheduled_posts: integer('scheduled_posts').default(0),
+  plan: text('plan').notNull().default('free'), // 'free' | 'ipro' | 'business'
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
+
 // Scheduled posts table
 export const scheduled_posts = pgTable('scheduled_posts', {
   id: uuid('id').primaryKey().defaultRandom(),
-  company_id: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }),
-  campaign_id: uuid('campaign_id').references(() => campaigns.id, { onDelete: 'set null' }),
+  campaign_id: uuid('campaign_id').references(() => campaigns.id, { onDelete: 'cascade' }),
   date: date('date').notNull(),
   time: time('time').notNull(),
   content: text('content').notNull(),
@@ -131,12 +152,12 @@ export const media = pgTable('media', {
 // Type definitions for TypeScript
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
-export type Company = typeof companies.$inferSelect;
-export type NewCompany = typeof companies.$inferInsert;
-export type Post = typeof posts.$inferSelect;
-export type NewPost = typeof posts.$inferInsert;
+export type Profile = typeof profiles.$inferSelect;
+export type NewProfile = typeof profiles.$inferInsert;
 export type Campaign = typeof campaigns.$inferSelect;
 export type NewCampaign = typeof campaigns.$inferInsert;
+export type Post = typeof posts.$inferSelect;
+export type NewPost = typeof posts.$inferInsert;
 export type ScheduledPost = typeof scheduled_posts.$inferSelect;
 export type NewScheduledPost = typeof scheduled_posts.$inferInsert;
 export type OAuthToken = typeof oauth_tokens.$inferSelect;
