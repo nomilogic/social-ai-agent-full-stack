@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { CompanyInfo, PostContent, GeneratedPost } from '../types';
+import { CampaignInfo, PostContent, GeneratedPost } from '../types';
 
 // Base API configuration
 const api = axios.create({
@@ -9,6 +9,33 @@ const api = axios.create({
   }
 });
 
+// Add auth token to all requests
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Handle auth errors globally
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token is invalid, clear it and redirect to login
+      localStorage.removeItem('auth_token');
+      window.location.href = '/auth';
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Response wrapper interface
 interface ApiResponse<T = any> {
   success: boolean;
@@ -17,57 +44,57 @@ interface ApiResponse<T = any> {
   message?: string;
 }
 
-// Company operations
-export const companiesApi = {
-  // Get all companies for a user
+// Campaign operations
+export const campaignsApi = {
+  // Get all campaigns for a user
   async getAll(userId: string): Promise<any[]> {
-    const response = await api.get<ApiResponse<any[]>>('/companies', {
+    const response = await api.get<ApiResponse<any[]>>('/campaigns', {
       params: { userId }
     });
 
     if (!response.data.success) {
-      throw new Error(response.data.error || 'Failed to fetch companies');
+      throw new Error(response.data.error || 'Failed to fetch campaigns');
     }
 
     return response.data.data || [];
   },
 
-  // Create a new company
-  async create(companyInfo: CompanyInfo, userId: string): Promise<any> {
-    const response = await api.post<ApiResponse>('/companies', {
-      ...companyInfo,
+  // Create a new campaign
+  async create(campaignInfo: CampaignInfo, userId: string): Promise<any> {
+    const response = await api.post<ApiResponse>('/campaigns', {
+      ...campaignInfo,
       userId
     });
 
     if (!response.data.success) {
-      throw new Error(response.data.error || 'Failed to create company');
+      throw new Error(response.data.error || 'Failed to create campaign');
     }
 
     return response.data.data;
   },
 
-  // Update an existing company
-  async update(companyId: string, updates: Partial<CompanyInfo>, userId: string): Promise<any> {
-    const response = await api.put<ApiResponse>(`/companies/${companyId}`, {
+  // Update an existing campaign
+  async update(campaignId: string, updates: Partial<CampaignInfo>, userId: string): Promise<any> {
+    const response = await api.put<ApiResponse>(`/campaigns/${campaignId}`, {
       ...updates,
       userId
     });
 
     if (!response.data.success) {
-      throw new Error(response.data.error || 'Failed to update company');
+      throw new Error(response.data.error || 'Failed to update campaign');
     }
 
     return response.data.data;
   },
 
-  // Delete a company
-  async delete(companyId: string, userId: string): Promise<void> {
-    const response = await api.delete<ApiResponse>(`/companies/${companyId}`, {
+  // Delete a campaign
+  async delete(campaignId: string, userId: string): Promise<void> {
+    const response = await api.delete<ApiResponse>(`/campaigns/${campaignId}`, {
       params: { userId }
     });
 
     if (!response.data.success) {
-      throw new Error(response.data.error || 'Failed to delete company');
+      throw new Error(response.data.error || 'Failed to delete campaign');
     }
   }
 };
@@ -223,7 +250,7 @@ export const aiApi = {
 
 // Export the main API object
 export const apiService = {
-  companies: companiesApi,
+  campaigns: campaignsApi,
   posts: postsApi,
   media: mediaApi,
   ai: aiApi

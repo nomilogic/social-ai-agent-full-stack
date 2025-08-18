@@ -1,9 +1,7 @@
-
 import express, { Request, Response } from 'express'
 import { db } from '../db'
-import { campaigns, companies } from '../../shared/schema'
+import { campaigns } from '../../shared/schema'
 import { eq, and, desc } from 'drizzle-orm'
-import { validateRequestBody } from '../middleware/auth'
 import jwt from 'jsonwebtoken'
 
 const router = express.Router()
@@ -26,181 +24,109 @@ const authenticateToken = (req: Request, res: Response, next: any) => {
   });
 };
 
-interface Campaign {
-  id?: string;
-  company_id: string;
-  name: string;
-  description?: string;
-  objective?: string;
-  start_date?: string;
-  end_date?: string;
-  target_audience?: string;
-  platforms?: string[];
-  budget?: number;
-  status?: 'active' | 'paused' | 'completed' | 'draft';
-  brand_voice?: string;
-  keywords?: string[];
-  hashtags?: string[];
-}
-
-// GET /api/campaigns - Get all campaigns for a company
+// GET /api/campaigns - Get all campaigns for a user
 router.get('/', authenticateToken, async (req: Request, res: Response) => {
-  const { companyId, userId, status } = req.query
+  const userId = req.query.userId as string
 
-  if (!companyId) {
-    return res.status(400).json({ error: 'Company ID is required' })
+  if (!userId) {
+    console.log('No userId provided in campaigns request')
+    return res.status(400).json({ error: 'User ID is required' })
   }
 
   try {
-    console.log('Fetching campaigns for companyId:', companyId, 'userId:', userId)
-    
-    let whereCondition = eq(campaigns.company_id, companyId as string);
-    
-    if (userId) {
-      whereCondition = and(whereCondition, eq(campaigns.user_id, userId as string));
-    }
-    
-    if (status) {
-      whereCondition = and(whereCondition, eq(campaigns.status, status as string));
-    }
-
+    console.log('Fetching campaigns for userId:', userId)
     const data = await db
-      .select({
-        id: campaigns.id,
-        company_id: campaigns.company_id,
-        name: campaigns.name,
-        description: campaigns.description,
-        objective: campaigns.objective,
-        start_date: campaigns.start_date,
-        end_date: campaigns.end_date,
-        target_audience: campaigns.target_audience,
-        platforms: campaigns.platforms,
-        budget: campaigns.budget,
-        status: campaigns.status,
-        brand_voice: campaigns.brand_voice,
-        keywords: campaigns.keywords,
-        hashtags: campaigns.hashtags,
-        created_at: campaigns.created_at,
-        updated_at: campaigns.updated_at,
-        companies: {
-          name: companies.name,
-          industry: companies.industry
-        }
-      })
+      .select()
       .from(campaigns)
-      .leftJoin(companies, eq(campaigns.company_id, companies.id))
-      .where(whereCondition)
+      .where(eq(campaigns.user_id, userId))
       .orderBy(desc(campaigns.created_at))
 
     console.log('Found campaigns:', data.length)
     res.json({ success: true, data: data || [] })
   } catch (err: any) {
     console.error('Server error fetching campaigns:', err)
+    console.error('Error details:', err.message, err.stack)
     res.status(500).json({ error: 'Internal server error', details: err.message })
   }
 })
 
-// GET /api/campaigns/:id - Get a specific campaign
-router.get('/:id', authenticateToken, async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-
-    const data = await db
-      .select({
-        id: campaigns.id,
-        company_id: campaigns.company_id,
-        name: campaigns.name,
-        description: campaigns.description,
-        objective: campaigns.objective,
-        start_date: campaigns.start_date,
-        end_date: campaigns.end_date,
-        target_audience: campaigns.target_audience,
-        platforms: campaigns.platforms,
-        budget: campaigns.budget,
-        status: campaigns.status,
-        brand_voice: campaigns.brand_voice,
-        keywords: campaigns.keywords,
-        hashtags: campaigns.hashtags,
-        created_at: campaigns.created_at,
-        updated_at: campaigns.updated_at,
-        companies: {
-          name: companies.name,
-          industry: companies.industry,
-          target_audience: companies.target_audience,
-          brand_tone: companies.brand_tone
-        }
-      })
-      .from(campaigns)
-      .leftJoin(companies, eq(campaigns.company_id, companies.id))
-      .where(eq(campaigns.id, id))
-      .limit(1);
-
-    if (data.length === 0) {
-      return res.status(404).json({ error: 'Campaign not found' });
-    }
-
-    res.json(data[0]);
-  } catch (error) {
-    console.error('Error fetching campaign:', error);
-    res.status(500).json({ error: 'Failed to fetch campaign' });
-  }
-});
-
 // POST /api/campaigns - Create a new campaign
-router.post('/', authenticateToken, validateRequestBody(['company_id', 'name']), async (req: Request, res: Response) => {
+router.post('/', authenticateToken, async (req: Request, res: Response) => {
   const {
     name,
+    website,
+    industry,
     description,
+    targetAudience,
+    brandTone,
+    goals,
+    platforms,
+    userId,
+    // Additional campaign fields
     objective,
-    budget,
     startDate,
     endDate,
-    targetAudience,
-    platforms,
+    budget,
+    status,
     keywords,
-    companyId,
-    userId,
-    company_id
+    hashtags
   } = req.body
 
-  const finalCompanyId = company_id || companyId;
+  // Validate required fields
+  if (!name || !userId) {
+    return res.status(400).json({ 
+      error: 'Campaign name and user ID are required' 
+    });
+  }
 
-  if (!name || !finalCompanyId) {
-    return res.status(400).json({ error: 'Name and company ID are required' })
+  if (!platforms || platforms.length === 0) {
+    return res.status(400).json({ 
+      error: 'At least one platform must be selected' 
+    });
   }
 
   try {
     console.log('Creating campaign with data:', {
       name,
+      website,
+      industry,
       description,
+      targetAudience,
+      brandTone,
+      goals,
+      platforms,
+      userId,
       objective,
-      budget,
       startDate,
       endDate,
-      targetAudience,
-      platforms,
-      keywords,
-      companyId: finalCompanyId,
-      userId
+      budget,
+      status
     });
 
     const insertResults = await db
       .insert(campaigns)
       .values({
         name,
+        website: website || null,
+        industry: industry || null,
         description: description || null,
-        objective: objective || 'awareness',
-        budget: budget || null,
-        start_date: startDate ? new Date(startDate) : null,
-        end_date: endDate ? new Date(endDate) : null,
         target_audience: targetAudience || null,
+        brand_tone: brandTone || 'professional',
+        goals: goals || [],
         platforms: platforms || [],
+        objective: objective || null,
+        start_date: startDate || null,
+        end_date: endDate || null,
+        budget: budget || null,
+        status: status || 'active',
+        brand_voice: brandTone || 'professional', // alias for brand_tone
         keywords: keywords || [],
-        company_id: finalCompanyId,
-        user_id: userId,
-        status: 'active',
-        brand_voice: req.body.brand_voice || null,
-        hashtags: req.body.hashtags || []
+        hashtags: hashtags || [],
+        total_posts: 0,
+        published_posts: 0,
+        scheduled_posts: 0,
+        is_active: true,
+        user_id: userId
       })
       .returning()
 
@@ -210,6 +136,7 @@ router.post('/', authenticateToken, validateRequestBody(['company_id', 'name']),
     res.status(201).json({ success: true, data })
   } catch (err: any) {
     console.error('Server error creating campaign:', err)
+    console.error('Error details:', err.message, err.stack)
     res.status(500).json({ error: 'Internal server error', details: err.message })
   }
 })
@@ -219,46 +146,49 @@ router.put('/:id', authenticateToken, async (req: Request, res: Response) => {
   const campaignId = req.params.id
   const {
     name,
+    website,
+    industry,
     description,
+    targetAudience,
+    brandTone,
+    goals,
+    platforms,
+    userId,
+    // Additional campaign fields
     objective,
-    budget,
     startDate,
     endDate,
-    targetAudience,
-    platforms,
-    keywords,
+    budget,
     status,
-    userId,
-    brand_voice,
+    keywords,
     hashtags
   } = req.body
 
   try {
     console.log('Updating campaign:', campaignId, 'for user:', userId);
 
-    let whereCondition = eq(campaigns.id, campaignId);
-    if (userId) {
-      whereCondition = and(whereCondition, eq(campaigns.user_id, userId));
-    }
-
     const updateResults = await db
       .update(campaigns)
       .set({
         name,
+        website,
+        industry,
         description,
-        objective,
-        budget,
-        start_date: startDate ? new Date(startDate) : null,
-        end_date: endDate ? new Date(endDate) : null,
         target_audience: targetAudience,
+        brand_tone: brandTone,
+        goals,
         platforms,
-        keywords,
+        objective,
+        start_date: startDate,
+        end_date: endDate,
+        budget,
         status,
-        brand_voice,
+        brand_voice: brandTone, // alias for brand_tone
+        keywords,
         hashtags,
         updated_at: new Date()
       })
-      .where(whereCondition)
+      .where(and(eq(campaigns.id, campaignId), eq(campaigns.user_id, userId)))
       .returning()
 
     if (updateResults.length === 0) {
@@ -271,6 +201,7 @@ router.put('/:id', authenticateToken, async (req: Request, res: Response) => {
     res.json({ success: true, data })
   } catch (err: any) {
     console.error('Server error updating campaign:', err)
+    console.error('Error details:', err.message, err.stack)
     res.status(500).json({ error: 'Internal server error', details: err.message })
   }
 })
@@ -280,15 +211,14 @@ router.delete('/:id', authenticateToken, async (req: Request, res: Response) => 
   const campaignId = req.params.id
   const userId = req.query.userId as string
 
-  try {
-    let whereCondition = eq(campaigns.id, campaignId);
-    if (userId) {
-      whereCondition = and(whereCondition, eq(campaigns.user_id, userId));
-    }
+  if (!userId) {
+    return res.status(400).json({ error: 'User ID is required' })
+  }
 
+  try {
     const result = await db
       .delete(campaigns)
-      .where(whereCondition)
+      .where(and(eq(campaigns.id, campaignId), eq(campaigns.user_id, userId)))
       .returning({ id: campaigns.id })
 
     if (result.length === 0) {
@@ -301,97 +231,5 @@ router.delete('/:id', authenticateToken, async (req: Request, res: Response) => 
     res.status(500).json({ error: 'Internal server error' })
   }
 })
-
-// GET /api/campaigns/:id/analytics - Get campaign analytics
-router.get('/:id/analytics', authenticateToken, async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-
-    // TODO: Implement campaign analytics with proper schema
-    const data = {
-      id,
-      impressions: 0,
-      clicks: 0,
-      engagement_rate: 0
-    };
-
-    // Get posts data for analytics calculation
-    const postsData = await db
-      .select({
-        status: campaigns.status,
-        platforms: campaigns.platforms,
-        created_at: campaigns.created_at
-      })
-      .from(campaigns)
-      .where(eq(campaigns.id, id));
-
-    // Calculate platform breakdown
-    const platformBreakdown: Record<string, number> = {};
-    postsData?.forEach(post => {
-      post.platforms?.forEach((platform: string) => {
-        platformBreakdown[platform] = (platformBreakdown[platform] || 0) + 1;
-      });
-    });
-
-    const analytics = {
-      ...data,
-      platformBreakdown,
-      livePostsCount: 0,
-      averagePostsPerDay: 0
-    };
-
-    res.json(analytics);
-  } catch (error) {
-    console.error('Error fetching campaign analytics:', error);
-    res.status(500).json({ error: 'Failed to fetch campaign analytics' });
-  }
-});
-
-// PATCH /api/campaigns/:id/status - Update campaign status
-router.patch('/:id/status', authenticateToken, async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-
-    if (!status || !['active', 'paused', 'completed', 'draft'].includes(status)) {
-      return res.status(400).json({ 
-        error: 'Valid status is required (active, paused, completed, draft)' 
-      });
-    }
-
-    const [data] = await db
-      .update(campaigns)
-      .set({ 
-        status,
-        updated_at: new Date()
-      })
-      .where(eq(campaigns.id, id))
-      .returning();
-
-    if (!data) {
-      return res.status(404).json({ error: 'Campaign not found' });
-    }
-
-    res.json(data);
-  } catch (error) {
-    console.error('Error updating campaign status:', error);
-    res.status(500).json({ error: 'Failed to update campaign status' });
-  }
-});
-
-// GET /api/campaigns/:id/posts - Get all posts for a campaign
-router.get('/:id/posts', authenticateToken, async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-
-    // TODO: Implement scheduled_posts table and queries
-    const transformedPosts: any[] = [];
-    
-    res.json(transformedPosts);
-  } catch (error) {
-    console.error('Error fetching campaign posts:', error);
-    res.status(500).json({ error: 'Failed to fetch campaign posts' });
-  }
-});
 
 export default router

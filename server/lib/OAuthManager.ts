@@ -3,10 +3,22 @@ import axios from 'axios';
 import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 
-// Initialize Supabase client
-const supabaseUrl = process.env.VITE_SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Lazy-load Supabase client
+let supabase: any = null;
+
+function getSupabase() {
+  if (!supabase) {
+    const supabaseUrl = process.env.VITE_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase credentials. Please check VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.');
+    }
+    
+    supabase = createClient(supabaseUrl, supabaseKey);
+  }
+  return supabase;
+}
 
 interface OAuthConfig {
   client_id: string;
@@ -111,7 +123,7 @@ class OAuthManager {
 
     // Store state in Supabase with expiration
     const expiresAt = new Date(Date.now() + 600000); // 10 minutes
-    await supabase.from('oauth_states').insert({
+    await getSupabase().from('oauth_states').insert({
       state,
       platform,
       user_id: userId,
@@ -148,7 +160,7 @@ class OAuthManager {
     }
 
     // Validate and get state data from Supabase
-    const { data: stateData } = await supabase
+    const { data: stateData } = await getSupabase()
       .from('oauth_states')
       .select('*')
       .eq('state', state)
@@ -188,7 +200,7 @@ class OAuthManager {
     await this.storeConnection(userId, platform, connectionData);
     
     // Clean up state
-    await supabase.from('oauth_states').delete().eq('state', state);
+    await getSupabase().from('oauth_states').delete().eq('state', state);
 
     console.log(`OAuth connection successful for ${platform}:`, { userId, platform, username: userProfile.username || userProfile.name });
     return connectionData;
@@ -299,7 +311,7 @@ class OAuthManager {
 
   // Get connection status for user across all platforms
   async getConnectionStatus(userId: string): Promise<Record<string, any>> {
-    const { data: connections } = await supabase
+    const { data: connections } = await getSupabase()
       .from('oauth_tokens')
       .select('platform, expires_at, profile_data')
       .eq('user_id', userId);
@@ -332,7 +344,7 @@ class OAuthManager {
 
   // Get valid access token for platform (with auto-refresh)
   async getAccessToken(userId: string, platform: string): Promise<string> {
-    const { data: connection } = await supabase
+    const { data: connection } = await getSupabase()
       .from('oauth_tokens')
       .select('*')
       .eq('user_id', userId)
@@ -358,7 +370,7 @@ class OAuthManager {
           updated_at: new Date().toISOString()
         };
 
-        await supabase
+        await getSupabase()
           .from('oauth_tokens')
           .update(updatedConnection)
           .eq('user_id', userId)
@@ -401,7 +413,7 @@ class OAuthManager {
 
   // Disconnect platform for user
   async disconnect(userId: string, platform: string): Promise<boolean> {
-    const { data: connection } = await supabase
+    const { data: connection } = await getSupabase()
       .from('oauth_tokens')
       .select('access_token')
       .eq('user_id', userId)
@@ -417,7 +429,7 @@ class OAuthManager {
       }
       
       // Delete from database
-      await supabase
+      await getSupabase()
         .from('oauth_tokens')
         .delete()
         .eq('user_id', userId)
@@ -477,7 +489,7 @@ class OAuthManager {
     };
 
     // Upsert the connection
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('oauth_tokens')
       .upsert(connectionRecord, { 
         onConflict: 'user_id,platform'

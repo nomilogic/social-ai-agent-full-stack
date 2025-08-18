@@ -584,7 +584,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, prompt: e.target.value }))
                 }
-                className="w-full px-3 py-2 theme-bg-primary/20 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-200 min-h-[160px] text-sm theme-text-primary placeholder-gray-400"
+                className="w-full px-3 py-2 theme-bg-primary/20 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-200 min-h-[160px] text-sm  placeholder-gray-400"
                 placeholder="Describe what you want to share... (e.g., 'Launch of our new eco-friendly water bottles')"
                 required
               />
@@ -606,7 +606,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                     campaignId: e.target.value,
                   }))
                 }
-                className="w-full px-3 py-2 theme-bg-primary/20 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-200 text-sm theme-text-primary placeholder-gray-400"
+                className="w-full px-3 py-2 theme-bg-primary/20 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-200 text-sm placeholder-gray-400"
                 placeholder="e.g., spring-launch-2024"
               />
             </div>
@@ -624,7 +624,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                   onKeyPress={(e) =>
                     e.key === "Enter" && (e.preventDefault(), addTag())
                   }
-                  className="flex-1 px-3 py-2 theme-bg-primary/20 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-200 text-sm theme-text-primary placeholder-gray-400"
+                  className="flex-1 px-3 py-2 theme-bg-primary/20 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-200 text-sm  placeholder-gray-400"
                   placeholder="Add keywords..."
                 />
                 <button

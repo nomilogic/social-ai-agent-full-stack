@@ -11,14 +11,23 @@ export const AuthPage: React.FC = () => {
   // Check if user is already authenticated
   useEffect(() => {
     if (state.user) {
-      const from = (location.state as any)?.from?.pathname || '/pricing';
+      const from = (location.state as any)?.from?.pathname || '/campaigns';
       navigate(from, { replace: true });
     }
   }, [state.user, navigate, location]);
 
   const handleAuthSuccess = (user: any) => {
     dispatch({ type: 'SET_USER', payload: user });
-    const from = (location.state as any)?.from?.pathname || '/pricing';
+    
+    // Set user plan and business account status based on login response
+    if (user.plan) {
+      dispatch({ type: 'SET_USER_PLAN', payload: user.plan });
+    }
+    if (user.profile_type === 'business') {
+      dispatch({ type: 'SET_BUSINESS_ACCOUNT', payload: true });
+    }
+    
+    const from = (location.state as any)?.from?.pathname || '/campaigns';
     navigate(from, { replace: true });
   };
 

@@ -2,9 +2,10 @@ import express, { Request, Response } from 'express'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import axios from 'axios'
 import multer from 'multer'
-// import dotenv from 'dotenv'
+import { c } from 'node_modules/vite/dist/node/types.d-aGj9QkWt';
+import dotenv from 'dotenv'
 
-// dotenv.config() // Environment variables are handled by Replit
+dotenv.config() // Environment variables are handled by Replit
 
 // Configure multer for file uploads
 const upload = multer({
@@ -12,13 +13,16 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
+
+
+
 const router = express.Router()
 
 // Initialize AI Services
-const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY!)
+//const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY!)
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || null
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || null
-
+let genAI =  new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY || '');
 // AI Model Configuration
 interface AIModel {
   id: string;
@@ -84,9 +88,10 @@ router.post('/analyze-image', async (req: Request, res: Response) => {
         error: 'Gemini API key not configured'
       });
     }
+    console.log('Gemini API key is configured, proceeding with image analysis...', process.env.VITE_GEMINI_API_KEY , 'Yes' );
 
     // Initialize Gemini model for vision
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const prompt = `Analyze this image and provide a detailed description that would be useful for social media content creation. Include:
 1. What's in the image (objects, people, setting)
@@ -367,10 +372,12 @@ Create TikTok caption (max 150 characters).
     youtube: `
 Create YouTube video description.
 - Include compelling title suggestion
-- Write detailed description with timestamps if relevant
+- Be trendy and fun
+- Use popular hashtags
+- Be energetic and engaging
 - Include relevant keywords and hashtags
 - Add call-to-action
-`
+` 
   }
 
   return `${baseInfo}

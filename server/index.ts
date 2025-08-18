@@ -1,15 +1,25 @@
 import express, { Request, Response, NextFunction } from 'express'
 import cors from 'cors'
-// import dotenv from 'dotenv'
+import dotenv from 'dotenv'
 import path from 'path'
+import { fileURLToPath } from 'url'
 import { registerRoutes } from './routes.ts'
 import { log } from 'console'
 import { serveStatic, setupVite } from './vite.ts'
 import { initializeDatabase } from './db'
-import companiesRouter from './routes/companies'
-import campaignsRouter from './routes/campaigns'
 
-// dotenv.config() // Environment variables are handled by Replit
+// Get __dirname equivalent in ES module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, '../.env') }) // Load environment variables from .env file
+
+// Debug: Log environment variables
+console.log('Environment variables loaded:');
+console.log('VITE_SUPABASE_URL:', process.env.VITE_SUPABASE_URL);
+console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY);
+console.log('VITE_SUPABASE_ANON_KEY:',process.env.VITE_SUPABASE_ANON_KEY);
+
 const app = express()
 const PORT = process.env.PORT || 5000
 
@@ -23,7 +33,7 @@ app.use((req, res, next) => {
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? [process.env.CLIENT_URL || 'https://your-production-domain.com']
-    : ['http://localhost:5173', 'http://localhost:3000'],
+    : ['http://localhost:5000', 'http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
@@ -32,8 +42,6 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
-app.use('/api/companies', companiesRouter)
-app.use('/api/campaigns', campaignsRouter)
 
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   const status = err.status || err.statusCode || 500;
