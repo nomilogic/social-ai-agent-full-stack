@@ -102,16 +102,46 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
 
 
   const renderPlatformPreview = (post: GeneratedPost) => {
-    const renderImage = () =>
-      post.imageUrl ? (
-        <div className="w-full flex justify-center my-3">
-          <img
-            src={post.imageUrl}
-            alt="Post media"
-            className="rounded-lg max-h-80 object-contain"
-          />
-        </div>
-      ) : null;
+    const renderMedia = useCallback(() => {
+      if (!post.imageUrl) return null;
+      
+      // Check if it's a video file
+      const isVideo = post.imageUrl.match(/\.(mp4|webm|ogg|mov|avi)$/i);
+      
+      if (isVideo) {
+        return (
+          <div className="w-full flex justify-center my-3">
+            <video
+              src={post.imageUrl}
+              controls
+              className="rounded-lg max-h-80 object-contain"
+              onError={(e) => {
+                console.error('Video failed to load:', post.imageUrl);
+                e.currentTarget.style.display = 'none';
+              }}
+              onLoadStart={() => console.log('Video loading started:', post.imageUrl)}
+            >
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        );
+      } else {
+        return (
+          <div className="w-full flex justify-center my-3">
+            <img
+              src={post.imageUrl}
+              alt="Post media"
+              className="rounded-lg max-h-80 object-contain"
+              onError={(e) => {
+                console.error('Image failed to load:', post.imageUrl);
+                e.currentTarget.style.display = 'none';
+              }}
+              onLoad={() => console.log('Image loaded successfully:', post.imageUrl)}
+            />
+          </div>
+        );
+      }
+    }, [post.imageUrl]);
     switch (post.platform) {
       case "facebook":
         return (
@@ -131,7 +161,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
               <p className="text-gray-800 whitespace-pre-wrap">
                 {post.caption}
               </p>
-              {renderImage()}
+              {renderMedia()}
               <div className="mt-3 flex flex-wrap gap-1">
                 {post.hashtags.map((tag, index) => (
                   <span
@@ -181,11 +211,29 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
             </div>
             <div className="aspect-square bg-gray-100 flex items-center justify-center">
               {post.imageUrl ? (
-                <img
-                  src={post.imageUrl}
-                  alt="Instagram media"
-                  className="object-cover w-full h-full"
-                />
+                post.imageUrl.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
+                  <video
+                    src={post.imageUrl}
+                    controls
+                    className="object-cover w-full h-full"
+                    onError={(e) => {
+                      console.error('Instagram video failed to load:', post.imageUrl);
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                ) : (
+                  <img
+                    src={post.imageUrl}
+                    alt="Instagram media"
+                    className="object-cover w-full h-full"
+                    onError={(e) => {
+                      console.error('Instagram image failed to load:', post.imageUrl);
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                )
               ) : (
                 <div className="text-gray-400 text-center">
                   <div className="w-16 h-16 bg-gray-300 rounded-lg mx-auto mb-2"></div>
@@ -233,7 +281,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                   <p className="text-gray-800 whitespace-pre-wrap">
                     {post.caption}
                   </p>
-                  {renderImage()}
+                  {renderMedia()}
                   <div className="mt-2 flex flex-wrap gap-1">
                     {post.hashtags.map((tag, index) => (
                       <span
@@ -285,7 +333,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
               <p className="text-gray-800 whitespace-pre-wrap mb-3">
                 {post.caption}
               </p>
-              {renderImage()}
+              {renderMedia()}
               <div className="flex flex-wrap gap-1 mb-4">
                 {post.hashtags.map((tag, index) => (
                   <span
@@ -319,11 +367,29 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
           <div className="bg-black rounded-lg overflow-hidden max-w-sm shadow-sm">
             <div className="aspect-[9/16] bg-gray-900 relative">
               {post.imageUrl && (
-                <img
-                  src={post.imageUrl}
-                  alt="Tiktok media"
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
+                post.imageUrl.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
+                  <video
+                    src={post.imageUrl}
+                    controls
+                    className="absolute inset-0 w-full h-full object-cover"
+                    onError={(e) => {
+                      console.error('TikTok video failed to load:', post.imageUrl);
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                ) : (
+                  <img
+                    src={post.imageUrl}
+                    alt="Tiktok media"
+                    className="absolute inset-0 w-full h-full object-cover"
+                    onError={(e) => {
+                      console.error('TikTok image failed to load:', post.imageUrl);
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                )
               )}
               <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
                 <div className="text-white">
@@ -346,11 +412,29 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm max-w-lg">
             <div className="aspect-video bg-gray-900 flex items-center justify-center">
               {post.imageUrl ? (
-                <img
-                  src={post.imageUrl}
-                  alt="Youtube media"
-                  className="object-cover w-full h-full"
-                />
+                post.imageUrl.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
+                  <video
+                    src={post.imageUrl}
+                    controls
+                    className="object-cover w-full h-full"
+                    onError={(e) => {
+                      console.error('YouTube video failed to load:', post.imageUrl);
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                ) : (
+                  <img
+                    src={post.imageUrl}
+                    alt="Youtube media"
+                    className="object-cover w-full h-full"
+                    onError={(e) => {
+                      console.error('YouTube image failed to load:', post.imageUrl);
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                )
               ) : (
                 <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
                   <span className="text-white text-2xl">▶</span>
