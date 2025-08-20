@@ -105,6 +105,18 @@ export class SocialMediaAPI {
 
       return response.data;
     } catch (error: any) {
+      const errorData = error.response?.data;
+      
+      // Handle specific Facebook errors with user-friendly messages
+      if (errorData?.platform === 'facebook') {
+        const fbError = new Error(errorData.error || 'Facebook post failed');
+        (fbError as any).code = error.response?.status;
+        (fbError as any).retryable = errorData.retryable || false;
+        (fbError as any).platform = 'facebook';
+        (fbError as any).details = errorData.details;
+        throw fbError;
+      }
+      
       throw new Error(`Facebook post failed: ${error.response?.data?.error || error.message}`);
     }
   }
@@ -272,25 +284,28 @@ export class SocialMediaAPI {
   // YouTube
   async postToYouTube(accessToken: string, post: GeneratedPost, videoUrl: string, channelId?: string): Promise<any> {
     try {
-      // Step 1: Initialize upload
-      const initResponse = await axios.post(`${API_BASE}/youtube/upload-init`, {
+      // Use the simplified YouTube post endpoint (like LinkedIn)
+      const response = await axios.post(`${API_BASE}/youtube/post`, {
         accessToken,
         post,
-        channelId
-      });
-
-      const { uploadUrl } = initResponse.data;
-
-      // Step 2: Upload video
-      const uploadResponse = await axios.post(`${API_BASE}/youtube/upload-video`, {
-        accessToken,
-        uploadUrl,
         videoUrl
       });
 
-      return uploadResponse.data;
+      return response.data;
     } catch (error: any) {
-      throw new Error(`YouTube upload failed: ${error.response?.data?.error || error.message}`);
+      const errorData = error.response?.data;
+      
+      // Handle specific YouTube errors with user-friendly messages
+      if (errorData?.platform === 'youtube') {
+        const ytError = new Error(errorData.error || 'YouTube post failed');
+        (ytError as any).code = error.response?.status;
+        (ytError as any).retryable = errorData.retryable || false;
+        (ytError as any).platform = 'youtube';
+        (ytError as any).details = errorData.details;
+        throw ytError;
+      }
+      
+      throw new Error(`YouTube post failed: ${error.response?.data?.error || error.message}`);
     }
   }
 
@@ -327,6 +342,48 @@ export class SocialMediaAPI {
       return response.data;
     } catch (error: any) {
       throw new Error(`Failed to get YouTube video status: ${error.response?.data?.error || error.message}`);
+    }
+  }
+
+  // YouTube upload methods for consistency with TikTok pattern
+  async initializeYouTubeUpload(accessToken: string, post: GeneratedPost): Promise<any> {
+    try {
+      const response = await axios.post(`${API_BASE}/youtube/upload-init`, {
+        accessToken,
+        post
+      });
+
+      return response.data;
+    } catch (error: any) {
+      throw new Error(`Failed to initialize YouTube upload: ${error.response?.data?.error || error.message}`);
+    }
+  }
+
+  async uploadYouTubeVideo(accessToken: string, uploadUrl: string, videoUrl: string): Promise<any> {
+    try {
+      const response = await axios.post(`${API_BASE}/youtube/upload-video`, {
+        accessToken,
+        uploadUrl,
+        videoUrl
+      });
+
+      return response.data;
+    } catch (error: any) {
+      throw new Error(`Failed to upload YouTube video: ${error.response?.data?.error || error.message}`);
+    }
+  }
+
+  async updateYouTubeVideo(accessToken: string, videoId: string, metadata: any): Promise<any> {
+    try {
+      const response = await axios.post(`${API_BASE}/youtube/update-video`, {
+        accessToken,
+        videoId,
+        ...metadata
+      });
+
+      return response.data;
+    } catch (error: any) {
+      throw new Error(`Failed to update YouTube video: ${error.response?.data?.error || error.message}`);
     }
   }
 

@@ -80,6 +80,204 @@ router.get('/me', async (req: Request, res: Response) => {
   }
 })
 
+// POST /api/youtube/post - Simple YouTube posting interface (matches other platforms)
+router.post('/post', async (req: Request, res: Response) => {
+  const { accessToken, post, videoUrl } = req.body
+
+  if (!accessToken || !post) {
+    return res.status(400).json({ error: 'Missing accessToken or post data' })
+  }
+
+  if (!videoUrl && !post.imageUrl) {
+    return res.status(400).json({ error: 'YouTube requires a video URL' })
+  }
+
+  const videoUrlToUse = videoUrl || post.imageUrl
+  
+  // Validate video URL exists
+  if (!videoUrlToUse) {
+    return res.status(400).json({ error: 'YouTube requires a video URL or file' })
+  }
+  
+  // Convert relative URL to full URL if needed (similar to LinkedIn image handling)
+  let fullVideoUrl = videoUrlToUse;
+  if (fullVideoUrl.startsWith('/uploads/')) {
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? process.env.BASE_URL || 'http://localhost:5000'
+      : 'http://localhost:5000';
+    fullVideoUrl = `${baseUrl}${fullVideoUrl}`;
+  }
+  
+  // Validate URL format
+  try {
+    new URL(fullVideoUrl);
+  } catch (error) {
+    return res.status(400).json({ 
+      error: 'Invalid video URL format', 
+      details: 'Please provide a valid URL for the video file'
+    })
+  }
+  
+  // Check if URL is accessible before proceeding
+  try {
+    const headResponse = await axios.head(fullVideoUrl, { timeout: 10000 });
+    const contentType = headResponse.headers['content-type'];
+    
+    // Validate content type is video
+    if (!contentType || !contentType.startsWith('video/')) {
+      return res.status(400).json({
+        error: 'Invalid video file type',
+        details: `Expected video file, but received content type: ${contentType || 'unknown'}`
+      })
+    }
+    
+    // Check file size (YouTube limit is 256GB, but we'll set a reasonable limit)
+    const contentLength = headResponse.headers['content-length'];
+    if (contentLength) {
+      const fileSizeGB = parseInt(contentLength) / (1024 * 1024 * 1024);
+      if (fileSizeGB > 15) { // 15GB limit for reasonable upload times
+        return res.status(400).json({
+          error: 'Video file too large',
+          details: `Video file size (${fileSizeGB.toFixed(2)}GB) exceeds the 15GB limit for uploads`
+        })
+      }
+    }
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      return res.status(400).json({
+        error: 'Video file not found',
+        details: 'The specified video URL could not be accessed or does not exist'
+      })
+    } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+      return res.status(400).json({
+        error: 'Video URL not accessible',
+        details: 'Unable to connect to the video URL. Please check the URL and try again'
+      })
+    } else {
+      console.warn('Video URL validation warning:', error.message);
+      // Continue with upload attempt even if HEAD request fails
+    }
+  }
+  
+  console.log('YouTube video URL (original):', videoUrlToUse);
+  console.log('YouTube video URL (full):', fullVideoUrl);
+
+  try {
+    // Step 1: Initialize upload
+    const metadata = {
+      snippet: {
+        title: post.caption ? post.caption.slice(0, 100) : 'YouTube Video',
+        description: `${post.caption}\n\n${post.hashtags ? post.hashtags.join(' ') : ''}`,
+        tags: post.hashtags ? post.hashtags.map((tag: string) => tag.replace('#', '')) : [],
+        categoryId: '22', // People & Blogs
+        defaultLanguage: 'en',
+        defaultAudioLanguage: 'en'
+      },
+      status: {
+        privacyStatus: 'public',
+        selfDeclaredMadeForKids: false
+      }
+    }
+
+    const initResponse = await axios.post(
+      'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
+      metadata,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'X-Upload-Content-Type': 'video/*'
+        }
+      }
+    )
+
+    const uploadUrl = initResponse.headers.location
+    if (!uploadUrl) {
+      throw new Error('Failed to get upload URL from YouTube')
+    }
+
+    // Step 2: Upload video
+    const videoResponse = await axios.get(fullVideoUrl, {
+      responseType: 'stream'
+    })
+
+    const uploadHeaders: any = {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'video/*'
+    }
+
+    if (videoResponse.headers['content-length']) {
+      uploadHeaders['Content-Length'] = videoResponse.headers['content-length']
+    }
+
+    const uploadResponse = await axios.put(uploadUrl, videoResponse.data, {
+      headers: uploadHeaders,
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity
+    })
+
+    res.json({
+      success: true,
+      platform: 'youtube',
+      data: uploadResponse.data,
+      videoId: uploadResponse.data.id,
+      videoUrl: `https://www.youtube.com/watch?v=${uploadResponse.data.id}`
+    })
+
+  } catch (error: any) {
+    console.error('YouTube post error:', error.response?.data || error.message)
+    
+    // Enhanced error handling with specific YouTube error codes
+    const errorData = error.response?.data
+    let errorMessage = 'Failed to create YouTube post'
+    let statusCode = 500
+    
+    if (errorData?.error) {
+      const ytError = errorData.error
+      
+      // Handle specific YouTube error codes
+      if (ytError.code === 401 || ytError.errors?.some((e: any) => e.reason === 'authError')) {
+        errorMessage = 'YouTube access token expired or invalid. Please reconnect your account.'
+        statusCode = 401
+      } else if (ytError.code === 403) {
+        if (ytError.errors?.some((e: any) => e.reason === 'quotaExceeded')) {
+          errorMessage = 'YouTube API quota exceeded. Please try again later.'
+          statusCode = 429
+        } else if (ytError.errors?.some((e: any) => e.reason === 'forbidden')) {
+          errorMessage = 'YouTube upload permission denied. Please ensure your account has upload permissions.'
+          statusCode = 403
+        } else {
+          errorMessage = 'YouTube API access forbidden. Please check your permissions.'
+          statusCode = 403
+        }
+      } else if (ytError.code === 400) {
+        if (ytError.errors?.some((e: any) => e.reason === 'invalidVideoData')) {
+          errorMessage = 'Invalid video data. Please check your video file format and size.'
+        } else {
+          errorMessage = 'Invalid YouTube API request. Please check your video and metadata.'
+        }
+        statusCode = 400
+      } else {
+        errorMessage = ytError.message || 'YouTube API error'
+        statusCode = error.response?.status || 500
+      }
+    } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+      errorMessage = 'Unable to connect to YouTube API. Please check your internet connection.'
+      statusCode = 503
+    } else if (error.message?.includes('timeout')) {
+      errorMessage = 'Video upload timeout. Please try with a smaller video file.'
+      statusCode = 408
+    }
+    
+    res.status(statusCode).json({
+      error: errorMessage,
+      details: errorData || error.message,
+      platform: 'youtube',
+      retryable: statusCode >= 500 || statusCode === 429 || statusCode === 408
+    })
+  }
+})
+
 // POST /api/youtube/upload-init - Initialize video upload
 router.post('/upload-init', async (req: Request, res: Response) => {
   const { accessToken, post, channelId } = req.body

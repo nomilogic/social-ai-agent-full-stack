@@ -131,12 +131,12 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const handleFileUpload = async (file: File) => {
     setUploading(true);
     try {
-      const user = await getCurrentUser();
-      if (!user) {
+      const userResult = await getCurrentUser();
+      if (!userResult || !userResult.user) {
         throw new Error("User not authenticated");
       }
 
-      const mediaUrl = await uploadMedia(file, user.id);
+      const mediaUrl = await uploadMedia(file, userResult.user.id);
       setFormData((prev) => ({ ...prev, media: file, mediaUrl }));
     } catch (error) {
       console.error("Error uploading file:", error);

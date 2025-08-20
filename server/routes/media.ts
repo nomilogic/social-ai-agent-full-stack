@@ -61,14 +61,15 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
     // Save media record to database
     await db.insert(media).values({
       id: crypto.randomUUID(),
-      userId,
-      fileName,
-      originalName: file.originalname,
-      filePath: publicUrl,
-      mimeType: file.mimetype,
-      size: file.size,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      user_id: userId,
+      filename: fileName,
+      original_name: file.originalname,
+      file_path: publicUrl,
+      mime_type: file.mimetype,
+      file_size: file.size,
+      media_type: file.mimetype.startsWith('image/') ? 'image' : file.mimetype.startsWith('video/') ? 'video' : 'other',
+      created_at: new Date(),
+      updated_at: new Date()
     })
 
     res.json({ 
@@ -92,17 +93,17 @@ router.get('/:userId', async (req: Request, res: Response) => {
   const userId = req.params.userId
 
   try {
-    const mediaFiles = await db.select().from(media).where(eq(media.userId, userId))
+    const mediaFiles = await db.select().from(media).where(eq(media.user_id, userId))
 
     const filesWithUrls = mediaFiles.map((file) => {
       return {
-        name: file.fileName,
-        url: file.filePath,
-        size: file.size,
-        lastModified: file.updatedAt,
-        createdAt: file.createdAt,
-        originalName: file.originalName,
-        mimeType: file.mimeType
+        name: file.filename,
+        url: file.file_path,
+        size: file.file_size,
+        lastModified: file.updated_at,
+        createdAt: file.created_at,
+        originalName: file.original_name,
+        mimeType: file.mime_type
       }
     })
 
@@ -125,14 +126,14 @@ router.delete('/:userId/:fileName', async (req: Request, res: Response) => {
 
   try {
     // Find the media record in the database
-    const mediaRecord = await db.select().from(media).where(eq(media.fileName, fileName)).limit(1)
+    const mediaRecord = await db.select().from(media).where(eq(media.filename, fileName)).limit(1)
 
     if (mediaRecord.length === 0) {
       return res.status(404).json({ error: 'File not found' })
     }
 
     // Delete from database
-    await db.delete(media).where(eq(media.fileName, fileName))
+    await db.delete(media).where(eq(media.filename, fileName))
 
     // Delete physical file
     const filePath = path.join(process.cwd(), 'public', 'uploads', fileName)
