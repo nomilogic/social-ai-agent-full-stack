@@ -569,7 +569,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
           onClick={onBack}
           className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-8 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
         >
-          Back to Generation
+          Regenerate
         </button>
       </div>
 
