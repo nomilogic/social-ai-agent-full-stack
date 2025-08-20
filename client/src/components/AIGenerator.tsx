@@ -61,11 +61,16 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
         }
       );
 
-      // Generate images for posts that need them
+      // Set media URL for posts that need them
       if (posts && posts.length > 0) {
         for (let i = 0; i < posts.length; i++) {
           const post = posts[i];
-          if (post.caption && !post.imageUrl) {
+          // First priority: use existing media URL from content data
+          if (contentData?.mediaUrl && !post.imageUrl) {
+            posts[i].imageUrl = contentData.mediaUrl;
+          }
+          // Second priority: try to generate image if no media provided
+          else if (post.caption && !post.imageUrl && !contentData?.mediaUrl) {
             try {
               // Generate an image based on the post content
               const imagePrompt = `Professional ${post.platform} image for: ${post.caption.substring(0, 100)}`;
