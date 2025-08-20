@@ -1,23 +1,26 @@
-import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import axios from 'axios';
 import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+import { db } from '../db'
+import { oauth_tokens, oauth_states } from '../../shared/schema'
+import { eq, and, sql } from 'drizzle-orm'
 
-// Lazy-load Supabase client
-let supabase: any = null;
+// Ensure environment variables are loaded first
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
-function getSupabase() {
-  if (!supabase) {
-    const supabaseUrl = process.env.VITE_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase credentials. Please check VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.');
-    }
-    
-    supabase = createClient(supabaseUrl, supabaseKey);
-  }
-  return supabase;
+// Define a type for OAuth states stored in the database
+interface OAuthState {
+  id: string;
+  state: string;
+  platform: string;
+  user_id: string;
+  created_at: Date;
+  expires_at: Date;
 }
 
 interface OAuthConfig {
@@ -58,13 +61,19 @@ class OAuthManager {
   constructor() {
     this.baseUrl = process.env.VITE_APP_URL || 'http://localhost:5000';
     
+    // Debug OAuth environment variables
+    console.log('OAuth Environment Variables Check:');
+    console.log('LinkedIn ID:', process.env.VITE_LINKEDIN_CLIENT_ID ? 'CONFIGURED' : 'MISSING');
+    console.log('Facebook ID:', process.env.VITE_FACEBOOK_CLIENT_ID ? 'CONFIGURED' : 'MISSING');
+    console.log('YouTube ID:', process.env.VITE_YOUTUBE_CLIENT_ID ? 'CONFIGURED' : 'MISSING');
+    
     // Platform configurations
     this.config = {
       facebook: {
         client_id: process.env.VITE_FACEBOOK_CLIENT_ID!,
         client_secret: process.env.VITE_FACEBOOK_CLIENT_SECRET!,
         redirect_uri: `${this.baseUrl}/api/oauth/facebook/callback`,
-        scopes: ['pages_manage_posts', 'pages_read_engagement', 'pages_show_list', 'business_management', 'public_profile'],
+        scopes: ['pages_manage_posts', 'pages_read_engagement', 'pages_show_list', 'public_profile'],
         authUrl: 'https://www.facebook.com/v19.0/dialog/oauth',
         tokenUrl: 'https://graph.facebook.com/v19.0/oauth/access_token',
         api_version: 'v19.0'
@@ -121,14 +130,14 @@ class OAuthManager {
     const config = this.config[platform];
     const state = this.generateState(platform, userId);
 
-    // Store state in Supabase with expiration
+    // Store state in database with expiration
     const expiresAt = new Date(Date.now() + 600000); // 10 minutes
-    await getSupabase().from('oauth_states').insert({
+    await db.insert(oauth_states).values({
       state,
       platform,
       user_id: userId,
-      options: JSON.stringify(options),
-      expires_at: expiresAt.toISOString()
+      options: options,
+      expires_at: expiresAt
     });
 
     const params = new URLSearchParams({
@@ -159,19 +168,17 @@ class OAuthManager {
       throw new Error(`Unsupported platform: ${platform}`);
     }
 
-    // Validate and get state data from Supabase
-    const { data: stateData } = await getSupabase()
-      .from('oauth_states')
-      .select('*')
-      .eq('state', state)
-      .single();
+    // Validate and get state data from database
+    const stateData = await db.query.oauth_states.findFirst({
+      where: eq(oauth_states.state, state)
+    });
 
     if (!stateData) {
       throw new Error('Invalid or expired state parameter');
     }
 
     // Check state expiration
-    if (new Date() > new Date(stateData.expires_at)) {
+    if (new Date() > stateData.expires_at) {
       throw new Error('OAuth state has expired');
     }
 
@@ -200,7 +207,7 @@ class OAuthManager {
     await this.storeConnection(userId, platform, connectionData);
     
     // Clean up state
-    await getSupabase().from('oauth_states').delete().eq('state', state);
+    await db.delete(oauth_states).where(eq(oauth_states.state, state));
 
     console.log(`OAuth connection successful for ${platform}:`, { userId, platform, username: userProfile.username || userProfile.name });
     return connectionData;
@@ -235,7 +242,7 @@ class OAuthManager {
       );
 
       let tokenResponse = response.data;
-
+      console.log(`Token exchange successful for ${platform}:`, tokenResponse);
       // For Facebook/Instagram, exchange for long-lived token
       if ((platform === 'facebook' || platform === 'instagram') && tokenResponse.access_token) {
         try {
@@ -311,13 +318,17 @@ class OAuthManager {
 
   // Get connection status for user across all platforms
   async getConnectionStatus(userId: string): Promise<Record<string, any>> {
-    const { data: connections } = await getSupabase()
-      .from('oauth_tokens')
-      .select('platform, expires_at, profile_data')
-      .eq('user_id', userId);
+    const connections  = await db
+        .select()
+        .from(oauth_tokens)
+        .where(and(
+          eq(oauth_tokens.user_id, userId),
+    
+        ))
+        
 
     const status: Record<string, any> = {};
-
+    //console.log(`Checking connection status for user: ${userId}`, connections);
     // Initialize all platforms as disconnected
     const allPlatforms = Object.keys(this.config);
     allPlatforms.forEach(platform => {
@@ -334,8 +345,8 @@ class OAuthManager {
       status[connection.platform] = {
         connected: !isExpired,
         expired: isExpired,
-        profile: connection.profile_data,
-        username: connection.profile_data?.username || connection.profile_data?.name
+     //   profile: connection.profile_data,
+       // username: connection.profile_data?.username || connection.profile_data?.name
       };
     });
 
@@ -344,19 +355,20 @@ class OAuthManager {
 
   // Get valid access token for platform (with auto-refresh)
   async getAccessToken(userId: string, platform: string): Promise<string> {
-    const { data: connection } = await getSupabase()
-      .from('oauth_tokens')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('platform', platform)
-      .single();
-
+    const [connection] = await db
+        .select()
+        .from(oauth_tokens)
+        .where(and(
+          eq(oauth_tokens.user_id, userId),
+          eq(oauth_tokens.platform, platform)
+        ))
+        .limit(1)
     if (!connection) {
       throw new Error(`No connection found for ${platform}`);
     }
-
+    console.log(`Retrieved connection for ${platform}:`, connection);
     // Check if token needs refresh
-    const needsRefresh = connection.expires_at ? new Date() >= new Date(connection.expires_at - 300000) : false; // 5 min buffer
+    const needsRefresh = connection.expires_at ? new Date().getTime() >= new  Date(connection.expires_at).getTime() - 300000 : false; // 5 min buffer
     
     if (needsRefresh && connection.refresh_token) {
       try {
@@ -370,11 +382,17 @@ class OAuthManager {
           updated_at: new Date().toISOString()
         };
 
-        await getSupabase()
-          .from('oauth_tokens')
-          .update(updatedConnection)
-          .eq('user_id', userId)
-          .eq('platform', platform);
+                 
+          await db
+          .update(oauth_tokens)
+          .set({ access_token: newTokenData.access_token,
+          refresh_token: newTokenData.refresh_token || connection?.refresh_token,
+           expires_at: newTokenData.expires_in ? new Date(Date.now() + (newTokenData.expires_in * 1000)) : null,
+          updated_at: new Date()})
+          .where(and(
+            eq(oauth_tokens.user_id, userId),
+            eq(oauth_tokens.platform, platform)
+          ))
 
         console.log(`Token refreshed for ${platform}`);
         return newTokenData.access_token;
@@ -413,12 +431,15 @@ class OAuthManager {
 
   // Disconnect platform for user
   async disconnect(userId: string, platform: string): Promise<boolean> {
-    const { data: connection } = await getSupabase()
-      .from('oauth_tokens')
-      .select('access_token')
-      .eq('user_id', userId)
-      .eq('platform', platform)
-      .single();
+    const connection = await db.query.oauth_tokens.findFirst({
+      where: and(
+        eq(oauth_tokens.user_id, userId),
+        eq(oauth_tokens.platform, platform)
+      ),
+      columns: {
+        access_token: true
+      }
+    });
 
     if (connection) {
       // Try to revoke tokens if platform supports it
@@ -429,11 +450,11 @@ class OAuthManager {
       }
       
       // Delete from database
-      await getSupabase()
-        .from('oauth_tokens')
-        .delete()
-        .eq('user_id', userId)
-        .eq('platform', platform);
+      await db.delete(oauth_tokens)
+        .where(and(
+          eq(oauth_tokens.user_id, userId),
+          eq(oauth_tokens.platform, platform)
+        ));
 
       console.log(`Platform disconnected:`, { userId, platform });
       return true;
@@ -475,29 +496,72 @@ class OAuthManager {
     }
   }
 
-  // Store connection data in Supabase
+  // Store connection data in database
   private async storeConnection(userId: string, platform: string, connectionData: ConnectionData): Promise<void> {
     const connectionRecord = {
       user_id: userId,
       platform,
       access_token: connectionData.accessToken,
       refresh_token: connectionData.refreshToken,
-      expires_at: connectionData.expiresAt ? new Date(connectionData.expiresAt).toISOString() : null,
-      scope: connectionData.scopes.join(' '),
-      profile_data: connectionData.userProfile,
-      updated_at: new Date().toISOString()
+      expires_at: connectionData.expiresAt ? new Date(connectionData.expiresAt) : null,
+      updated_at: new Date()
     };
 
-    // Upsert the connection
-    const { error } = await getSupabase()
-      .from('oauth_tokens')
-      .upsert(connectionRecord, { 
-        onConflict: 'user_id,platform'
+    console.log(`Storing ${platform} connection for user ${userId}:`, {
+      hasAccessToken: !!connectionData.accessToken,
+      hasRefreshToken: !!connectionData.refreshToken,
+      expiresAt: connectionData.expiresAt,
+      userProfile: connectionData.userProfile
+    });
+
+    try {
+      // Check if connection exists
+      const existingConnection = await db.query.oauth_tokens.findFirst({
+        where: and(
+          eq(oauth_tokens.user_id, userId),
+          eq(oauth_tokens.platform, platform)
+        )
       });
 
-    if (error) {
-      console.error('Failed to store connection:', error);
-      throw new Error(`Failed to store connection: ${error.message}`);
+      if (existingConnection) {
+        // Update existing connection
+        console.log(`Updating existing ${platform} connection for user ${userId}`);
+        const result = await db.update(oauth_tokens)
+          .set(connectionRecord)
+          .where(and(
+            eq(oauth_tokens.user_id, userId),
+            eq(oauth_tokens.platform, platform)
+          ));
+        console.log(`${platform} connection updated successfully:`, result);
+      } else {
+        // Insert new connection
+        console.log(`Inserting new ${platform} connection for user ${userId}`);
+        const result = await db.insert(oauth_tokens).values(connectionRecord);
+        console.log(`${platform} connection inserted successfully:`, result);
+      }
+      
+      // Verify the token was stored
+      const verifyConnection = await db.query.oauth_tokens.findFirst({
+        where: and(
+          eq(oauth_tokens.user_id, userId),
+          eq(oauth_tokens.platform, platform)
+        )
+      });
+      
+      if (verifyConnection) {
+        console.log(`✅ ${platform} token verified in database:`, {
+          platform: verifyConnection.platform,
+          hasAccessToken: !!verifyConnection.access_token,
+          hasRefreshToken: !!verifyConnection.refresh_token,
+          expiresAt: verifyConnection.expires_at
+        });
+      } else {
+        console.error(`❌ ${platform} token NOT found in database after storage attempt`);
+      }
+    } catch (error) {
+      console.error(`Failed to store ${platform} connection:`, error);
+      console.error('Connection record being saved:', connectionRecord);
+      throw new Error(`Failed to store connection: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

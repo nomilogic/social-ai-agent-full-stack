@@ -21,8 +21,9 @@ Get your password from: https://supabase.com/dashboard/project/kdaxthclqiodvetum
 const pool = new Pool({
   connectionString,
   max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  idleTimeoutMillis: 60000,
+  connectionTimeoutMillis: 5000,
+  statement_timeout: 10000
 });
 
 export const db = drizzle(pool, { schema });

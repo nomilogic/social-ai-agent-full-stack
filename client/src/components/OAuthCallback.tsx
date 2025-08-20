@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { oauthManager } from "../lib/oauth";
+import { oauthManagerClient } from "../lib/oauthManagerClient";
 import { Loader } from "lucide-react";
 
 export const OAuthCallback: React.FC = () => {
@@ -29,8 +29,23 @@ export const OAuthCallback: React.FC = () => {
 
         setMessage(`Connecting to ${platform}...`);
 
+        // Try to extract user ID from state parameter (it might be JSON)
+        let userId: string | undefined;
+        try {
+          const stateData = JSON.parse(state);
+          userId = stateData.userId || stateData.user_id;
+        } catch {
+          // If state is not JSON, try to get userId from localStorage or other means
+          userId = localStorage.getItem('currentUserId') || 'default-user';
+        }
+
+        // Set the user ID in the oauth manager client
+        if (userId) {
+          oauthManagerClient.setUserId(userId);
+        }
+
         // Handle the OAuth callback
-        const credentials = await oauthManager.handleCallback(
+        const credentials = await oauthManagerClient.handleCallback(
           platform,
           code,
           state,
@@ -49,7 +64,7 @@ export const OAuthCallback: React.FC = () => {
             },
             "*",
           );
-          window.close();
+         // window.close();
         } else {
           // Redirect to settings page after successful connection
           setTimeout(() => {
@@ -80,7 +95,7 @@ export const OAuthCallback: React.FC = () => {
           // Redirect to settings page after error
           setTimeout(() => {
             navigate("/settings");
-          }, 3000);
+          }, 30000);
         }
       }
     };

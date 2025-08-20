@@ -62,6 +62,7 @@ export const OAuthManager: React.FC<OAuthManagerProps> = ({
   };
 
   const handleConnect = async (platform: Platform) => {
+    alert(`Connecting to ${platform.charAt(0).toUpperCase() + platform.slice(1)}...`);
     console.log('Connecting to platform:', platform);
     try {
       setPlatformStatuses(prev =>

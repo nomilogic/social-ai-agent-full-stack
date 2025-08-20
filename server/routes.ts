@@ -3,11 +3,13 @@ import type { Express } from "express";
 import express from 'express';
 import path from 'path';
 import authRouter from './routes/auth'
-import oauthRoutes from './routes/oauth';
-import oauthEnhancedRoutes from './routes/oauth-enhanced';
-import oauthTokensRoutes from './routes/oauth-tokens';
 import enhancedOAuthRoutes from './routes/oauth-enhanced-integrated';
 import linkedinRouter from './routes/linkedin'
+import facebookRouter from './routes/facebook'
+import instagramRouter from './routes/instagram'
+import twitterRouter from './routes/twitter'
+import tiktokRouter from './routes/tiktok'
+import youtubeRouter from './routes/youtube'
 import socialRouter from './routes/social'
 import aiRouter from './routes/ai'
 import postsRouter from './routes/posts'
@@ -22,13 +24,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // API routes
 app.use('/api/auth', authRouter)
-// NEW: OAuth Manager (handles everything automatically)
+// Simplified OAuth Manager (handles all platforms)
 app.use('/api/oauth', enhancedOAuthRoutes);
-// OLD: Keep legacy routes for backward compatibility
-app.use('/api/oauth-legacy', oauthRoutes);
-  app.use('/api/oauth-enhanced', oauthEnhancedRoutes);
-  app.use('/api/oauth-tokens', oauthTokensRoutes);
 app.use('/api/linkedin', linkedinRouter)
+app.use('/api/facebook', facebookRouter)
+app.use('/api/instagram', instagramRouter)
+app.use('/api/twitter', twitterRouter)
+app.use('/api/tiktok', tiktokRouter)
+app.use('/api/youtube', youtubeRouter)
 app.use('/api/social', socialRouter)
 app.use('/api/ai', aiRouter)
 app.use('/api/posts', postsRouter)

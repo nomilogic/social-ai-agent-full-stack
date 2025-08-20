@@ -28,7 +28,9 @@ export class OAuthManagerClient {
   private defaultHeaders: HeadersInit;
 
   constructor(baseURL?: string, options: { userId?: string; authToken?: string; headers?: HeadersInit } = {}) {
-    this.baseURL = baseURL || import.meta.env.VITE_APP_URL || 'http://localhost:5000';
+    // Normalize base URL by removing trailing slash
+    const rawBaseURL = baseURL || import.meta.env.VITE_APP_URL || 'http://localhost:5000';
+    this.baseURL = rawBaseURL.endsWith('/') ? rawBaseURL.slice(0, -1) : rawBaseURL;
     this.userId = options.userId;
     this.authToken = options.authToken;
     this.defaultHeaders = {
@@ -166,6 +168,51 @@ export class OAuthManagerClient {
     }
 
     return this.request(`/api/oauth/tokens/${platform}/${userIdToUse}`);
+  }
+
+  // Handle OAuth callback
+  async handleCallback(platform: string, code: string, state: string): Promise<any> {
+    try {
+      // Make a POST request to the platform-specific access token endpoint
+      const response = await fetch(`${this.baseURL}/api/${platform}/access-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.defaultHeaders
+        },
+        body: JSON.stringify({
+          code,
+          state,
+          redirect_uri: `${window.location.origin}/oauth/${platform}/callback`,
+          user_id: this.userId
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      const tokenData = await response.json();
+      
+      // Return connection data compatible with the UI expectations
+      return {
+        platform,
+        accessToken: tokenData.access_token,
+        tokenType: tokenData.token_type,
+        expiresIn: tokenData.expires_in,
+        refreshToken: tokenData.refresh_token,
+        userProfile: {
+          username: tokenData.username,
+          name: tokenData.name,
+          profile_picture_url: tokenData.profile_picture_url
+        },
+        connectedAt: Date.now()
+      };
+    } catch (error) {
+      console.error(`OAuth callback error for ${platform}:`, error);
+      throw error;
+    }
   }
 }
 

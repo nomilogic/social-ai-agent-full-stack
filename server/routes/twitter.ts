@@ -1,5 +1,8 @@
 import express, { Request, Response } from 'express'
 import axios from 'axios'
+import { db } from '../db'
+import { oauth_tokens } from '../../shared/schema'
+import { eq, and } from 'drizzle-orm'
 
 const router = express.Router()
 
@@ -208,5 +211,145 @@ async function uploadMediaToTwitter(accessToken: string, imageUrl: string): Prom
     return null
   }
 }
+
+// POST /api/twitter/access-token - Handle Twitter OAuth callback
+router.post('/access-token', async (req: Request, res: Response) => {
+  console.log('Received Twitter OAuth callback with body:', req.body)
+  
+  let body = req.body
+  if (typeof body === 'string') {
+    body = JSON.parse(body)
+  }
+  
+  const { code, redirect_uri, user_id, code_verifier } = body
+  
+  if (!code || !redirect_uri) {
+    return res.status(400).json({ error: 'Missing required parameters: code and redirect_uri' })
+  }
+  
+  const tokenData = {
+    client_id: process.env.VITE_TWITTER_CLIENT_ID || '',
+    client_secret: process.env.VITE_TWITTER_CLIENT_SECRET || '',
+    code: code,
+    grant_type: 'authorization_code',
+    redirect_uri: redirect_uri,
+    code_verifier: code_verifier || 'challenge'
+  }
+  
+  try {
+    const response = await axios.post(
+      'https://api.twitter.com/2/oauth2/token',
+      new URLSearchParams(tokenData).toString(),
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+    )
+    
+    console.log('Twitter access token response:', response.data)
+    
+    // Save token to database if user_id is provided
+    if (user_id && response.data.access_token) {
+      try {
+        // Calculate expiry date if expires_in is provided
+        let expires_at: Date | null = null
+        if (response.data.expires_in) {
+          expires_at = new Date(Date.now() + (response.data.expires_in * 1000))
+        }
+        
+        // Check if token already exists
+        const existingToken = await db
+          .select()
+          .from(oauth_tokens)
+          .where(and(
+            eq(oauth_tokens.user_id, user_id),
+            eq(oauth_tokens.platform, 'twitter')
+          ))
+          .limit(1)
+        
+        if (existingToken.length > 0) {
+          // Update existing token
+          await db
+            .update(oauth_tokens)
+            .set({
+              access_token: response.data.access_token,
+              refresh_token: response.data.refresh_token || null,
+              expires_at: expires_at,
+              updated_at: new Date()
+            })
+            .where(and(
+              eq(oauth_tokens.user_id, user_id),
+              eq(oauth_tokens.platform, 'twitter')
+            ))
+        } else {
+          // Insert new token
+          await db.insert(oauth_tokens).values({
+            user_id: user_id,
+            platform: 'twitter',
+            access_token: response.data.access_token,
+            refresh_token: response.data.refresh_token || null,
+            expires_at: expires_at
+          })
+        }
+        
+        console.log(`Twitter token stored successfully for user ${user_id}`)
+      } catch (storeError) {
+        console.error('Failed to store Twitter token:', storeError)
+        // Don't fail the request, but log the error
+      }
+    }
+    
+    res.json(response.data)
+  } catch (error: any) {
+    console.error('Twitter token exchange error:', error.response?.data || error.message)
+    res.status(500).json({
+      error: 'Failed to exchange Twitter authorization code for access token',
+      details: error.response?.data || error.message
+    })
+  }
+})
+
+// GET /api/twitter/oauth_tokens - Get Twitter OAuth tokens for a user
+router.get('/oauth_tokens', async (req: Request, res: Response) => {
+  const { user_id } = req.query
+  
+  if (!user_id || typeof user_id !== 'string') {
+    return res.status(400).json({ error: 'user_id parameter is required' })
+  }
+  
+  try {
+    console.log(`Fetching Twitter tokens for user: ${user_id}`)
+    
+    const tokens = await db
+      .select()
+      .from(oauth_tokens)
+      .where(and(
+        eq(oauth_tokens.user_id, user_id),
+        eq(oauth_tokens.platform, 'twitter')
+      ))
+      .limit(1)
+    
+    if (tokens.length === 0) {
+      return res.json({ connected: false, token: null })
+    }
+    
+    const token = tokens[0]
+    
+    // Check if token is expired
+    const isExpired = token.expires_at ? new Date(token.expires_at) < new Date() : false
+    
+    return res.json({
+      connected: true,
+      expired: isExpired,
+      token: {
+        access_token: token.access_token,
+        refresh_token: token.refresh_token,
+        expires_at: token.expires_at,
+        token_type: token.token_type
+      }
+    })
+    
+  } catch (error) {
+    console.error('Failed to fetch Twitter tokens:', error)
+    res.status(500).json({ error: 'Failed to fetch Twitter tokens' })
+  }
+})
 
 export default router

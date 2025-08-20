@@ -44,7 +44,7 @@ router.post('/:platform/connect', async (req: Request, res: Response) => {
 router.get('/:platform/callback', async (req: Request, res: Response) => {
   const { platform } = req.params;
   const { code, state, error } = req.query;
-
+console.log("OUAAAAUT")
   console.log(`OAuth callback for ${platform}:`, { code: !!code, state, error });
 
   if (error) {
@@ -56,7 +56,7 @@ router.get('/:platform/callback', async (req: Request, res: Response) => {
           platform: '${platform}', 
           error: '${error}'
         }, '*'); 
-        window.close();
+     //   window.close();
       </script>
     `);
   }
@@ -69,7 +69,7 @@ router.get('/:platform/callback', async (req: Request, res: Response) => {
           platform: '${platform}', 
           error: 'Missing code or state parameter'
         }, '*'); 
-        window.close();
+        //window.close();
       </script>
     `);
   }
@@ -90,7 +90,7 @@ router.get('/:platform/callback', async (req: Request, res: Response) => {
           profilePicture: '${connectionData.userProfile.profile_picture_url || ''}',
           connectedAt: ${connectionData.connectedAt}
         }, '*'); 
-        window.close();
+        //window.close();
       </script>
     `);
   } catch (error) {
@@ -104,7 +104,7 @@ router.get('/:platform/callback', async (req: Request, res: Response) => {
           platform: '${platform}', 
           error: '${errorMessage}'
         }, '*'); 
-        window.close();
+        //window.close();
       </script>
     `);
   }
@@ -251,6 +251,7 @@ router.get('/health', async (req: Request, res: Response) => {
 // GET /api/oauth/status/:userId - Get connection status (legacy)
 router.get('/status/:userId', async (req: Request, res: Response) => {
   // Redirect to new endpoint
+  console.log(`Redirecting status check for user: ${req.params.userId}`);
   const { userId } = req.params;
   try {
     const connections = await oauthManager.getConnectionStatus(userId);
