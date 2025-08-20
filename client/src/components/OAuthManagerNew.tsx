@@ -26,6 +26,7 @@ export const OAuthManager: React.FC<OAuthManagerProps> = ({
   const handleConnect = async (platform: Platform) => {
     try {
       await connectPlatform(platform);
+      alert(`Successfully connected to ${platform.charAt(0).toUpperCase() + platform.slice(1)}!`);
       onCredentialsUpdate?.();
     } catch (error) {
       console.error('Failed to connect:', error);

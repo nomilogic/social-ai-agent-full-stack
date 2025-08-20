@@ -310,6 +310,7 @@ router.post("/access-token", async (req: Request, res: Response) => {
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
     );
 
+    console.log("LinkedIn access token response:", response.data);
     // Save token to database if user_id is provided
     const { user_id } = body;
     if (user_id && response.data.access_token) {

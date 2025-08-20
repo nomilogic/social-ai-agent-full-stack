@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { GeneratedPost, Platform } from '../types';
-import { mockOAuth } from './mockOAuth';
 
 // Facebook
 export async function postToFacebook(pageId: string, accessToken: string, post: GeneratedPost) {
@@ -309,20 +308,8 @@ export async function postToAllPlatforms(
         onProgress?.(post.platform, 'success');
         console.log(`Successfully posted to ${post.platform} via real OAuth`);
       } else {
-        // Fall back to mock OAuth for demo
-        const mockResult = await mockOAuth.publishPost(post.platform, userId, post);
-        
-        if (mockResult.success) {
-          results[post.platform] = { 
-            success: true, 
-            data: mockResult,
-            method: 'demo' 
-          };
-          onProgress?.(post.platform, 'success');
-          console.log(`Successfully posted to ${post.platform} via demo mode`);
-        } else {
-          throw new Error(mockResult.message);
-        }
+        // No mock fallback - real OAuth required
+        throw new Error(`No valid OAuth token found for ${post.platform}. Please connect your account.`);
       }
       
     } catch (error: any) {

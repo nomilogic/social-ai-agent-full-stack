@@ -7,7 +7,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Platform } from "../types";
-import { oauthManager } from "../lib/oauth";
+import { oauthManagerClient } from "../lib/oauthManagerClient";
 import {
   getPlatformIcon,
   getPlatformDisplayName,
@@ -159,8 +159,11 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
         ),
       );
 
-      // Use the same OAuth flow that's working in OAuthManager
-      const authUrl = oauthManager.generateAuthUrl(platform, userId);
+      // Set user ID in the oauth manager client
+      oauthManagerClient.setUserId(userId);
+      
+      // Use the OAuth client to start OAuth flow
+      const { authUrl } = await oauthManagerClient.startOAuthFlow(platform);
       console.log("Opening OAuth popup with URL:", authUrl);
 
       const authWindow = window.open(
@@ -236,8 +239,9 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
     }
 
     try {
-      // Use the same OAuth manager for disconnecting
-      await oauthManager.revokeCredentials(userId, platform);
+      // Use the OAuth manager client for disconnecting
+      oauthManagerClient.setUserId(userId);
+      await oauthManagerClient.disconnectPlatform(platform);
 
       setPlatformStatuses((prev) =>
         prev.map((status) =>
@@ -268,11 +272,11 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
         ),
       );
 
-      // Use the same OAuth manager for refreshing
-      const credentials = await oauthManager.getCredentials(userId, platform);
-      if (credentials) {
-        await oauthManager.refreshToken(userId, platform, credentials);
-      }
+      // Use the OAuth manager client for refreshing
+      oauthManagerClient.setUserId(userId);
+      
+      // Simply check status again to refresh the connection state
+      // Note: Token refresh is typically handled server-side automatically
 
       await checkPlatformStatuses();
       onCredentialsUpdate?.();
