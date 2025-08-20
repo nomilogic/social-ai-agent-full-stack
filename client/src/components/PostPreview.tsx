@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   Copy,
   Download,
@@ -10,6 +10,8 @@ import {
   ThumbsUp,
   Send,
   Edit,
+  Save,
+  X,
 } from "lucide-react";
 import { GeneratedPost, Platform } from "../types";
 import { getPlatformIcon, getPlatformColors, getPlatformDisplayName } from "../utils/platformIcons";
@@ -39,6 +41,10 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
     generatedPosts[0]?.platform || "facebook",
   );
   const [copiedPost, setCopiedPost] = useState<string | null>(null);
+  const [editingPostIndex, setEditingPostIndex] = useState<number | null>(null);
+  const [editingCaption, setEditingCaption] = useState<string>("");
+  const [editingHashtags, setEditingHashtags] = useState<string[]>([]);
+  const [newHashtag, setNewHashtag] = useState<string>("");
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -49,6 +55,49 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
       console.error("Failed to copy text: ", err);
     }
   };
+
+  // Editing functions
+  const startEditing = useCallback((postIndex: number) => {
+    const post = generatedPosts[postIndex];
+    if (post) {
+      setEditingPostIndex(postIndex);
+      setEditingCaption(post.caption);
+      setEditingHashtags([...post.hashtags]);
+    }
+  }, [generatedPosts]);
+
+  const cancelEditing = useCallback(() => {
+    setEditingPostIndex(null);
+    setEditingCaption("");
+    setEditingHashtags([]);
+    setNewHashtag("");
+  }, []);
+
+  const saveEditing = useCallback(() => {
+    if (editingPostIndex !== null && onPostsUpdate) {
+      const updatedPosts = [...generatedPosts];
+      updatedPosts[editingPostIndex] = {
+        ...updatedPosts[editingPostIndex],
+        caption: editingCaption,
+        hashtags: editingHashtags,
+        characterCount: editingCaption.length,
+      };
+      onPostsUpdate(updatedPosts);
+      cancelEditing();
+    }
+  }, [editingPostIndex, editingCaption, editingHashtags, generatedPosts, onPostsUpdate, cancelEditing]);
+
+  const addHashtag = useCallback(() => {
+    if (newHashtag.trim() && !editingHashtags.includes(newHashtag.trim())) {
+      const formattedTag = newHashtag.startsWith('#') ? newHashtag : `#${newHashtag}`;
+      setEditingHashtags([...editingHashtags, formattedTag]);
+      setNewHashtag("");
+    }
+  }, [newHashtag, editingHashtags]);
+
+  const removeHashtag = useCallback((indexToRemove: number) => {
+    setEditingHashtags(editingHashtags.filter((_, index) => index !== indexToRemove));
+  }, [editingHashtags]);
 
 
 
@@ -476,6 +525,101 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
           <div className="flex justify-center mb-6">
             {selectedPost && renderPlatformPreview(selectedPost)}
           </div>
+
+          {/* Inline Editing Controls */}
+          {selectedPost && (
+            <div className="flex justify-center mb-6">
+              <div className="max-w-lg w-full">
+                {editingPostIndex === generatedPosts.findIndex(p => p.platform === selectedPlatform) ? (
+                  // Editing Mode
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-blue-900">Quick Edit</h4>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={saveEditing}
+                          className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm"
+                        >
+                          <Save className="w-3 h-3" />
+                          Save
+                        </button>
+                        <button
+                          onClick={cancelEditing}
+                          className="flex items-center gap-1 px-3 py-1 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors text-sm"
+                        >
+                          <X className="w-3 h-3" />
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Caption Editor */}
+                    <div>
+                      <label className="block text-sm font-medium text-blue-900 mb-1">Caption</label>
+                      <textarea
+                        value={editingCaption}
+                        onChange={useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                          setEditingCaption(e.target.value);
+                        }, [])}
+                        className="w-full p-3 border border-blue-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        rows={4}
+                        placeholder="Enter your post caption..."
+                      />
+                      <p className="text-xs text-blue-600 mt-1">{editingCaption.length} characters</p>
+                    </div>
+
+                    {/* Hashtags Editor */}
+                    <div>
+                      <label className="block text-sm font-medium text-blue-900 mb-1">Hashtags</label>
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {editingHashtags.map((tag, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
+                          >
+                            {tag}
+                            <button
+                              onClick={() => removeHashtag(index)}
+                              className="hover:text-red-600 transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newHashtag}
+                          onChange={(e) => setNewHashtag(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && addHashtag()}
+                          className="flex-1 p-2 border border-blue-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Add hashtag (without #)"
+                        />
+                        <button
+                          onClick={addHashtag}
+                          className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  // View Mode with Edit Button
+                  <div className="text-center">
+                    <button
+                      onClick={() => startEditing(generatedPosts.findIndex(p => p.platform === selectedPlatform))}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Quick Edit Post
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Post Details - Below Preview with constrained width */}
           {selectedPost && (

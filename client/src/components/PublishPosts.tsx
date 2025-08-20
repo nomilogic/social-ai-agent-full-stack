@@ -17,6 +17,10 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
   const [error, setError] = useState<string | null>(null);
   const [connectedPlatforms, setConnectedPlatforms] = useState<Platform[]>([]);
   const [publishProgress, setPublishProgress] = useState<Record<string, 'pending' | 'success' | 'error'>>({});
+  const [facebookPages, setFacebookPages] = useState<any[]>([]);
+  const [youtubeChannels, setYoutubeChannels] = useState<any[]>([]);
+  const [selectedFacebookPage, setSelectedFacebookPage] = useState<string>('');
+  const [selectedYoutubeChannel, setSelectedYoutubeChannel] = useState<string>('');
 
   useEffect(() => {
     console.log('Publishing posts for user:', userId);
@@ -38,9 +42,61 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
         }
       }
       setConnectedPlatforms(connected);
+      
+      // Fetch Facebook pages if Facebook is connected
+      if (connected.includes('facebook')) {
+        await fetchFacebookPages();
+      }
+      
+      // Fetch YouTube channels if YouTube is connected
+      if (connected.includes('youtube')) {
+        await fetchYouTubeChannels();
+      }
     } catch (error) {
       console.error('Failed to check connected platforms:', error);
       setConnectedPlatforms([]);
+    }
+  };
+
+  const fetchFacebookPages = async () => {
+    try {
+      const tokenResponse = await fetch(`/api/oauth/token/${userId}/facebook`);
+      if (tokenResponse.ok) {
+        const tokenData = await tokenResponse.json();
+        if (tokenData.access_token) {
+          const pagesResponse = await fetch(`/api/facebook/pages?access_token=${tokenData.access_token}`);
+          if (pagesResponse.ok) {
+            const pagesData = await pagesResponse.json();
+            setFacebookPages(pagesData.pages || []);
+            if (pagesData.pages && pagesData.pages.length > 0 && !selectedFacebookPage) {
+              setSelectedFacebookPage(pagesData.pages[0].id);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch Facebook pages:', error);
+    }
+  };
+
+  const fetchYouTubeChannels = async () => {
+    try {
+      const tokenResponse = await fetch(`/api/oauth/token/${userId}/youtube`);
+      if (tokenResponse.ok) {
+        const tokenData = await tokenResponse.json();
+        if (tokenData.access_token) {
+          const channelsResponse = await fetch(`/api/youtube/channels?access_token=${tokenData.access_token}`);
+          if (channelsResponse.ok) {
+            const channelsData = await channelsResponse.json();
+            setYoutubeChannels(channelsData.channels || []);
+            if (channelsData.channels && channelsData.channels.length > 0 && !selectedYoutubeChannel) {
+              setSelectedYoutubeChannel(channelsData.channels[0].id);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch YouTube channels:', error);
     }
   };
 
@@ -163,6 +219,43 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
           })}
         </div>
       </div>
+      {/* Platform-specific options */}
+      {(connectedPlatforms.includes('facebook') && selectedPlatforms.includes('facebook') && facebookPages.length > 0) && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h4 className="font-medium text-blue-900 mb-2">📄 Facebook Page Selection</h4>
+          <p className="text-blue-700 text-sm mb-3">Choose which Facebook page to post to:</p>
+          <select
+            value={selectedFacebookPage}
+            onChange={(e) => setSelectedFacebookPage(e.target.value)}
+            className="w-full p-2 border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            {facebookPages.map((page) => (
+              <option key={page.id} value={page.id}>
+                {page.name} ({page.category})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {(connectedPlatforms.includes('youtube') && selectedPlatforms.includes('youtube') && youtubeChannels.length > 0) && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <h4 className="font-medium text-red-900 mb-2">📺 YouTube Channel Selection</h4>
+          <p className="text-red-700 text-sm mb-3">Choose which YouTube channel to upload to:</p>
+          <select
+            value={selectedYoutubeChannel}
+            onChange={(e) => setSelectedYoutubeChannel(e.target.value)}
+            className="w-full p-2 border border-red-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+          >
+            {youtubeChannels.map((channel) => (
+              <option key={channel.id} value={channel.id}>
+                {channel.snippet.title}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-800 text-sm">{error}</p>
