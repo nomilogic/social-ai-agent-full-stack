@@ -58,6 +58,39 @@ export async function postToLinkedInFromServer(accessToken: string, post: Genera
     throw new Error(error.response?.data?.error || error.message);
   }
 }
+
+export async function postToFacebookFromServer(accessToken: string, post: GeneratedPost) {
+  try {
+    const response = await axios.post('/api/facebook/post', {
+      accessToken,
+      post
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || error.message);
+  }
+}
+
+export async function postToYouTubeFromServer(accessToken: string, post: GeneratedPost, videoUrl?: string) {
+  try {
+    if (!videoUrl && !post.imageUrl) {
+      throw new Error('YouTube requires a video file');
+    }
+    
+    const videoUrlToUse = videoUrl || post.imageUrl;
+    
+    // Use the simpler YouTube post endpoint
+    const response = await axios.post('/api/youtube/post', {
+      accessToken,
+      post,
+      videoUrl: videoUrlToUse
+    });
+    
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || error.message);
+  }
+}
 export async function postToLinkedInPersonal(accessToken: string, post: GeneratedPost) {
   // Step 1: Get personId from LinkedIn
   const meResponse = await fetch(`/api/linkedin/me?access_token=${accessToken}`, {
@@ -197,78 +230,72 @@ export async function postToTikTok(params: { accessToken: string; post: Generate
 }
 
 // YouTube
-export async function postToYouTube(params: { accessToken: string; post: GeneratedPost; videoPath: string }) {
-  if (!params.videoPath) {
+export async function postToYouTube(params: { accessToken: string; post: GeneratedPost; videoUrl?: string }) {
+  if (!params.videoUrl) {
     throw new SocialPosterError('YouTube requires a video file', 'youtube', 400, false);
   }
   
-  // Step 1: Upload video metadata
-  const metadataUrl = 'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status';
-  
-  const metadata = {
-    snippet: {
-      title: params.post.caption.slice(0, 100),
-      description: `${params.post.caption}\n\n${params.post.hashtags.join(' ')}`,
-      tags: params.post.hashtags.map(tag => tag.replace('#', '')),
-      categoryId: '22', // People & Blogs category
-      defaultLanguage: 'en',
-      defaultAudioLanguage: 'en'
-    },
-    status: {
-      privacyStatus: 'public', // or 'private', 'unlisted'
-      selfDeclaredMadeForKids: false
+  try {
+    // Use the server API for YouTube posting
+    const response = await fetch('/api/youtube/upload-init', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        accessToken: params.accessToken,
+        post: params.post
+      })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new SocialPosterError(
+        `YouTube upload init failed: ${error.error || 'Unknown error'}`,
+        'youtube',
+        response.status,
+        response.status >= 500
+      );
     }
-  };
-  
-  const metadataResponse = await fetch(metadataUrl, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${params.accessToken}`,
-      'Content-Type': 'application/json',
-      'X-Upload-Content-Type': 'video/*'
-    },
-    body: JSON.stringify(metadata)
-  });
-  
-  if (!metadataResponse.ok) {
-    const error = await metadataResponse.json();
+    
+    const initData = await response.json();
+    
+    // Upload the video using the server API
+    const uploadResponse = await fetch('/api/youtube/upload-video', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        accessToken: params.accessToken,
+        uploadUrl: initData.uploadUrl,
+        videoUrl: params.videoUrl
+      })
+    });
+    
+    if (!uploadResponse.ok) {
+      const error = await uploadResponse.json();
+      throw new SocialPosterError(
+        `YouTube video upload failed: ${error.error || 'Unknown error'}`,
+        'youtube',
+        uploadResponse.status,
+        uploadResponse.status >= 500
+      );
+    }
+    
+    return uploadResponse.json();
+    
+  } catch (error) {
+    if (error instanceof SocialPosterError) {
+      throw error;
+    }
     throw new SocialPosterError(
-      `YouTube upload failed: ${error.error?.message || 'Unknown error'}`,
+      `YouTube posting failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       'youtube',
-      metadataResponse.status,
-      metadataResponse.status >= 500
+      500,
+      true
     );
   }
-  
-  const uploadUrl = metadataResponse.headers.get('Location');
-  if (!uploadUrl) {
-    throw new SocialPosterError('Failed to get YouTube upload URL', 'youtube', 500, true);
-  }
-  
-  // Step 2: Upload video file
-  const videoResponse = await fetch(params.videoPath);
-  const videoBlob = await videoResponse.blob();
-  
-  const uploadResponse = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${params.accessToken}`,
-      'Content-Type': 'video/*'
-    },
-    body: videoBlob
-  });
-  
-  if (!uploadResponse.ok) {
-    const error = await uploadResponse.json();
-    throw new SocialPosterError(
-      `YouTube video upload failed: ${error.error?.message || 'Unknown error'}`,
-      'youtube',
-      uploadResponse.status,
-      uploadResponse.status >= 500
-    );
-  }
-  
-  return uploadResponse.json();
 }
 
 // Enhanced posting function that supports both real and mock OAuth
@@ -343,8 +370,20 @@ async function postWithRealOAuth(post: GeneratedPost, accessToken: string): Prom
         };
       
       case 'facebook':
-        // Add real Facebook posting logic here
-        throw new Error('Real Facebook posting not implemented yet');
+        const fbResult = await postToFacebookFromServer(accessToken, post);
+        return {
+          success: true,
+          message: `Successfully posted to Facebook`,
+          postId: fbResult.postId || fbResult.data?.id
+        };
+      
+      case 'youtube':
+        const ytResult = await postToYouTubeFromServer(accessToken, post);
+        return {
+          success: true,
+          message: `Successfully posted to YouTube`,
+          postId: ytResult.videoId || ytResult.data?.id
+        };
       
       case 'instagram':
         // Add real Instagram posting logic here
@@ -357,10 +396,6 @@ async function postWithRealOAuth(post: GeneratedPost, accessToken: string): Prom
       case 'tiktok':
         // Add real TikTok posting logic here
         throw new Error('Real TikTok posting not implemented yet');
-      
-      case 'youtube':
-        // Add real YouTube posting logic here
-        throw new Error('Real YouTube posting not implemented yet');
       
       default:
         throw new Error(`Unsupported platform: ${post.platform}`);

@@ -59,18 +59,57 @@ router.post('/post', async (req: Request, res: Response) => {
 
     const response = await axios.post(url, postData)
 
+    // Standardize response format to match other platforms
     res.json({
       success: true,
-      data: response.data,
       platform: 'facebook',
-      postId: response.data.id
+      data: response.data,
+      postId: response.data.id,
+      postUrl: `https://www.facebook.com/${response.data.id}`,
+      message: 'Successfully posted to Facebook',
+      timestamp: new Date().toISOString()
     })
 
   } catch (error: any) {
     console.error('Facebook post error:', error.response?.data || error.message)
-    res.status(500).json({
-      error: 'Failed to create Facebook post',
-      details: error.response?.data || error.message
+    
+    // Enhanced error handling with specific Facebook error codes
+    const errorData = error.response?.data
+    let errorMessage = 'Failed to create Facebook post'
+    let statusCode = 500
+    
+    if (errorData?.error) {
+      const fbError = errorData.error
+      
+      // Handle specific Facebook error codes
+      switch (fbError.code) {
+        case 190:
+          errorMessage = 'Facebook access token expired or invalid. Please reconnect your account.'
+          statusCode = 401
+          break
+        case 100:
+          errorMessage = 'Invalid Facebook API request. Please check your post content.'
+          statusCode = 400
+          break
+        case 200:
+          errorMessage = 'Facebook permissions error. Please ensure you have proper posting permissions.'
+          statusCode = 403
+          break
+        case 368:
+          errorMessage = 'Facebook posting temporarily blocked due to suspicious activity.'
+          statusCode = 429
+          break
+        default:
+          errorMessage = fbError.message || 'Facebook API error'
+          statusCode = error.response?.status || 500
+      }
+    }
+    
+    res.status(statusCode).json({
+      error: errorMessage,
+      details: errorData || error.message,
+      platform: 'facebook',
+      retryable: statusCode >= 500 || statusCode === 429
     })
   }
 })
