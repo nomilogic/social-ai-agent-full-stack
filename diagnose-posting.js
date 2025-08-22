@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const BASE_URL = 'http://localhost:5000/api';
-const TEST_USER_ID = '763fac3c-ea7c-42c3-8a20-b3c968cb5265'; // From server logs
+const TEST_USER_ID = 'a8e5f171-45f8-4b07-938b-0ea59744b802';
 
 async function diagnoseFacebook() {
   console.log('\n🔵 Diagnosing Facebook Posting Issue...\n');
