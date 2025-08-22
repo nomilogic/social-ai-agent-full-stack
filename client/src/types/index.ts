@@ -55,6 +55,7 @@ export interface GeneratedPost {
   characterCount: number;
   engagement: 'high' | 'medium' | 'low';
   imageUrl?: string;
+  pageId?: string; // For Facebook/Instagram pages
 }
 
 export type Platform = 'facebook' | 'instagram' | 'twitter' | 'linkedin' | 'tiktok' | 'youtube';

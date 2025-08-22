@@ -59,11 +59,12 @@ export async function postToLinkedInFromServer(accessToken: string, post: Genera
   }
 }
 
-export async function postToFacebookFromServer(accessToken: string, post: GeneratedPost) {
+export async function postToFacebookFromServer(accessToken: string, post: GeneratedPost, pageId?: string) {
   try {
     const response = await axios.post('/api/facebook/post', {
       accessToken,
-      post
+      post,
+      pageId
     });
     return response.data;
   } catch (error: any) {
@@ -302,7 +303,8 @@ export async function postToYouTube(params: { accessToken: string; post: Generat
 export async function postToAllPlatforms(
   userId: string, 
   posts: GeneratedPost[], 
-  onProgress?: (platform: string, status: 'pending' | 'success' | 'error') => void
+  onProgress?: (platform: string, status: 'pending' | 'success' | 'error') => void,
+  context?: { facebookPageId?: string; youtubeChannelId?: string }
 ): Promise<Record<string, any>> {
   const results: Record<string, any> = {};
   
@@ -311,19 +313,32 @@ export async function postToAllPlatforms(
       onProgress?.(post.platform, 'pending');
       console.log(`Attempting to post to ${post.platform} for user ${userId}`);
       
-      // First, try to get real OAuth tokens
+      // Try to get real OAuth tokens using correct endpoint
       let realPostResult = null;
       try {
-        const tokenResponse = await fetch(`/api/oauth/token/${userId}/${post.platform}`);
+        // Use platform-specific OAuth token endpoint
+        const tokenResponse = await fetch(`/api/${post.platform}/oauth_tokens?user_id=${userId}`);
+        console.log(`Token response status for ${post.platform}:`, tokenResponse.status);
+        
         if (tokenResponse.ok) {
           const tokenData = await tokenResponse.json();
-          if (tokenData.access_token) {
-            console.log(`Found real OAuth token for ${post.platform}, attempting real post`);
-            realPostResult = await postWithRealOAuth(post, tokenData.access_token);
+          console.log(`Token data for ${post.platform}:`, { connected: tokenData.connected, expired: tokenData.expired });
+          
+          if (tokenData.connected && tokenData.token?.access_token && !tokenData.expired) {
+            console.log(`Found valid OAuth token for ${post.platform}, attempting real post`);
+            realPostResult = await postWithRealOAuth(post, tokenData.token.access_token, context);
+          } else if (tokenData.expired) {
+            throw new Error(`${post.platform} token has expired. Please reconnect your account.`);
+          } else {
+            throw new Error(`No valid token found for ${post.platform}. Please connect your account.`);
           }
+        } else {
+          const errorData = await tokenResponse.text();
+          throw new Error(`Failed to get token for ${post.platform}: ${errorData}`);
         }
       } catch (error) {
-        console.log(`Real OAuth failed for ${post.platform}, will try demo mode:`, error);
+        console.error(`OAuth token retrieval failed for ${post.platform}:`, error);
+        throw error;
       }
       
       if (realPostResult?.success) {
@@ -358,7 +373,7 @@ export async function postToAllPlatforms(
 }
 
 // Function to handle real OAuth posting
-async function postWithRealOAuth(post: GeneratedPost, accessToken: string): Promise<{ success: boolean; message: string; postId?: string }> {
+async function postWithRealOAuth(post: GeneratedPost, accessToken: string, context?: { facebookPageId?: string; youtubeChannelId?: string }): Promise<{ success: boolean; message: string; postId?: string }> {
   try {
     switch (post.platform) {
       case 'linkedin':
@@ -370,7 +385,7 @@ async function postWithRealOAuth(post: GeneratedPost, accessToken: string): Prom
         };
       
       case 'facebook':
-        const fbResult = await postToFacebookFromServer(accessToken, post);
+        const fbResult = await postToFacebookFromServer(accessToken, post, context?.facebookPageId || post.pageId);
         return {
           success: true,
           message: `Successfully posted to Facebook`,

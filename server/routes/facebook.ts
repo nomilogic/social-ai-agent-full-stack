@@ -43,18 +43,80 @@ router.post('/post', async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Missing accessToken or post data' })
   }
 
-  try {
-    const targetId = pageId || 'me' // Post to page if pageId provided, otherwise to user's profile
-    const url = `https://graph.facebook.com/v19.0/${targetId}/feed`
+  console.log('Facebook post request:', { 
+    hasAccessToken: !!accessToken, 
+    hasPost: !!post, 
+    pageId, 
+    caption: post?.caption?.substring(0, 50) + '...', 
+    hasImage: !!post?.imageUrl 
+  })
 
-    const postData: any = {
-      message: `${post.caption}\n${post.hashtags ? post.hashtags.join(' ') : ''}`,
-      access_token: accessToken
+  try {
+    // First, try to get user permissions to determine what we can do
+    let targetId = 'me' // Default to user profile
+    let finalAccessToken = accessToken
+    
+    // If pageId is provided, try to use page token
+    if (pageId && pageId !== 'me') {
+      try {
+        console.log('Fetching page token for pageId:', pageId)
+        const pagesResponse = await axios.get('https://graph.facebook.com/v19.0/me/accounts', {
+          params: {
+            access_token: accessToken,
+            fields: 'id,name,access_token'
+          }
+        })
+        
+        const selectedPage = pagesResponse.data.data.find((page: any) => page.id === pageId)
+        if (selectedPage && selectedPage.access_token) {
+          targetId = pageId
+          finalAccessToken = selectedPage.access_token
+          console.log(`Using page token for page: ${selectedPage.name}`)
+        } else {
+          console.log('Page not found or no access token, using user profile')
+        }
+      } catch (pageError) {
+        console.warn('Could not fetch page token, posting to user profile instead:', pageError)
+      }
+    }
+    
+    // Prepare common message
+    const message = `${post.caption}${post.hashtags && post.hashtags.length > 0 ? '\n\n' + post.hashtags.join(' ') : ''}`
+
+    // Handle media properly - convert relative URLs to absolute
+    let resolvedImageUrl: string | null = null
+    if (post.imageUrl) {
+      resolvedImageUrl = post.imageUrl
+      // Convert relative URL to absolute if needed
+      if (resolvedImageUrl.startsWith('/uploads/')) {
+        const baseUrl = process.env.NODE_ENV === 'production' 
+          ? (process.env.BASE_URL || 'http://localhost:5000')
+          : 'http://localhost:5000'
+        resolvedImageUrl = `${baseUrl}${resolvedImageUrl}`
+      }
+      console.log('Resolved image URL:', resolvedImageUrl)
     }
 
-    // Add image if provided
-    if (post.imageUrl) {
-      postData.picture = post.imageUrl
+    // Decide endpoint based on whether we have an image
+    let url = `https://graph.facebook.com/v19.0/${targetId}/feed`
+    let postData: any = { access_token: finalAccessToken }
+
+    if (resolvedImageUrl) {
+      // Use photos endpoint when an image is provided to avoid (#100) error
+      url = `https://graph.facebook.com/v19.0/${targetId}/photos`
+      postData = {
+        url: resolvedImageUrl,
+        caption: message,
+        access_token: finalAccessToken
+      }
+      console.log('Posting photo to URL:', url)
+    } else {
+      // Text-only post
+      postData = {
+        message,
+        access_token: finalAccessToken
+      }
+      console.log('Posting feed (text) to URL:', url)
     }
 
     const response = await axios.post(url, postData)

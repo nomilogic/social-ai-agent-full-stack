@@ -121,6 +121,10 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
         selectedPosts,
         (platform, status) => {
           setPublishProgress(prev => ({ ...prev, [platform]: status }));
+        },
+        {
+          facebookPageId: selectedFacebookPage || undefined,
+          youtubeChannelId: selectedYoutubeChannel || undefined
         }
       );
       
