@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { Platform, CompanyInfo, PostContent, GeneratedPost } from '../types';
+import { Platform, CampaignInfo, PostContent, GeneratedPost } from '../types';
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -101,7 +101,7 @@ async function fileToGenerativePart(file: File) {
 
 export async function generatePostForPlatform(
   platform: Platform,
-  companyInfo: CompanyInfo,
+  campaignInfo: CampaignInfo,
   contentData: PostContent
 ): Promise<{
   caption: string;
@@ -117,11 +117,11 @@ export async function generatePostForPlatform(
 You are an expert social media content creator. Generate a ${platform} post with the following requirements:
 
 COMPANY INFORMATION:
-- Company: ${companyInfo.name}
-- Industry: ${companyInfo.industry || 'General'}
-- Target Audience: ${companyInfo.targetAudience || 'General audience'}
-- Brand Tone: ${companyInfo.brandTone}
-- Goals: ${companyInfo.goals.join(', ')}
+- Campaign: ${campaignInfo.name}
+- Industry: ${campaignInfo.industry || 'General'}
+- Target Audience: ${campaignInfo.targetAudience || 'General audience'}
+- Brand Tone: ${campaignInfo.brandTone}
+- Goals: ${campaignInfo.goals.join(', ')}
 
 CONTENT DETAILS:
 - Main Message: ${contentData.prompt}
@@ -167,7 +167,7 @@ Make sure the JSON is valid and properly formatted.
 
     return {
       caption: jsonResponse.caption || contentData.prompt,
-      hashtags: jsonResponse.hashtags || [`#${companyInfo.name.replace(/\s+/g, '').toLowerCase()}`],
+      hashtags: jsonResponse.hashtags || [`#${campaignInfo.name.replace(/\s+/g, '').toLowerCase()}`],
       emojis: jsonResponse.emojis || '✨',
       characterCount: jsonResponse.caption?.length || 0,
       engagement: jsonResponse.engagement_prediction || 'medium'
@@ -176,13 +176,13 @@ Make sure the JSON is valid and properly formatted.
     console.error('Error generating content with Gemini:', error);
 
     // Fallback content generation
-    return generateFallbackContent(platform, companyInfo, contentData, config);
+    return generateFallbackContent(platform, campaignInfo, contentData, config);
   }
 }
 
 function generateFallbackContent(
   platform: Platform,
-  companyInfo: CompanyInfo,
+  campaignInfo: CampaignInfo,
   contentData: PostContent,
   config: PlatformConfig
 ) {
@@ -224,11 +224,11 @@ function generateFallbackContent(
 }
 
 export async function generateAllPosts(
-  companyInfo: CompanyInfo,
+  campaignInfo: CampaignInfo,
   contentData: PostContent,
   onProgress?: (platform: Platform, progress: number) => void
 ): Promise<GeneratedPost[]> {
-  const platforms = companyInfo.platforms || contentData.selectedPlatforms || ['linkedin'];
+  const platforms = campaignInfo.platforms || contentData.selectedPlatforms || ['linkedin'];
   const posts: GeneratedPost[] = [];
   
   console.log('Generating posts for platforms:', platforms);
@@ -256,18 +256,18 @@ export async function generateAllPosts(
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            company: {
-              name: companyInfo.name,
-              industry: companyInfo.industry,
-              description: companyInfo.description,
-              targetAudience: companyInfo.targetAudience,
-              brandTone: companyInfo.brandTone
+            campaign: {
+              name: campaignInfo.name,
+              industry: campaignInfo.industry,
+              description: campaignInfo.description,
+              targetAudience: campaignInfo.targetAudience,
+              brandTone: campaignInfo.brandTone
             },
             content: {
               topic: contentData.prompt,
               contentType: contentData.contentType || 'general',
-              tone: contentData.tone || companyInfo.brandTone,
-              targetAudience: contentData.targetAudience || companyInfo.targetAudience,
+              tone: contentData.tone || campaignInfo.brandTone,
+              targetAudience: contentData.targetAudience || campaignInfo.targetAudience,
               tags: contentData.tags || []
             },
             platforms: [platform]
@@ -298,7 +298,7 @@ export async function generateAllPosts(
           
           // Add default hashtags if none found
           if (hashtags.length === 0) {
-            hashtags = [`#${companyInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`, '#socialmedia'];
+            hashtags = [`#${campaignInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`, '#socialmedia'];
           }
 
           posts.push({
@@ -318,7 +318,7 @@ export async function generateAllPosts(
         posts.push({
           platform,
           caption: contentData.prompt || 'Check out our latest updates!',
-          hashtags: [`#${companyInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`, '#update'],
+          hashtags: [`#${campaignInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`, '#update'],
           imageUrl: contentData.mediaUrl || null,
           success: false,
           error: platformError instanceof Error ? platformError.message : 'Generation failed'
@@ -339,7 +339,7 @@ export async function generateAllPosts(
     return platforms.map((platform: Platform) => ({
       platform,
       caption: contentData.prompt || 'Check out our latest updates!',
-      hashtags: [`#${companyInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`],
+      hashtags: [`#${campaignInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`],
       imageUrl: contentData.mediaUrl || null,
       success: false,
       error: error.message || 'AI generation failed'
@@ -348,11 +348,11 @@ export async function generateAllPosts(
     // Check for quota errors
     if (error.message && (error.message.includes('quota') || error.message.includes('429'))) {
       // Create fallback posts when quota is exceeded
-      const platforms = companyInfo.platforms || ['linkedin'];
+      const platforms = campaignInfo.platforms || ['linkedin'];
       return platforms.map(platform => ({
         platform,
-        caption: contentData.prompt || `📈 Exciting updates from ${companyInfo.name}!\n\nWe're continuously working to bring you the best in ${companyInfo.industry}. Stay tuned for more updates!`,
-        hashtags: getDefaultHashtags(platform, companyInfo.industry),
+        caption: contentData.prompt || `📈 Exciting updates from ${campaignInfo.name}!\n\nWe're continuously working to bring you the best in ${campaignInfo.industry}. Stay tuned for more updates!`,
+        hashtags: getDefaultHashtags(platform, campaignInfo.industry),
         imageUrl: null,
         emojis: '✨ 🚀 💫',
         characterCount: 0,

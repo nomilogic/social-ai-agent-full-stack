@@ -20,7 +20,7 @@ export const ContentPage: React.FC = () => {
   };
 
   const handleGenerationComplete = async (posts: any[]) => {
-    // Save posts to database if we have company and user data
+    // Save posts to database if we have campaign and user data
     if (state.user && state.selectedProfile && state.contentData) {
       try {
         await savePost(

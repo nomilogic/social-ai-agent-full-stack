@@ -11,7 +11,7 @@ export interface ProfileInfo {
   plan?: 'free' | 'ipro' | 'business';
 }
 
-// CampaignInfo (renamed from CompanyInfo with additional campaign fields)
+// CampaignInfo (renamed from CampaignInfo with additional campaign fields)
 export interface CampaignInfo {
   name: string;
   website?: string;
@@ -34,8 +34,8 @@ export interface CampaignInfo {
   scheduledPosts?: number;
 }
 
-// Keep CompanyInfo as alias for backward compatibility during migration
-export type CompanyInfo = CampaignInfo;
+// Keep CampaignInfo as alias for backward compatibility during migration
+export type CampaignInfo = CampaignInfo;
 
 export interface PostContent {
   prompt: string;

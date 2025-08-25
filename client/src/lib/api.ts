@@ -101,10 +101,10 @@ export const campaignsApi = {
 
 // Post operations
 export const postsApi = {
-  // Get all posts for a user (optionally filtered by company)
-  async getAll(userId: string, companyId?: string): Promise<any[]> {
+  // Get all posts for a user (optionally filtered by campaign)
+  async getAll(userId: string, campaignId?: string): Promise<any[]> {
     const params: any = { userId };
-    if (companyId) params.companyId = companyId;
+    if (campaignId) params.campaignId = campaignId;
 
     const response = await api.get<ApiResponse<any[]>>('/posts', { params });
 
@@ -117,13 +117,13 @@ export const postsApi = {
 
   // Create a new post
   async create(
-    companyId: string,
+    campaignId: string,
     contentData: PostContent,
     generatedPosts: GeneratedPost[],
     userId: string
   ): Promise<any> {
     const response = await api.post<ApiResponse>('/posts', {
-      companyId,
+      campaignId,
       prompt: contentData.prompt,
       tags: contentData.tags,
       campaignId: contentData.campaignId,
@@ -233,9 +233,9 @@ export const mediaApi = {
 
 // AI content generation (using existing route)
 export const aiApi = {
-  async generateContent(company: any, content: any, platforms: string[]): Promise<any[]> {
+  async generateContent(campaign: any, content: any, platforms: string[]): Promise<any[]> {
     const response = await api.post<ApiResponse<{posts: any[]}>>('/ai/generate', {
-      company,
+      campaign,
       content,
       platforms
     });

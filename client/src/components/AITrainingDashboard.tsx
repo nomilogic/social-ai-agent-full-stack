@@ -45,13 +45,13 @@ import {
 } from '../lib/aiTrainingService';
 
 interface AITrainingDashboardProps {
-  companyId: string;
+  campaignId: string;
 }
 
 type DashboardTab = 'overview' | 'criteria' | 'insights' | 'patterns' | 'reports';
 
 export const AITrainingDashboard: React.FC<AITrainingDashboardProps> = ({
-  companyId
+  campaignId
 }) => {
   // State management
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
@@ -76,13 +76,13 @@ export const AITrainingDashboard: React.FC<AITrainingDashboardProps> = ({
 
   useEffect(() => {
     loadDashboardData();
-  }, [companyId, activeTab, selectedCategory, dateRange]);
+  }, [campaignId, activeTab, selectedCategory, dateRange]);
 
   const loadDashboardData = async () => {
     setLoading(true);
     try {
       // Load metrics
-      const metricsData = await aiTrainingService.getTrainingMetrics(companyId, dateRange);
+      const metricsData = await aiTrainingService.getTrainingMetrics(campaignId, dateRange);
       setMetrics(metricsData);
 
       // Load data based on active tab
@@ -123,7 +123,7 @@ export const AITrainingDashboard: React.FC<AITrainingDashboardProps> = ({
   };
 
   const loadInsights = async () => {
-    const insightsData = await aiTrainingService.generateInsights(companyId, {
+    const insightsData = await aiTrainingService.generateInsights(campaignId, {
       category: selectedCategory === 'all' ? undefined : selectedCategory,
       limit: 20
     });
@@ -131,7 +131,7 @@ export const AITrainingDashboard: React.FC<AITrainingDashboardProps> = ({
   };
 
   const loadPatterns = async () => {
-    const patternsData = await aiTrainingService.discoverPatterns(companyId, {
+    const patternsData = await aiTrainingService.discoverPatterns(campaignId, {
       category: selectedCategory === 'all' ? undefined : selectedCategory,
       minConfidence: 0.7,
       dateRange
@@ -146,7 +146,7 @@ export const AITrainingDashboard: React.FC<AITrainingDashboardProps> = ({
 
   const generateReport = async () => {
     try {
-      const report = await aiTrainingService.generateTrainingReport(companyId, dateRange);
+      const report = await aiTrainingService.generateTrainingReport(campaignId, dateRange);
       setReports(prev => [report, ...prev]);
       setShowReportModal(false);
     } catch (error) {

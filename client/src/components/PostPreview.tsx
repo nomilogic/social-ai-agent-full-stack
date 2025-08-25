@@ -105,8 +105,11 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
     const renderMedia = useCallback(() => {
       if (!post.imageUrl) return null;
       
-      // Check if it's a video file
-      const isVideo = post.imageUrl.match(/\.(mp4|webm|ogg|mov|avi)$/i);
+      // Check if it's a video file - only match actual video file extensions at end of URL
+      // Exclude data URLs and URLs with query parameters that might contain video extensions
+      const isVideo = !post.imageUrl.startsWith('data:') && 
+                     !post.imageUrl.includes('pollinations.ai') && 
+                     /\.(mp4|webm|ogg|mov|avi)(\?.*)?$/i.test(post.imageUrl);
       
       if (isVideo) {
         return (
@@ -152,7 +155,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                   FB
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-900">Your Company</h3>
+                  <h3 className="font-medium text-gray-900">Your Campaign</h3>
                   <p className="text-xs text-gray-500">Just now · 🌍</p>
                 </div>
               </div>
@@ -204,14 +207,16 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                 </div>
                 <div>
                   <h3 className="font-medium text-gray-900 text-sm">
-                    yourcompany
+                    yourcampaign
                   </h3>
                 </div>
               </div>
             </div>
             <div className="aspect-square bg-gray-100 flex items-center justify-center">
               {post.imageUrl ? (
-                post.imageUrl.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
+                !post.imageUrl.startsWith('data:') && 
+                !post.imageUrl.includes('pollinations.ai') && 
+                /\.(mp4|webm|ogg|mov|avi)(\?.*)?$/i.test(post.imageUrl) ? (
                   <video
                     src={post.imageUrl}
                     controls
@@ -250,7 +255,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                 </div>
               </div>
               <p className="text-sm">
-                <span className="font-medium">yourcompany</span> {post.caption}
+                <span className="font-medium">yourcampaign</span> {post.caption}
               </p>
               <div className="mt-2 flex flex-wrap gap-1">
                 {post.hashtags.map((tag, index) => (
@@ -273,8 +278,8 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-1">
-                    <h3 className="font-bold text-gray-900">Your Company</h3>
-                    <span className="text-gray-500">@yourcompany</span>
+                    <h3 className="font-bold text-gray-900">Your Campaign</h3>
+                    <span className="text-gray-500">@yourcampaign</span>
                     <span className="text-gray-500">·</span>
                     <span className="text-gray-500">now</span>
                   </div>
@@ -325,8 +330,8 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                   LI
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-900">Your Company</h3>
-                  <p className="text-sm text-gray-500">Company • 1st</p>
+                  <h3 className="font-medium text-gray-900">Your Campaign</h3>
+                  <p className="text-sm text-gray-500">Campaign • 1st</p>
                   <p className="text-xs text-gray-400">Just now</p>
                 </div>
               </div>
@@ -367,7 +372,9 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
           <div className="bg-black rounded-lg overflow-hidden max-w-sm shadow-sm">
             <div className="aspect-[9/16] bg-gray-900 relative">
               {post.imageUrl && (
-                post.imageUrl.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
+                !post.imageUrl.startsWith('data:') && 
+                !post.imageUrl.includes('pollinations.ai') && 
+                /\.(mp4|webm|ogg|mov|avi)(\?.*)?$/i.test(post.imageUrl) ? (
                   <video
                     src={post.imageUrl}
                     controls
@@ -412,7 +419,9 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm max-w-lg">
             <div className="aspect-video bg-gray-900 flex items-center justify-center">
               {post.imageUrl ? (
-                post.imageUrl.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
+                !post.imageUrl.startsWith('data:') && 
+                !post.imageUrl.includes('pollinations.ai') && 
+                /\.(mp4|webm|ogg|mov|avi)(\?.*)?$/i.test(post.imageUrl) ? (
                   <video
                     src={post.imageUrl}
                     controls

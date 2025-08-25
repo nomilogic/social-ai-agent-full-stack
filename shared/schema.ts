@@ -24,7 +24,7 @@ export const oauth_tokens = pgTable('oauth_tokens', {
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
-// Campaigns table (renamed from companies with merged campaign fields)
+// Campaigns table (renamed from campaigns with merged campaign fields)
 export const campaigns = pgTable('campaigns', {
   id: uuid('id').primaryKey().defaultRandom(),
   user_id: uuid('user_id').notNull(),
@@ -42,7 +42,7 @@ export const campaigns = pgTable('campaigns', {
   goals: text('goals').array(),
   platforms: text('platforms').array(),
   business_type: text('business_type'),
-  company_size: text('company_size'),
+  campaign_size: text('campaign_size'),
   location: text('location'),
   content_style_preferences: text('content_style_preferences'),
   posting_frequency: text('posting_frequency'),
@@ -140,7 +140,7 @@ export const notifications = pgTable('notifications', {
 export const media = pgTable('media', {
   id: uuid('id').primaryKey().defaultRandom(),
   user_id: uuid('user_id').notNull(),
-  company_id: uuid('company_id'),
+  campaign_id: uuid('campaign_id'),
   filename: text('filename').notNull(),
   original_name: text('original_name').notNull(),
   file_path: text('file_path').notNull(),

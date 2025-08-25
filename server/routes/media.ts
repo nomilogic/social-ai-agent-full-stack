@@ -8,6 +8,7 @@ import { media } from '../../shared/schema'
 import { eq } from 'drizzle-orm'
 import crypto from 'crypto'
 import { serverSupabaseAnon as serverSupabase } from '../supabaseClient'
+import { supabaseStorage } from '../lib/supabaseStorage'
 
 const router = express.Router()
 
@@ -28,12 +29,26 @@ const upload = multer({
   }
 })
 
+// UUID validation helper
+function isValidUUID(str: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+}
+
 // POST /api/media/upload - Upload media file
 router.post('/upload', upload.single('file'), async (req: Request, res: Response) => {
   const userId = req.body.userId
 
   if (!userId) {
     return res.status(400).json({ error: 'User ID is required' })
+  }
+
+  if (userId === 'undefined' || userId === 'null' || !isValidUUID(userId)) {
+    return res.status(400).json({ 
+      error: 'Invalid User ID format. Must be a valid UUID.',
+      received: userId,
+      type: typeof userId
+    })
   }
 
   if (!req.file) {
@@ -45,26 +60,39 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
     const fileExt = file.originalname.split('.').pop()
     const fileName = `${userId}_${Date.now()}.${fileExt}`
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true })
+    console.log('📤 Uploading media file to Supabase:', fileName)
+    
+    // Upload to Supabase storage instead of local storage
+    const uploadResult = await supabaseStorage.uploadImageBuffer(
+      file.buffer,
+      file.mimetype,
+      {
+        bucket: 'images',
+        folder: 'user-uploads',
+        fileName: fileName,
+        makePublic: true // Ensure it's publicly accessible for Facebook posts
+      }
+    )
+
+    if (!uploadResult.success) {
+      console.error('❌ Failed to upload to Supabase:', uploadResult.error)
+      return res.status(500).json({ 
+        error: 'Failed to upload file to storage', 
+        details: uploadResult.error 
+      })
     }
 
-    // Save file to public/uploads directory
-    const filePath = path.join(uploadsDir, fileName)
-    fs.writeFileSync(filePath, file.buffer)
+    const publicUrl = uploadResult.publicUrl || uploadResult.url
+    console.log('✅ Successfully uploaded to Supabase:', publicUrl)
 
-    // Create public URL for the uploaded file
-    const publicUrl = `/uploads/${fileName}`
-
-    // Save media record to database
+    // Save media record to database with Supabase URL
     await db.insert(media).values({
       id: crypto.randomUUID(),
       user_id: userId,
       filename: fileName,
       original_name: file.originalname,
-      file_path: publicUrl,
+      file_path: publicUrl, // Use Supabase public URL
+      file_url: publicUrl, // Also store in file_url field
       mime_type: file.mimetype,
       file_size: file.size,
       media_type: file.mimetype.startsWith('image/') ? 'image' : file.mimetype.startsWith('video/') ? 'video' : 'other',
@@ -72,19 +100,22 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
       updated_at: new Date()
     })
 
+    console.log('💾 Media record saved to database')
+
     res.json({ 
       success: true, 
       data: {
-        url: publicUrl,
+        url: publicUrl, // Return Supabase public URL
         fileName: fileName,
         originalName: file.originalname,
         mimeType: file.mimetype,
-        size: file.size
+        size: file.size,
+        supabasePath: uploadResult.path
       }
     })
   } catch (err: any) {
-    console.error('Server error uploading media:', err)
-    res.status(500).json({ error: 'Internal server error' })
+    console.error('❌ Server error uploading media:', err)
+    res.status(500).json({ error: 'Internal server error', details: err.message })
   }
 })
 
@@ -132,19 +163,47 @@ router.delete('/:userId/:fileName', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'File not found' })
     }
 
-    // Delete from database
-    await db.delete(media).where(eq(media.filename, fileName))
+    const record = mediaRecord[0]
+    console.log('🗑️ Deleting media file:', fileName)
 
-    // Delete physical file
-    const filePath = path.join(process.cwd(), 'public', 'uploads', fileName)
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath)
+    // Delete from database first
+    await db.delete(media).where(eq(media.filename, fileName))
+    console.log('💾 Deleted media record from database')
+
+    // Delete from Supabase storage if it's a Supabase URL
+    if (record.file_path && record.file_path.includes('supabase.co/storage/v1/object/public/')) {
+      try {
+        // Extract path from Supabase URL and delete
+        const supabasePattern = /\/storage\/v1\/object\/public\/[^/]+\/(.+)/
+        const match = record.file_path.match(supabasePattern)
+        
+        if (match && match[1]) {
+          const filePath = match[1]
+          console.log('🗑️ Deleting from Supabase storage:', filePath)
+          const deleted = await supabaseStorage.deleteImage(filePath)
+          if (deleted) {
+            console.log('✅ Successfully deleted from Supabase storage')
+          } else {
+            console.warn('⚠️ Could not delete from Supabase storage, but database record removed')
+          }
+        }
+      } catch (storageError) {
+        console.warn('⚠️ Error deleting from Supabase storage:', storageError)
+        // Continue anyway - database record is already deleted
+      }
+    } else {
+      // Fallback: try to delete from local storage (for backward compatibility)
+      const localFilePath = path.join(process.cwd(), 'public', 'uploads', fileName)
+      if (fs.existsSync(localFilePath)) {
+        fs.unlinkSync(localFilePath)
+        console.log('✅ Deleted local file:', localFilePath)
+      }
     }
 
     res.json({ success: true, message: 'File deleted successfully' })
   } catch (err: any) {
-    console.error('Server error deleting media:', err)
-    res.status(500).json({ error: 'Internal server error' })
+    console.error('❌ Server error deleting media:', err)
+    res.status(500).json({ error: 'Internal server error', details: err.message })
   }
 })
 

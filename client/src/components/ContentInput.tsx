@@ -205,6 +205,81 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     }
   };
 
+  const analyzeImageFromUrl = async (imageUrl: string) => {
+    setAnalyzingImage(true);
+    try {
+      console.log("Analyzing AI-generated image from URL with Gemini API...");
+
+      // Fetch the image and convert to base64
+      const imageResponse = await fetch(imageUrl);
+      if (!imageResponse.ok) {
+        throw new Error("Failed to fetch image from URL");
+      }
+
+      const blob = await imageResponse.blob();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onload = () => {
+          const result = reader.result;
+          if (typeof result === "string") {
+            resolve(result.split(",")[1]); // Get base64 part
+          } else {
+            reject(new Error("FileReader result is not a string"));
+          }
+        };
+        reader.onerror = (error) => reject(error);
+      });
+
+      // Call the Gemini analysis API with proper data URL format
+      const dataUrl = `data:${blob.type};base64,${base64}`;
+
+      const apiUrl =
+        import.meta.env.VITE_API_URL ||
+        (typeof window !== "undefined"
+          ? `${window.location.protocol}//${window.location.host}`
+          : "http://localhost:5000");
+      const response = await fetch(`${apiUrl}/api/ai/analyze-image`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          image: dataUrl,
+          mimeType: blob.type,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Analysis API error:", errorData);
+        throw new Error(errorData.error || "Failed to analyze image");
+      }
+
+      const result = await response.json();
+      console.log("Analysis result:", result);
+
+      if (result.success && result.analysis) {
+        setImageAnalysis(result.analysis);
+        console.log("Image analysis completed successfully");
+      } else {
+        console.log("No analysis in result:", result);
+        setImageAnalysis(
+          "AI-generated image analyzed. Add a description for better content generation.",
+        );
+      }
+    } catch (error: any) {
+      console.error("Error analyzing AI-generated image:", error);
+      console.error("Error details:", error.message);
+      console.error("Error stack:", error.stack);
+      setImageAnalysis(
+        `AI-generated image loaded successfully. ${error.message?.includes("quota") ? "AI analysis quota exceeded." : "Add a description for better content generation."}`,
+      );
+    } finally {
+      setAnalyzingImage(false);
+    }
+  };
+
   const addTag = () => {
     if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
       setFormData((prev) => ({
@@ -225,14 +300,14 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.prompt.trim()) {
-      // For now, passing an empty object for companyInfo and mediaAssets to simulate the structure
+      // For now, passing an empty object for campaignInfo and mediaAssets to simulate the structure
       // This should be replaced with actual data fetching or state management
-      const companyInfo = {
-        name: "Sample Company",
+      const campaignInfo = {
+        name: "Sample Campaign",
         industry: "Technology",
         brand_tone: "professional",
         target_audience: "Professionals",
-        description: "A sample company for content generation",
+        description: "A sample campaign for content generation",
       };
       const mediaAssets = formData.mediaUrl
         ? [{ url: formData.mediaUrl, type: formData.media?.type || "image" }]
@@ -243,14 +318,14 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         prompt: formData.prompt,
         selectedPlatforms: formData.selectedPlatforms,
         platforms: formData.selectedPlatforms,
-        companyName: companyInfo.name,
-        companyInfo,
+        campaignName: campaignInfo.name,
+        campaignInfo,
         mediaAssets,
         analysisResults: imageAnalysis,
-        industry: companyInfo.industry,
-        tone: companyInfo.brand_tone,
-        targetAudience: companyInfo.target_audience,
-        description: companyInfo.description,
+        industry: campaignInfo.industry,
+        tone: campaignInfo.brand_tone,
+        targetAudience: campaignInfo.target_audience,
+        description: campaignInfo.description,
         imageAnalysis: imageAnalysis,
       };
 
@@ -296,7 +371,11 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
   const performAIAnalysis = async () => {
     if (formData.media && formData.media.type.startsWith("image/")) {
+      // Analyze uploaded image file
       await analyzeImage(formData.media);
+    } else if (formData.mediaUrl && !formData.media && !formData.mediaUrl.match(/\.(mp4|mov|avi|wmv|flv|webm|mkv|m4v)$/i)) {
+      // Analyze AI-generated image from URL
+      await analyzeImageFromUrl(formData.mediaUrl);
     }
   };
 
@@ -382,8 +461,8 @@ export const ContentInput: React.FC<ContentInputProps> = ({
               {formData.media || formData.mediaUrl ? (
                 <div className="space-y-3">
                   <div className="relative">
-                    {formData.media?.type.startsWith("image/") ||
-                    formData.mediaUrl?.startsWith("image/") ? (
+                    {(formData.media?.type.startsWith("image/")) ||
+                    (formData.mediaUrl && !formData.media && !formData.mediaUrl.match(/\.(mp4|mov|avi|wmv|flv|webm|mkv|m4v)$/i)) ? (
                       <div className="relative">
                         <img
                           src={
@@ -484,7 +563,8 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
                     {/* AI Analysis Button */}
                     {(formData.media || formData.mediaUrl) &&
-                      formData.media?.type.startsWith("image/") &&
+                      ((formData.media?.type.startsWith("image/")) ||
+                      (formData.mediaUrl && !formData.media && !formData.mediaUrl.match(/\.(mp4|mov|avi|wmv|flv|webm|mkv|m4v)$/i))) &&
                       !analyzingImage && (
                         <button
                           type="button"

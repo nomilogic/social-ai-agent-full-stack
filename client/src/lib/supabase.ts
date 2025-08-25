@@ -1,6 +1,6 @@
 // Migrated from Supabase to PostgreSQL with Drizzle
 // Database operations are now handled server-side via API calls
-// Example: Use fetch('/api/companies') instead of supabase.from('companies')
+// Example: Use fetch('/api/campaigns') instead of supabase.from('campaigns')
 
 // import { createClient } from '@supabase/supabase-js';
 
@@ -49,7 +49,7 @@ export const supabaseClient = apiClient;
 export interface Database {
   public: {
     Tables: {
-      companies: {
+      campaigns: {
         Row: {
           id: string;
           name: string;
@@ -93,7 +93,7 @@ export interface Database {
       posts: {
         Row: {
           id: string;
-          company_id: string;
+          campaign_id: string;
           prompt: string;
           tags: string[];
           campaign_id: string | null;
@@ -105,7 +105,7 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          company_id: string;
+          campaign_id: string;
           prompt: string;
           tags?: string[];
           campaign_id?: string | null;
@@ -117,7 +117,7 @@ export interface Database {
         };
         Update: {
           id?: string;
-          company_id?: string;
+          campaign_id?: string;
           prompt?: string;
           tags?: string[];
           campaign_id?: string | null;

@@ -37,7 +37,7 @@ import { VideoPlayerModal } from './VideoPlayerModal';
 import { ContentInput } from './ContentInput'; // Assuming ContentInput is in this path
 
 interface PostGalleryDashboardProps {
-  companyId: string;
+  campaignId: string;
   onSelectPost?: (post: PostGalleryItem) => void;
   onReusePost?: (postId: string) => void;
   onCreateTemplate?: (postId: string) => void;
@@ -48,7 +48,7 @@ type MediaType = 'all' | 'image' | 'video' | 'audio';
 type SortBy = 'date' | 'performance' | 'popularity';
 
 export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
-  companyId,
+  campaignId,
   onSelectPost,
   onReusePost,
   onCreateTemplate
@@ -87,7 +87,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
 
   useEffect(() => {
     loadContent();
-  }, [companyId, viewMode, filters]);
+  }, [campaignId, viewMode, filters]);
 
   const loadContent = async () => {
     setLoading(true);
@@ -95,7 +95,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
       switch (viewMode) {
         case 'gallery':
         case 'list':
-          const { items } = await postHistoryService.getPostGallery(companyId, {
+          const { items } = await postHistoryService.getPostGallery(campaignId, {
             categories: filters.categories,
             platforms: filters.platforms,
             status: filters.status as any[],
@@ -108,7 +108,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
           break;
 
         case 'media':
-          const { assets } = await mediaAssetService.getMediaAssets(companyId, {
+          const { assets } = await mediaAssetService.getMediaAssets(campaignId, {
             type: filters.mediaType === 'all' ? undefined : filters.mediaType,
             limit: 50
           });
@@ -116,7 +116,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
           break;
 
         case 'templates':
-          const templateList = await postHistoryService.getContentTemplates(companyId);
+          const templateList = await postHistoryService.getContentTemplates(campaignId);
           setTemplates(templateList);
           break;
       }
@@ -136,12 +136,12 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
     setLoading(true);
     try {
       if (viewMode === 'media') {
-        const results = await mediaAssetService.searchMediaAssets(companyId, searchQuery, {
+        const results = await mediaAssetService.searchMediaAssets(campaignId, searchQuery, {
           type: filters.mediaType === 'all' ? undefined : filters.mediaType
         });
         setMediaAssets(results);
       } else {
-        const results = await postHistoryService.searchPosts(companyId, searchQuery, {
+        const results = await postHistoryService.searchPosts(campaignId, searchQuery, {
           platforms: filters.platforms,
           categories: filters.categories
         });
@@ -202,7 +202,7 @@ export const PostGalleryDashboard: React.FC<PostGalleryDashboardProps> = ({
   const handleFileUpload = async (files: FileList) => {
     try {
       const uploadPromises = Array.from(files).map(file => 
-        mediaAssetService.uploadMedia(file, companyId, {
+        mediaAssetService.uploadMedia(file, campaignId, {
           source: 'uploaded',
           altText: file.name
         })

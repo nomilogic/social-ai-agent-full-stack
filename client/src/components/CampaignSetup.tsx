@@ -190,14 +190,14 @@ export const CampaignSetup: React.FC<CampaignSetupProps> = ({ onNext, onBack, in
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <FileText className="w-4 h-4 inline mr-2" />
-                Company Description
+                Campaign Description
               </label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 rows={3}
-                placeholder="Describe what your company does, your mission, and values"
+                placeholder="Describe what your campaign does, your mission, and values"
               />
             </div>
           </div>

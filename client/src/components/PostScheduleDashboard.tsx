@@ -24,15 +24,15 @@ import {
 import { format } from "date-fns";
 
 interface PostScheduleDashboardProps {
-  companyId: string;
-  companyData?: any;
+  campaignId: string;
+  campaignData?: any;
 }
 
 type ActiveView = "calendar" | "generator" | "analytics" | "create";
 
 export const PostScheduleDashboard: React.FC<PostScheduleDashboardProps> = ({
-  companyId,
-  companyData,
+  campaignId,
+  campaignData,
 }) => {
   const [activeView, setActiveView] = useState<ActiveView>("calendar");
   const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([]);
@@ -47,13 +47,13 @@ export const PostScheduleDashboard: React.FC<PostScheduleDashboardProps> = ({
   useEffect(() => {
     loadScheduledPosts();
     loadAnalytics();
-  }, [companyId]);
+  }, [campaignId]);
 
   const loadScheduledPosts = async () => {
     try {
       setLoading(true);
       setIsLoading(true); // Set loading for post list
-      const posts = await scheduleService.getScheduledPosts(companyId);
+      const posts = await scheduleService.getScheduledPosts(campaignId);
       setScheduledPosts(
         posts.map((post) => ({ ...post, scheduledDate: new Date(post.date) })),
       ); // Ensure scheduledDate is a Date object
@@ -67,7 +67,7 @@ export const PostScheduleDashboard: React.FC<PostScheduleDashboardProps> = ({
 
   const loadAnalytics = async () => {
     try {
-      const data = await scheduleService.getSchedulingAnalytics(companyId);
+      const data = await scheduleService.getSchedulingAnalytics(campaignId);
       setAnalytics(data);
     } catch (error) {
       console.error("Failed to load analytics:", error);
@@ -81,7 +81,7 @@ export const PostScheduleDashboard: React.FC<PostScheduleDashboardProps> = ({
       setIsGeneratingSchedule(true);
       const schedule = await scheduleService.generateSchedule({
         ...request,
-        companyId,
+        campaignId,
       });
       return schedule;
     } catch (error) {
@@ -140,7 +140,7 @@ export const PostScheduleDashboard: React.FC<PostScheduleDashboardProps> = ({
         platform: postData.platforms || ["linkedin"],
         status: "scheduled",
         category: postData.category,
-        companyId,
+        campaignId,
         isLive: false,
       };
 
@@ -413,7 +413,7 @@ export const PostScheduleDashboard: React.FC<PostScheduleDashboardProps> = ({
             onEditPost={handleEditPost}
             onDeletePost={handleDeletePost}
             onViewPost={handleViewPost}
-            companyId={companyId}
+            campaignId={campaignId}
           />
         )}
 
@@ -421,7 +421,7 @@ export const PostScheduleDashboard: React.FC<PostScheduleDashboardProps> = ({
           <AIScheduleGenerator
             onGenerateSchedule={handleGenerateSchedule}
             onApproveSchedule={handleApproveSchedule}
-            companyData={companyData}
+            campaignData={campaignData}
             isGenerating={isGeneratingSchedule}
           />
         )}
@@ -443,7 +443,7 @@ export const PostScheduleDashboard: React.FC<PostScheduleDashboardProps> = ({
 
             <ContentInput
               onGenerate={handleCreateScheduledPost}
-              companyData={companyData}
+              campaignData={campaignData}
               initialPlatforms={["linkedin"]}
               showScheduling={true}
               scheduledDate={selectedDate}

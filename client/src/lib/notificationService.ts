@@ -22,7 +22,7 @@ export interface LegacyNotificationData {
   message: string;
   scheduledTime: Date;
   userId: string;
-  companyId?: string;
+  campaignId?: string;
   campaignId?: string;
   postId?: string;
   isRead: boolean;

@@ -56,7 +56,7 @@ function App() {
           </ProtectedRoute>
         } />
 
-        <Route path="/profile/*" element={ // Changed from /companies/* to /profile/*
+        <Route path="/profile/*" element={ // Changed from /campaigns/* to /profile/*
           <ProtectedRoute>
             <AppLayout>
               <ProfilePage /> {/* Changed from CompaniesPage to ProfilePage */}
@@ -74,7 +74,7 @@ function App() {
         } />
 
         {/* Companies route redirects to campaigns for backward compatibility */}
-        {/* <Route path="/companies/*" element={<Navigate to="/campaigns" replace />} /> */}
+        {/* <Route path="/campaigns/*" element={<Navigate to="/campaigns" replace />} /> */}
 
         <Route path="/content/*" element={
           <ProtectedRoute>

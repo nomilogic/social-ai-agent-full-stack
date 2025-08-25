@@ -3,6 +3,7 @@ import axios from "axios";
 import { db } from '../db';
 import { oauth_tokens } from '../../shared/schema';
 import { eq, and } from 'drizzle-orm';
+import { c } from "node_modules/vite/dist/node/types.d-aGj9QkWt";
 
 const router = express.Router();
 
@@ -37,6 +38,8 @@ router.get("/me", async (req: Request, res: Response) => {
 router.post("/post", async (req: Request, res: Response) => {
   const { accessToken, post } = req.body;
 
+  console.log("Received request to create LinkedIn post with data:",accessToken, post);
+  
   if (!accessToken || !post) {
     return res.status(400).json({ error: "Missing accessToken or post data" });
   }
@@ -133,7 +136,7 @@ router.post("/post", async (req: Request, res: Response) => {
       lifecycleState: "PUBLISHED",
       specificContent: {
         "com.linkedin.ugc.ShareContent": {
-          shareCommentary: { text: post.caption },
+          shareCommentary: { text: post.caption +" "+post.hashtags.join(" ") },
           shareMediaCategory: mediaAsset ? "IMAGE" : "NONE",
           media: mediaAsset
             ? [

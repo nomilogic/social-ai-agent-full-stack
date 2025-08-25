@@ -5,6 +5,7 @@ export interface ImageGenerationRequest {
   style?: 'realistic' | 'artistic' | 'cartoon' | 'professional' | 'minimalist';
   aspectRatio?: '1:1' | '16:9' | '4:3' | '9:16';
   quality?: 'standard' | 'hd';
+  model?: string;
 }
 
 export interface GeneratedImage {
@@ -54,14 +55,30 @@ export async function generateImage(request: ImageGenerationRequest): Promise<Ge
         enhancedPrompt += ', square format, social media optimized';
     }
 
-    const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate-image`, {
+    // Use Pollinations with model selection
+    const model = request.model || 'stabilityai/stable-diffusion-xl-base-1.0';
+    const endpoint = '/api/ai/generate-image';
+    
+    // Convert aspect ratio to dimensions
+    const dimensions = {
+      '1:1': { width: 1024, height: 1024 },
+      '16:9': { width: 1792, height: 1024 },
+      '9:16': { width: 1024, height: 1792 },
+      '4:3': { width: 1024, height: 768 }
+    };
+    const { width, height } = dimensions[request.aspectRatio as keyof typeof dimensions] || dimensions['1:1'];
+    
+    const requestData = {
       prompt: enhancedPrompt,
-      size: request.aspectRatio === '1:1' ? '1024x1024' : 
-            request.aspectRatio === '16:9' ? '1792x1024' :
-            request.aspectRatio === '9:16' ? '1024x1792' : '1024x1024',
-      quality: request.quality || 'standard',
-      style: request.style || 'realistic'
-    });
+      model: model,
+      style: request.style || 'realistic',
+      width,
+      height,
+      saveToStorage: true,
+      userId: 'anonymous' // Can be updated to use actual user ID
+    };
+
+    const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${endpoint}`, requestData);
 
     return {
       url: response.data.imageUrl,

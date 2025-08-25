@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
-import { scheduled_posts, companies, campaigns } from '../../shared/schema';
+import { scheduled_posts, campaigns, campaigns } from '../../shared/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -45,7 +45,7 @@ interface ScheduleRequest {
   timePreference?: 'morning' | 'afternoon' | 'evening' | 'custom';
   customTime?: string;
   keywords?: string[];
-  companyId: string;
+  campaignId: string;
 }
 
 interface GeneratedSchedule {
@@ -58,7 +58,7 @@ interface GeneratedSchedule {
   category: string;
   isLive?: boolean;
   reasoning?: string;
-  companyId: string;
+  campaignId: string;
 }
 
 /**
@@ -193,15 +193,15 @@ router.post('/ai/generate-schedule', async (req: Request, res: Response) => {
   try {
     const request: ScheduleRequest & { preferredModel?: string } = req.body;
 
-    if (!request.prompt || !request.platforms || request.platforms.length === 0 || !request.companyId) {
-      return res.status(400).json({ error: 'Missing required fields: prompt, platforms, and companyId are required' });
+    if (!request.prompt || !request.platforms || request.platforms.length === 0 || !request.campaignId) {
+      return res.status(400).json({ error: 'Missing required fields: prompt, platforms, and campaignId are required' });
     }
 
-    // Get company data for context
-    const { data: companyData } = await supabase
-      .from('companies')
+    // Get campaign data for context
+    const { data: campaignData } = await supabase
+      .from('campaigns')
       .select('*')
-      .eq('id', request.companyId)
+      .eq('id', request.campaignId)
       .single();
 
     // Determine which AI model to use
@@ -245,12 +245,12 @@ REQUEST ANALYSIS:
 - Suggested Times: ${getOptimalTimes().join(', ')}
 
 COMPANY PROFILE:
-${companyData ? `
-- Company: ${companyData.name}
-- Industry: ${companyData.industry || 'Technology'}
-- Description: ${companyData.description || 'Professional services company'}
-- Target Audience: ${companyData.target_audience || 'Business professionals'}
-- Brand Voice: ${companyData.brand_voice || 'Professional and engaging'}
+${campaignData ? `
+- Campaign: ${campaignData.name}
+- Industry: ${campaignData.industry || 'Technology'}
+- Description: ${campaignData.description || 'Professional services campaign'}
+- Target Audience: ${campaignData.target_audience || 'Business professionals'}
+- Brand Voice: ${campaignData.brand_voice || 'Professional and engaging'}
 ` : '- Generic business profile'}
 
 TASK: Analyze the request and create a strategic posting schedule following these steps:
@@ -348,7 +348,7 @@ Generate ${Math.min(parseInt(request.prompt.match(/\d+/)?.[0] || '5'), 20)} post
       category: item.category || request.category || 'General',
       isLive: Boolean(item.isLive),
       reasoning: item.reasoning,
-      companyId: request.companyId
+      campaignId: request.campaignId
     }));
 
     res.json(enhancedSchedule);
@@ -372,7 +372,7 @@ router.post('/schedule/save', authenticateToken, async (req: Request, res: Respo
     // Prepare data for database insertion
     const scheduledPosts = schedule.map(item => ({
       id: item.id,
-      company_id: item.companyId,
+      campaign_id: item.campaignId,
       date: item.date,
       time: item.time,
       content: item.content,
@@ -401,20 +401,20 @@ router.post('/schedule/save', authenticateToken, async (req: Request, res: Respo
 });
 
 /**
- * Get scheduled posts for a company
+ * Get scheduled posts for a campaign
  */
 router.get('/schedule/posts', authenticateToken, async (req: Request, res: Response) => {
   try {
-    const { companyId, startDate, endDate } = req.query;
+    const { campaignId, startDate, endDate } = req.query;
 
-    if (!companyId) {
-      return res.status(400).json({ error: 'Company ID is required' });
+    if (!campaignId) {
+      return res.status(400).json({ error: 'Campaign ID is required' });
     }
 
     let query = supabase
       .from('scheduled_posts')
       .select('*')
-      .eq('company_id', companyId)
+      .eq('campaign_id', campaignId)
       .order('date', { ascending: true })
       .order('time', { ascending: true });
 
@@ -443,7 +443,7 @@ router.get('/schedule/posts', authenticateToken, async (req: Request, res: Respo
       status: post.status,
       isLive: post.is_live,
       category: post.category,
-      companyId: post.company_id,
+      campaignId: post.campaign_id,
       createdAt: post.created_at,
       updatedAt: post.updated_at
     })) || [];
@@ -465,7 +465,7 @@ router.post('/schedule/posts', authenticateToken, async (req: Request, res: Resp
     const { data, error } = await supabase
       .from('scheduled_posts')
       .insert({
-        company_id: postData.companyId,
+        campaign_id: postData.campaignId,
         date: postData.date,
         time: postData.time,
         content: postData.content,
@@ -493,7 +493,7 @@ router.post('/schedule/posts', authenticateToken, async (req: Request, res: Resp
       status: data.status,
       isLive: data.is_live,
       category: data.category,
-      companyId: data.company_id,
+      campaignId: data.campaign_id,
       createdAt: data.created_at,
       updatedAt: data.updated_at
     };
@@ -544,7 +544,7 @@ router.patch('/schedule/posts/:postId', authenticateToken, async (req: Request, 
       status: data.status,
       isLive: data.is_live,
       category: data.category,
-      companyId: data.company_id,
+      campaignId: data.campaign_id,
       createdAt: data.created_at,
       updatedAt: data.updated_at
     };
@@ -584,10 +584,10 @@ router.delete('/schedule/posts/:postId', authenticateToken, async (req: Request,
  */
 router.get('/schedule/analytics', authenticateToken, async (req: Request, res: Response) => {
   try {
-    const { companyId, period = 'month' } = req.query;
+    const { campaignId, period = 'month' } = req.query;
 
-    if (!companyId) {
-      return res.status(400).json({ error: 'Company ID is required' });
+    if (!campaignId) {
+      return res.status(400).json({ error: 'Campaign ID is required' });
     }
 
     // Calculate date range based on period
@@ -609,7 +609,7 @@ router.get('/schedule/analytics', authenticateToken, async (req: Request, res: R
     const { data: allPosts, error } = await supabase
       .from('scheduled_posts')
       .select('*')
-      .eq('company_id', companyId)
+      .eq('campaign_id', campaignId)
       .gte('created_at', startDate.toISOString());
 
     if (error) {
@@ -654,7 +654,7 @@ router.get('/schedule/analytics', authenticateToken, async (req: Request, res: R
       status: post.status,
       isLive: post.is_live,
       category: post.category,
-      companyId: post.company_id,
+      campaignId: post.campaign_id,
       createdAt: post.created_at,
       updatedAt: post.updated_at
     })) || [];
@@ -670,7 +670,7 @@ router.get('/schedule/analytics', authenticateToken, async (req: Request, res: R
       status: post.status,
       isLive: post.is_live,
       category: post.category,
-      companyId: post.company_id,
+      campaignId: post.campaign_id,
       createdAt: post.created_at,
       updatedAt: post.updated_at
     })) || [];
@@ -695,17 +695,17 @@ router.get('/schedule/analytics', authenticateToken, async (req: Request, res: R
  */
 router.post('/ai/generate-live-content', authenticateToken, async (req: Request, res: Response) => {
   try {
-    const { companyId, date, category, preferredModel } = req.body;
+    const { campaignId, date, category, preferredModel } = req.body;
 
-    if (!companyId || !date) {
-      return res.status(400).json({ error: 'Company ID and date are required' });
+    if (!campaignId || !date) {
+      return res.status(400).json({ error: 'Campaign ID and date are required' });
     }
 
-    // Get company data
-    const { data: companyData } = await supabase
-      .from('companies')
+    // Get campaign data
+    const { data: campaignData } = await supabase
+      .from('campaigns')
       .select('*')
-      .eq('id', companyId)
+      .eq('id', campaignId)
       .single();
 
     // Create contextual AI prompt for live content
@@ -715,13 +715,13 @@ router.post('/ai/generate-live-content', authenticateToken, async (req: Request,
     const aiPrompt = `
 Generate live, contextual social media content for ${date}. This content should be relevant to current events, trends, or date-specific topics.
 
-Company Context:
-${companyData ? `
-Name: ${companyData.name}
-Industry: ${companyData.industry || 'Technology'}
-Description: ${companyData.description || ''}
-Target Audience: ${companyData.target_audience || 'Professionals'}
-` : 'No company data available'}
+Campaign Context:
+${campaignData ? `
+Name: ${campaignData.name}
+Industry: ${campaignData.industry || 'Technology'}
+Description: ${campaignData.description || ''}
+Target Audience: ${campaignData.target_audience || 'Professionals'}
+` : 'No campaign data available'}
 
 Requirements:
 - Content category: ${category || 'General'}
@@ -779,7 +779,7 @@ Generate 1-3 pieces of content as a JSON array with this structure:
       category: item.category,
       isLive: true,
       reasoning: item.reasoning,
-      companyId
+      campaignId
     }));
 
     res.json(enhancedContent);

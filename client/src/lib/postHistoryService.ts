@@ -36,7 +36,7 @@ export interface PostVersion {
 
 export interface PostHistoryRecord {
   id: string;
-  companyId: string;
+  campaignId: string;
   originalContent: string;
   currentVersion: number;
   versions: PostVersion[];
@@ -68,7 +68,7 @@ export interface ContentTemplate {
   id: string;
   name: string;
   description?: string;
-  companyId: string;
+  campaignId: string;
   category: string;
   templateType: 'content' | 'layout' | 'campaign' | 'series';
   content: {
@@ -169,10 +169,10 @@ class PostHistoryService {
   private baseUrl = '/api/posts';
 
   /**
-   * Get post history for a company
+   * Get post history for a campaign
    */
   async getPostHistory(
-    companyId: string,
+    campaignId: string,
     filters: {
       status?: PostHistoryRecord['status'];
       categories?: string[];
@@ -186,7 +186,7 @@ class PostHistoryService {
   ): Promise<{ posts: PostHistoryRecord[], total: number }> {
     try {
       const params = new URLSearchParams({
-        companyId,
+        campaignId,
         ...Object.fromEntries(
           Object.entries(filters).map(([key, value]) => [
             key,
@@ -260,7 +260,7 @@ class PostHistoryService {
    * Get gallery view of posts
    */
   async getPostGallery(
-    companyId: string,
+    campaignId: string,
     filters: {
       categories?: string[];
       platforms?: string[];
@@ -274,7 +274,7 @@ class PostHistoryService {
   ): Promise<{ items: PostGalleryItem[], total: number }> {
     try {
       const params = new URLSearchParams({
-        companyId,
+        campaignId,
         ...Object.fromEntries(
           Object.entries(filters).map(([key, value]) => [
             key,
@@ -354,7 +354,7 @@ class PostHistoryService {
    * Get content templates
    */
   async getContentTemplates(
-    companyId: string,
+    campaignId: string,
     filters: {
       category?: string;
       templateType?: ContentTemplate['templateType'];
@@ -365,7 +365,7 @@ class PostHistoryService {
   ): Promise<ContentTemplate[]> {
     try {
       const params = new URLSearchParams({
-        companyId,
+        campaignId,
         ...Object.fromEntries(
           Object.entries(filters).map(([key, value]) => [
             key,
@@ -421,7 +421,7 @@ class PostHistoryService {
    * Search through post history
    */
   async searchPosts(
-    companyId: string,
+    campaignId: string,
     query: string,
     filters: {
       platforms?: string[];
@@ -433,7 +433,7 @@ class PostHistoryService {
   ): Promise<PostGalleryItem[]> {
     try {
       const params = new URLSearchParams({
-        companyId,
+        campaignId,
         query,
         ...Object.fromEntries(
           Object.entries(filters).map(([key, value]) => [
@@ -461,11 +461,11 @@ class PostHistoryService {
    * Get content analytics and insights
    */
   async getContentAnalytics(
-    companyId: string,
+    campaignId: string,
     timeRange?: { start: string; end: string }
   ): Promise<ContentAnalytics> {
     try {
-      const params = new URLSearchParams({ companyId });
+      const params = new URLSearchParams({ campaignId });
       if (timeRange) {
         params.append('startDate', timeRange.start);
         params.append('endDate', timeRange.end);
@@ -535,7 +535,7 @@ class PostHistoryService {
    * Get AI-powered content suggestions based on history
    */
   async getContentSuggestions(
-    companyId: string,
+    campaignId: string,
     context: {
       platforms: string[];
       category?: string;
@@ -558,7 +558,7 @@ class PostHistoryService {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ companyId, ...context })
+        body: JSON.stringify({ campaignId, ...context })
       });
 
       if (!response.ok) {

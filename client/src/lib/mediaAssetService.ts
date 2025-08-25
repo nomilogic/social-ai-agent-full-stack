@@ -18,7 +18,7 @@ export interface MediaAsset {
   format: string; // jpg, png, mp4, etc.
   createdAt: string;
   uploadedBy: string;
-  companyId: string;
+  campaignId: string;
   tags: string[];
   metadata: {
     altText?: string;
@@ -44,7 +44,7 @@ export interface MediaCollection {
   id: string;
   name: string;
   description?: string;
-  companyId: string;
+  campaignId: string;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -99,13 +99,13 @@ class MediaAssetService {
    */
   async uploadMedia(
     file: File, 
-    companyId: string, 
+    campaignId: string, 
     metadata: Partial<MediaAsset['metadata']> = {}
   ): Promise<MediaAsset> {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('companyId', companyId);
+      formData.append('campaignId', campaignId);
       formData.append('metadata', JSON.stringify(metadata));
 
       const response = await fetch(`${this.baseUrl}/upload`, {
@@ -151,10 +151,10 @@ class MediaAssetService {
   }
 
   /**
-   * Get all media assets for a company
+   * Get all media assets for a campaign
    */
   async getMediaAssets(
-    companyId: string, 
+    campaignId: string, 
     filters: {
       type?: 'image' | 'video' | 'audio';
       tags?: string[];
@@ -167,7 +167,7 @@ class MediaAssetService {
   ): Promise<{ assets: MediaAsset[], total: number }> {
     try {
       const params = new URLSearchParams({
-        companyId,
+        campaignId,
         ...Object.fromEntries(
           Object.entries(filters).map(([key, value]) => [
             key, 
@@ -282,11 +282,11 @@ class MediaAssetService {
   }
 
   /**
-   * Get collections for a company
+   * Get collections for a campaign
    */
-  async getCollections(companyId: string): Promise<MediaCollection[]> {
+  async getCollections(campaignId: string): Promise<MediaCollection[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/collections?companyId=${companyId}`);
+      const response = await fetch(`${this.baseUrl}/collections?campaignId=${campaignId}`);
 
       if (!response.ok) {
         const error = await response.json();
@@ -378,7 +378,7 @@ class MediaAssetService {
    * Search media assets by content, tags, or metadata
    */
   async searchMediaAssets(
-    companyId: string,
+    campaignId: string,
     query: string,
     filters: {
       type?: 'image' | 'video' | 'audio';
@@ -388,7 +388,7 @@ class MediaAssetService {
   ): Promise<MediaAsset[]> {
     try {
       const params = new URLSearchParams({
-        companyId,
+        campaignId,
         query,
         ...Object.fromEntries(
           Object.entries(filters).map(([key, value]) => [
@@ -415,7 +415,7 @@ class MediaAssetService {
   /**
    * Get media usage analytics
    */
-  async getMediaAnalytics(companyId: string): Promise<{
+  async getMediaAnalytics(campaignId: string): Promise<{
     totalAssets: number;
     totalUsage: number;
     topUsedAssets: MediaAsset[];
@@ -425,7 +425,7 @@ class MediaAssetService {
     storageUsed: number; // in bytes
   }> {
     try {
-      const response = await fetch(`${this.baseUrl}/analytics?companyId=${companyId}`);
+      const response = await fetch(`${this.baseUrl}/analytics?campaignId=${campaignId}`);
 
       if (!response.ok) {
         const error = await response.json();

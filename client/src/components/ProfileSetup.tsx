@@ -19,7 +19,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ userType, selectedPl
     profileImage: null as File | null,
 
     // Business-specific fields
-    companySize: '',
+    campaignSize: '',
     industry: '',
     targetAudience: '',
     brandVoice: '',
@@ -245,11 +245,11 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ userType, selectedPl
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Users className="w-4 h-4 inline mr-1" />
-                Company Size
+                Campaign Size
               </label>
               <select
-                name="companySize"
-                value={formData.companySize}
+                name="campaignSize"
+                value={formData.campaignSize}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >

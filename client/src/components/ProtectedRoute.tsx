@@ -30,7 +30,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   // After login, redirect users to campaigns page to create their first campaign
-  // This matches the original company -> campaign flow
+  // This matches the original campaign -> campaign flow
   
   // If user is authenticated but on auth page, redirect to campaigns
   if (location.pathname === '/auth') {

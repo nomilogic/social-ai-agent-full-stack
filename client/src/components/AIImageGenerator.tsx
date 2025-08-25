@@ -7,25 +7,77 @@ interface AIImageGeneratorProps {
   onImageGenerated: (imageUrl: string) => void;
   contentText?: string;
   selectedPlatforms?: Platform[];
-  companyInfo?: any;
+  campaignInfo?: any;
   onClose: () => void;
+}
+
+interface AIModel {
+  id: string;
+  name: string;
+  description: string;
+  provider: string;
 }
 
 export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
   onImageGenerated,
   contentText = '',
   selectedPlatforms = [],
-  companyInfo,
+  campaignInfo,
   onClose
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
+  const [currentImage, setCurrentImage] = useState<GeneratedImage | null>(null);
+  const [hasError, setHasError] = useState(false);
   const [imageRequest, setImageRequest] = useState<ImageGenerationRequest>({
     prompt: '',
     style: 'professional',
     aspectRatio: '1:1',
     quality: 'standard'
   });
+  const [selectedModel, setSelectedModel] = useState('stabilityai/stable-diffusion-xl-base-1.0');
+  
+  // Available models - Based on working reference implementation
+  const availableModels: AIModel[] = [
+    // Pollinations AI (Free & Fast) - No model selection, works by URL only
+    {
+      id: 'default',
+      name: '🌸 Pollinations AI',
+      description: 'Free, fast, creative generation',
+      provider: 'pollinations'
+    },
+    
+    // Hugging Face Models (Higher Quality, API Key Required)
+    {
+      id: 'stabilityai/stable-diffusion-xl-base-1.0',
+      name: 'Stable Diffusion XL',
+      description: 'High quality, detailed images',
+      provider: 'huggingface'
+    },
+    {
+      id: 'runwayml/stable-diffusion-v1-5',
+      name: 'Stable Diffusion 1.5',
+      description: 'Reliable, artistic styles',
+      provider: 'huggingface'
+    },
+    {
+      id: 'CompVis/stable-diffusion-v1-4',
+      name: 'Stable Diffusion 1.4',
+      description: 'Good for photorealistic images',
+      provider: 'huggingface'
+    },
+    {
+      id: 'dreamlike-art/dreamlike-diffusion-1.0',
+      name: 'Dreamlike Diffusion',
+      description: 'Dreamy, artistic style',
+      provider: 'huggingface'
+    },
+    {
+      id: 'prompthero/openjourney',
+      name: 'OpenJourney',
+      description: 'Midjourney-style images',
+      provider: 'huggingface'
+    }
+  ];
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
@@ -33,33 +85,24 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
     if (!imageRequest.prompt.trim()) return;
     
     setIsGenerating(true);
+    setHasError(false);
     try {
-      const image = await generateImage(imageRequest);
-      setGeneratedImages([image, ...generatedImages]);
+      const image = await generateImage({
+        ...imageRequest,
+        model: selectedModel
+      });
+      setCurrentImage(image);
     } catch (error) {
       console.error('Failed to generate image:', error);
-      alert('Failed to generate image. Please try again.');
+      setHasError(true);
+      setCurrentImage(null);
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleGenerateVariations = async (baseImage: GeneratedImage) => {
-    setIsGenerating(true);
-    try {
-      const variations = await generateImageVariations({
-        prompt: baseImage.prompt,
-        style: imageRequest.style,
-        aspectRatio: imageRequest.aspectRatio,
-        quality: imageRequest.quality
-      }, 3);
-      setGeneratedImages([...variations, ...generatedImages]);
-    } catch (error) {
-      console.error('Failed to generate variations:', error);
-      alert('Failed to generate variations. Please try again.');
-    } finally {
-      setIsGenerating(false);
-    }
+  const handleRetryGeneration = async () => {
+    await handleGenerateImage();
   };
 
   const handleGetSuggestions = async () => {
@@ -75,8 +118,8 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
         body: JSON.stringify({
           contentText,
           platforms: selectedPlatforms,
-          industry: companyInfo?.industry || '',
-          brandTone: companyInfo?.brandTone || 'professional'
+          industry: campaignInfo?.industry || '',
+          brandTone: campaignInfo?.brandTone || 'professional'
         })
       });
       
@@ -181,6 +224,50 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
                 </div>
               )}
 
+              {/* AI Model Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">AI Model</label>
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <optgroup label="🚀 Pollinations (Free & Fast)">
+                    {availableModels
+                      .filter(model => model.provider === 'pollinations')
+                      .map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.name} - {model.description}
+                        </option>
+                      ))}
+                  </optgroup>
+                  <optgroup label="🔬 Hugging Face (High Quality)">
+                    {availableModels
+                      .filter(model => model.provider === 'huggingface')
+                      .map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.name} - {model.description}
+                        </option>
+                      ))}
+                  </optgroup>
+                </select>
+                
+                {/* Provider Info */}
+                <div className="mt-2 text-xs text-gray-500">
+                  {availableModels.find(m => m.id === selectedModel)?.provider === 'pollinations' ? (
+                    <span className="flex items-center space-x-1">
+                      <span>🚀</span>
+                      <span>Using Pollinations AI - Free & Fast generation</span>
+                    </span>
+                  ) : (
+                    <span className="flex items-center space-x-1">
+                      <span>🔬</span>
+                      <span>Using Hugging Face - Requires API key, higher quality</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
               {/* Style Options */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -253,55 +340,86 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
               </button>
             </div>
 
-            {/* Generated Images Panel */}
+            {/* Generated Image Panel */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900">Generated Images</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Generated Image</h3>
               
-              {generatedImages.length === 0 ? (
+              {!currentImage && !hasError && !isGenerating && (
                 <div className="text-center py-12 text-gray-500">
                   <Wand2 className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p>No images generated yet</p>
+                  <p>No image generated yet</p>
                   <p className="text-sm">Start by describing your desired image</p>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {generatedImages.map((image, index) => (
-                    <div key={index} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-                      <img
-                        src={image.url}
-                        alt={image.prompt}
-                        className="w-full h-48 object-cover rounded-lg mb-3"
-                      />
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{image.prompt}</p>
-                      
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={() => handleUseImage(image.url)}
-                          className="flex-1 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-purple-700 transition-colors flex items-center justify-center space-x-1"
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span>Use This</span>
-                        </button>
-                        
-                        <button
-                          onClick={() => handleGenerateVariations(image)}
-                          disabled={isGenerating}
-                          className="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors flex items-center justify-center space-x-1"
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                          <span>Variations</span>
-                        </button>
-                        
-                        <a
-                          href={image.url}
-                          download="ai-generated-image.png"
-                          className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors flex items-center justify-center"
-                        >
-                          <Download className="w-4 h-4" />
-                        </a>
-                      </div>
-                    </div>
-                  ))}
+              )}
+              
+              {hasError && !isGenerating && (
+                <div className="text-center py-12 text-red-500">
+                  <div className="w-12 h-12 mx-auto mb-4 bg-red-100 rounded-xl flex items-center justify-center">
+                    <RefreshCw className="w-6 h-6 text-red-600" />
+                  </div>
+                  <p>Failed to generate image</p>
+                  <p className="text-sm text-gray-600 mb-4">Please try again with a different prompt or model</p>
+                  <button
+                    onClick={handleRetryGeneration}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors flex items-center justify-center space-x-1 mx-auto"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    <span>Retry</span>
+                  </button>
+                </div>
+              )}
+              
+              {isGenerating && (
+                <div className="text-center py-12 text-purple-500">
+                  <div className="w-12 h-12 mx-auto mb-4 bg-purple-100 rounded-xl flex items-center justify-center">
+                    <Loader className="w-6 h-6 text-purple-600 animate-spin" />
+                  </div>
+                  <p>Generating image...</p>
+                  <p className="text-sm text-gray-600">This may take a few moments</p>
+                </div>
+              )}
+              
+              {currentImage && !isGenerating && (
+                <div className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+                  <img
+                    src={currentImage.url}
+                    alt={currentImage.prompt}
+                    className="w-full h-48 object-cover rounded-lg mb-3"
+                    onError={() => {
+                      setHasError(true);
+                      setCurrentImage(null);
+                    }}
+                  />
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{currentImage.prompt}</p>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => handleUseImage(currentImage.url)}
+                      className="flex-1 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-purple-700 transition-colors flex items-center justify-center space-x-1"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>Use This Image</span>
+                    </button>
+                    
+                    <button
+                      onClick={handleRetryGeneration}
+                      disabled={isGenerating}
+                      className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors flex items-center justify-center space-x-1"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      <span>Generate New</span>
+                    </button>
+                    
+                    {currentImage.url && (
+                      <a
+                        href={currentImage.url}
+                        download="ai-generated-image.png"
+                        className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors flex items-center justify-center"
+                      >
+                        <Download className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

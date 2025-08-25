@@ -31,7 +31,7 @@ export const SchedulePage: React.FC = () => {
       try {
         setIsLoading(true);
         const response = await fetch(
-          `/api/schedule/posts?companyId=${state.selectedProfile.id}`,
+          `/api/schedule/posts?campaignId=${state.selectedProfile.id}`,
         );
 
         if (!response.ok) {
@@ -109,7 +109,7 @@ export const SchedulePage: React.FC = () => {
       <div className="">
         {/* Content */}
         <div className="space-y-6">
-          <PostScheduleDashboard companyId={state.selectedProfile?.id || ""} />
+          <PostScheduleDashboard campaignId={state.selectedProfile?.id || ""} />
         </div>
       </div>
     </div>
