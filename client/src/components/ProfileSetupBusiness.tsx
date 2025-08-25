@@ -13,7 +13,7 @@ export const ProfileSetupBusiness: React.FC<ProfileSetupBusinessProps> = ({ onCo
     bio: '',
     location: '',
     website: '',
-    companySize: '',
+    campaignSize: '',
     industry: '',
     targetAudience: '',
     brandVoice: '',
@@ -154,11 +154,11 @@ export const ProfileSetupBusiness: React.FC<ProfileSetupBusinessProps> = ({ onCo
         </p>
       </div>
 
-      {/* Company Information */}
+      {/* Campaign Information */}
       <div className="space-y-6">
         <h3 className="text-lg font-semibold text-gray-900 flex items-center">
           <Building2 className="w-5 h-5 mr-2" />
-          Company Information
+          Campaign Information
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -249,11 +249,11 @@ export const ProfileSetupBusiness: React.FC<ProfileSetupBusinessProps> = ({ onCo
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <Users className="w-4 h-4 inline mr-1" />
-              Company Size *
+              Campaign Size *
             </label>
             <select
-              name="companySize"
-              value={formData.companySize}
+              name="campaignSize"
+              value={formData.campaignSize}
               onChange={handleInputChange}
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"

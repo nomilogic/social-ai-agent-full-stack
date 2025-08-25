@@ -110,19 +110,19 @@ export const CampaignsPage: React.FC = () => {
       <Route 
         index 
         element={
-          <div className="space-y-6 p-6">
-            <div className="flex justify-between items-center">
+          <div className="space-y-6 p-6 w-full">
+            <div className="flex flex-col items-center justify-center w-full">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Campaigns 2</h1>
-                <p className="text-gray-600 mt-2">Manage your marketing campaigns and strategies</p>
+                <h1 className="text-3xl font-bold text-white text-center">Campaigns</h1>
+                <p className="theme-text-primary">Manage your marketing campaigns and strategies</p>
               </div>
-              <button
+              {/* <button
                 onClick={handleCreateCampaign}
                 className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >
                 <Plus className="w-4 h-4" />
                 <span>New Campaign</span>
-              </button>
+              </button> */}
             </div>
             
             <CampaignSelector

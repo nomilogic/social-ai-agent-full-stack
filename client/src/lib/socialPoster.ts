@@ -61,14 +61,23 @@ export async function postToLinkedInFromServer(accessToken: string, post: Genera
 
 export async function postToFacebookFromServer(accessToken: string, post: GeneratedPost, pageId?: string) {
   try {
+    console.log('Posting to Facebook with:', { 
+      pageId, 
+      hasImage: !!post.imageUrl, 
+      caption: post.caption?.substring(0, 50) + '...' 
+    })
+    
     const response = await axios.post('/api/facebook/post', {
       accessToken,
       post,
       pageId
-    });
-    return response.data;
+    })
+    
+    console.log('Facebook post successful:', response.data.success)
+    return response.data
   } catch (error: any) {
-    throw new Error(error.response?.data?.error || error.message);
+    console.error('Facebook posting error:', error.response?.data)
+    throw new Error(error.response?.data?.error || error.message)
   }
 }
 

@@ -641,13 +641,13 @@ class AIService {
   async generateSocialContent(
     prompt: string,
     platforms: string[],
-    companyContext?: any,
+    campaignContext?: any,
     preferredModel?: string
   ): Promise<AIResponse> {
     const modelId = preferredModel || this.getModelPreference('social-content', 'gpt-4o');
     
     const systemPrompt = `You are an expert social media strategist. Generate engaging content for ${platforms.join(', ')} platforms. 
-Company context: ${JSON.stringify(companyContext)}`;
+Campaign context: ${JSON.stringify(campaignContext)}`;
 
     return this.generateText({
       model: modelId,
@@ -664,7 +664,7 @@ Company context: ${JSON.stringify(companyContext)}`;
   async generateSchedule(
     prompt: string,
     platforms: string[],
-    companyId: string,
+    campaignId: string,
     options: any = {},
     preferredModel?: string
   ): Promise<AIResponse> {

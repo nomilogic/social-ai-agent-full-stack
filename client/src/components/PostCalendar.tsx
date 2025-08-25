@@ -21,7 +21,7 @@ interface ScheduledPost {
   status: "scheduled" | "draft" | "published" | "failed";
   isLive?: boolean; // Posts generated dynamically on that day
   category?: string;
-  companyId: string;
+  campaignId: string;
 }
 
 interface CalendarDay {
@@ -38,7 +38,7 @@ interface PostCalendarProps {
   onEditPost: (post: ScheduledPost) => void;
   onDeletePost: (postId: string) => void;
   onViewPost: (post: ScheduledPost) => void;
-  companyId: string;
+  campaignId: string;
 }
 
 export const PostCalendar: React.FC<PostCalendarProps> = ({
@@ -47,7 +47,7 @@ export const PostCalendar: React.FC<PostCalendarProps> = ({
   onEditPost,
   onDeletePost,
   onViewPost,
-  companyId,
+  campaignId,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedPost, setSelectedPost] = useState<ScheduledPost | null>(null);

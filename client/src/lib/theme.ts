@@ -31,8 +31,8 @@ export const themes: Record<string, ThemeColors> = {
     secondary: "#8B5CF6",
     accent: "#6366F1",
     text: {
-      primary: "#FFFFFF",
-      secondary: "rgba(255, 255, 255, 0.9)",
+      secondary: "#FFFFFF",
+      primary: "rgba(248, 210, 104, 0.95)",
       light: "rgba(255, 255, 255, 0.7)",
     },
     background: {
@@ -55,8 +55,8 @@ export const themes: Record<string, ThemeColors> = {
     secondary: "#0D9488",
     accent: "#0891B2",
     text: {
-      primary: "#FFFFFF",
-      secondary: "rgba(255, 255, 255, 0.9)",
+     secondary: "#FFFFFF",
+      primary: "rgba(248, 210, 104, 0.95)",
       light: "rgba(255, 255, 255, 0.7)",
     },
     background: {
@@ -78,8 +78,8 @@ export const themes: Record<string, ThemeColors> = {
     secondary: "#EF4444",
     accent: "#EC4899",
     text: {
-      primary: "#FFFFFF",
-      secondary: "rgba(255, 255, 255, 0.9)",
+      secondary: "#FFFFFF",
+      primary: "rgba(248, 210, 104, 0.95)",
       light: "rgba(255, 255, 255, 0.7)",
     },
     background: {
@@ -124,8 +124,8 @@ export const themes: Record<string, ThemeColors> = {
     secondary: "#EA580C",
     accent: "#DC2626",
     text: {
-      primary: "#FFFFFF",
-      secondary: "rgba(255, 255, 255, 0.9)",
+      secondary: "#FFFFFF",
+      primary: "rgba(248, 210, 104, 0.95)",
       light: "rgba(255, 255, 255, 0.7)",
     },
     background: {

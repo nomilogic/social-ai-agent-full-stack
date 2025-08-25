@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Brain, Zap } from 'lucide-react';
-import { CompanyInfo, PostContent, GeneratedPost, Platform } from '../types';
+import { CampaignInfo, PostContent, GeneratedPost, Platform } from '../types';
 import { generateAllPosts } from '../lib/gemini';
 import { getPlatformIcon, getPlatformDisplayName, getPlatformColors } from '../utils/platformIcons';
 
@@ -36,23 +36,23 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
       // Use selected platforms from content data or default to LinkedIn
       const targetPlatforms = contentData?.selectedPlatforms || contentData?.platforms || ['linkedin'];
 
-      // Create a minimal company info for generation
-      const companyInfo: CompanyInfo = {
-        name: contentData?.companyName || 'Default Company',
+      // Create a minimal campaign info for generation
+      const campaignInfo: CampaignInfo = {
+        name: contentData?.campaignName || 'Default Campaign',
         website: contentData?.website || 'https://example.com',
         industry: contentData?.industry || 'Technology',
-        description: contentData?.description || 'A technology company',
+        description: contentData?.description || 'A technology campaign',
         targetAudience: contentData?.targetAudience || 'Professionals',
         brandTone: (contentData?.tone as any) || 'professional',
         goals: contentData?.goals || ['brand_building'],
         platforms: targetPlatforms
       };
 
-      console.log('Starting AI generation with company info:', companyInfo);
+      console.log('Starting AI generation with campaign info:', campaignInfo);
       console.log('Content data:', contentData);
 
       const posts = await generateAllPosts(
-        companyInfo,
+        campaignInfo,
         contentData,
         (platform, progress) => {
           console.log(`Progress: ${platform} - ${progress}%`);
@@ -71,26 +71,26 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
           }
           // Second priority: try to generate image if no media provided
           else if (post.caption && !post.imageUrl && !contentData?.mediaUrl) {
-            try {
-              // Generate an image based on the post content
-              const imagePrompt = `Professional ${post.platform} image for: ${post.caption.substring(0, 100)}`;
-              const imageResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate-image`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  prompt: imagePrompt,
-                  style: 'professional',
-                  size: post.platform === 'instagram' ? '1024x1024' : '1792x1024'
-                })
-              });
+            // try {
+            //   // Generate an image based on the post content
+            //   const imagePrompt = `Professional ${post.platform} image for: ${post.caption.substring(0, 100)}`;
+            //   const imageResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate-image`, {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify({
+            //       prompt: imagePrompt,
+            //       style: 'professional',
+            //       size: post.platform === 'instagram' ? '1024x1024' : '1792x1024'
+            //     })
+            //   });
 
-              if (imageResponse.ok) {
-                const imageData = await imageResponse.json();
-                posts[i].imageUrl = imageData.imageUrl;
-              }
-            } catch (imageError) {
-              console.warn('Failed to generate image for post:', imageError);
-            }
+            //   if (imageResponse.ok) {
+            //     const imageData = await imageResponse.json();
+            //     posts[i].imageUrl = imageData.imageUrl;
+            //   }
+            // } catch (imageError) {
+            //   console.warn('Failed to generate image for post:', imageError);
+            // }
           }
         }
       }

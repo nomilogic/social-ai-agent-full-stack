@@ -5,7 +5,7 @@ interface ScheduleRequest {
   timePreference?: 'morning' | 'afternoon' | 'evening' | 'custom';
   customTime?: string;
   keywords?: string[];
-  companyId: string;
+  campaignId: string;
   preferredModel?: string;
 }
 
@@ -19,7 +19,7 @@ interface GeneratedSchedule {
   category: string;
   isLive?: boolean;
   reasoning?: string;
-  companyId: string;
+  campaignId: string;
 }
 
 interface ScheduledPost {
@@ -32,7 +32,7 @@ interface ScheduledPost {
   status: 'scheduled' | 'draft' | 'published' | 'failed';
   isLive?: boolean;
   category?: string;
-  companyId: string;
+  campaignId: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -116,12 +116,12 @@ class ScheduleService {
   }
 
   /**
-   * Get all scheduled posts for a company
+   * Get all scheduled posts for a campaign
    */
-  async getScheduledPosts(companyId: string, startDate?: string, endDate?: string): Promise<ScheduledPost[]> {
+  async getScheduledPosts(campaignId: string, startDate?: string, endDate?: string): Promise<ScheduledPost[]> {
     try {
       const params = new URLSearchParams({
-        companyId
+        campaignId
       });
 
       if (startDate) params.append('startDate', startDate);
@@ -213,9 +213,9 @@ class ScheduleService {
   /**
    * Get posts scheduled for a specific date
    */
-  async getPostsForDate(companyId: string, date: string): Promise<ScheduledPost[]> {
+  async getPostsForDate(campaignId: string, date: string): Promise<ScheduledPost[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/schedule/posts/date?companyId=${companyId}&date=${date}`);
+      const response = await fetch(`${this.baseUrl}/schedule/posts/date?campaignId=${campaignId}&date=${date}`);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -257,7 +257,7 @@ class ScheduleService {
   /**
    * Generate live content for a specific date
    */
-  async generateLiveContent(companyId: string, date: string, category?: string): Promise<GeneratedSchedule[]> {
+  async generateLiveContent(campaignId: string, date: string, category?: string): Promise<GeneratedSchedule[]> {
     try {
       const response = await fetch(`${this.baseUrl}/ai/generate-live-content`, {
         method: 'POST',
@@ -265,7 +265,7 @@ class ScheduleService {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          companyId,
+          campaignId,
           date,
           category
         })
@@ -307,7 +307,7 @@ class ScheduleService {
   /**
    * Get scheduling analytics
    */
-  async getSchedulingAnalytics(companyId: string, period: 'week' | 'month' | 'quarter' = 'month'): Promise<{
+  async getSchedulingAnalytics(campaignId: string, period: 'week' | 'month' | 'quarter' = 'month'): Promise<{
     totalScheduled: number;
     totalPublished: number;
     totalFailed: number;
@@ -317,7 +317,7 @@ class ScheduleService {
     recentActivity: ScheduledPost[];
   }> {
     try {
-      const response = await fetch(`${this.baseUrl}/schedule/analytics?companyId=${companyId}&period=${period}`);
+      const response = await fetch(`${this.baseUrl}/schedule/analytics?campaignId=${campaignId}&period=${period}`);
 
       if (!response.ok) {
         const errorData = await response.json();

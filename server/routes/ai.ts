@@ -151,11 +151,11 @@ Keep the description concise but informative for social media marketing purposes
 
 // POST /api/ai/generate-posts - Generate social media posts (new endpoint)
 router.post('/generate-posts', async (req: Request, res: Response) => {
-  const { companyInfo, contentData, platforms } = req.body
+  const { campaignInfo, contentData, platforms } = req.body
 
-  if (!companyInfo || !contentData || !platforms) {
+  if (!campaignInfo || !contentData || !platforms) {
     return res.status(400).json({
-      error: 'Missing required fields: companyInfo, contentData, and platforms are required'
+      error: 'Missing required fields: campaignInfo, contentData, and platforms are required'
     })
   }
 
@@ -166,7 +166,7 @@ router.post('/generate-posts', async (req: Request, res: Response) => {
     const generatedPosts = []
 
     for (const platform of platforms) {
-      const prompt = createPlatformPrompt(companyInfo, contentData, platform)
+      const prompt = createPlatformPrompt(campaignInfo, contentData, platform)
 
       try {
         const result = await model.generateContent(prompt)
@@ -189,7 +189,7 @@ router.post('/generate-posts', async (req: Request, res: Response) => {
         generatedPosts.push({
           platform,
           caption: caption || contentData.prompt,
-          hashtags: hashtags.length > 0 ? hashtags : [`#${companyInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`],
+          hashtags: hashtags.length > 0 ? hashtags : [`#${campaignInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`],
           imageUrl: contentData.mediaUrl || null,
           success: true
         })
@@ -197,7 +197,7 @@ router.post('/generate-posts', async (req: Request, res: Response) => {
         generatedPosts.push({
           platform,
           caption: contentData.prompt || 'Check out our latest updates!',
-          hashtags: [`#${companyInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`],
+          hashtags: [`#${campaignInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`],
           imageUrl: contentData.mediaUrl || null,
           error: error.message,
           success: false
@@ -231,11 +231,11 @@ router.post('/generate-posts', async (req: Request, res: Response) => {
 
 // POST /api/ai/generate - Generate social media posts (legacy endpoint)
 router.post('/generate', async (req: Request, res: Response) => {
-  const { company, content, platforms } = req.body
+  const { campaign, content, platforms } = req.body
 
-  if (!company || !content || !platforms) {
+  if (!campaign || !content || !platforms) {
     return res.status(400).json({
-      error: 'Missing required fields: company, content, and platforms are required'
+      error: 'Missing required fields: campaign, content, and platforms are required'
     })
   }
 
@@ -246,7 +246,7 @@ router.post('/generate', async (req: Request, res: Response) => {
     const generatedPosts = []
 
     for (const platform of platforms) {
-      const prompt = createPlatformPrompt(company, content, platform)
+      const prompt = createPlatformPrompt(campaign, content, platform)
 
       try {
         console.log(`Generating content for ${platform} with prompt:`, prompt.substring(0, 200) + '...')
@@ -271,7 +271,7 @@ router.post('/generate', async (req: Request, res: Response) => {
 
         // Add default hashtags if none found
         if (hashtags.length === 0) {
-          hashtags = [`#${company.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`]
+          hashtags = [`#${campaign.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`]
         }
 
         generatedPosts.push({
@@ -288,7 +288,7 @@ router.post('/generate', async (req: Request, res: Response) => {
           platform,
           content: content.topic || 'Check out our latest updates!',
           caption: content.topic || 'Check out our latest updates!',
-          hashtags: [`#${company.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`],
+          hashtags: [`#${campaign.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`],
           error: error.message,
           success: false
         })
@@ -322,11 +322,11 @@ router.post('/generate', async (req: Request, res: Response) => {
 })
 
 // Helper function to create platform-specific prompts
-function createPlatformPrompt(company: any, content: any, platform: string): string {
+function createPlatformPrompt(campaign: any, content: any, platform: string): string {
   const baseInfo = `
-Company: ${company.name}
-Industry: ${company.industry}
-Description: ${company.description}
+Campaign: ${campaign.name}
+Industry: ${campaign.industry}
+Description: ${campaign.description}
 Target Audience: ${content.targetAudience}
 Content Topic: ${content.topic}
 Content Type: ${content.contentType}
@@ -386,11 +386,11 @@ Platform: ${platform.toUpperCase()}
 
 ${platformGuidelines[platform as keyof typeof platformGuidelines] || 'Create engaging social media content for this platform.'}
 
-Please generate compelling content that aligns with the company brand and platform requirements. Return only the content without any prefixes or explanations.`
+Please generate compelling content that aligns with the campaign brand and platform requirements. Return only the content without any prefixes or explanations.`
 }
 
-// Generate image using DALL-E 3
-router.post('/generate-image', async (req: Request, res: Response) => {
+// Generate image using DALL-E 3 (Legacy endpoint - keeping for compatibility)
+router.post('/generate-image-dalle', async (req: Request, res: Response) => {
   try {
     const { prompt, size = '1024x1024', quality = 'standard', style = 'vivid' } = req.body;
 
@@ -402,7 +402,7 @@ router.post('/generate-image', async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'OpenAI API key not configured' });
     }
 
-    console.log('Generating image with prompt:', prompt);
+    console.log('Generating image with DALL-E 3:', prompt);
 
     const response = await axios.post(
       'https://api.openai.com/v1/images/generations',
@@ -430,31 +430,36 @@ router.post('/generate-image', async (req: Request, res: Response) => {
     const revisedPrompt = response.data.data[0].revised_prompt || prompt;
 
     res.json({
+      success: true,
       imageUrl,
       originalPrompt: prompt,
       revisedPrompt,
       style,
       quality,
-      size
+      size,
+      provider: 'dalle-3'
     });
 
   } catch (error: any) {
-    console.error('Error generating image:', error.response?.data || error.message);
+    console.error('Error generating image with DALL-E:', error.response?.data || error.message);
 
     if (error.response?.status === 400) {
       return res.status(400).json({
-        error: error.response.data?.error?.message || 'Invalid request to image generation API'
+        success: false,
+        error: error.response.data?.error?.message || 'Invalid request to DALL-E API'
       });
     }
 
     if (error.response?.status === 429) {
       return res.status(429).json({
+        success: false,
         error: 'Too many requests. Please try again later.'
       });
     }
 
     res.status(500).json({
-      error: 'Failed to generate image',
+      success: false,
+      error: 'Failed to generate image with DALL-E',
       details: error.message
     });
   }
@@ -830,33 +835,329 @@ async function generateImageWithDALLE(
   };
 }
 
-// POST /api/ai/generate-image - Generate image using AI
+// Import Supabase storage functions
+import { uploadImageFromUrl, ensureStorageSetup } from '../lib/supabaseStorage.js'
+
+// Available image generation models - Based on working reference implementation
+interface ImageModel {
+  id: string;
+  name: string;
+  description: string;
+  provider: string;
+}
+
+const availableModels: ImageModel[] = [
+  // Pollinations Models (Free & Fast) - No model selection, works by URL only
+  {
+    id: 'default',
+    name: '🌸 Pollinations AI',
+    description: 'Free, fast, creative generation',
+    provider: 'pollinations'
+  },
+  
+  // Hugging Face Models (Higher Quality, API Key Required)
+  {
+    id: 'stabilityai/stable-diffusion-xl-base-1.0',
+    name: 'Stable Diffusion XL',
+    description: 'High quality, detailed images',
+    provider: 'huggingface'
+  },
+  {
+    id: 'runwayml/stable-diffusion-v1-5',
+    name: 'Stable Diffusion 1.5',
+    description: 'Reliable, artistic styles',
+    provider: 'huggingface'
+  },
+  {
+    id: 'CompVis/stable-diffusion-v1-4',
+    name: 'Stable Diffusion 1.4',
+    description: 'Good for photorealistic images',
+    provider: 'huggingface'
+  },
+  {
+    id: 'dreamlike-art/dreamlike-diffusion-1.0',
+    name: 'Dreamlike Diffusion',
+    description: 'Dreamy, artistic style',
+    provider: 'huggingface'
+  },
+  {
+    id: 'prompthero/openjourney',
+    name: 'OpenJourney',
+    description: 'Midjourney-style images',
+    provider: 'huggingface'
+  }
+];
+
+// POST /api/ai/generate-image - Generate image using multiple AI providers
 router.post('/generate-image', async (req: Request, res: Response) => {
   try {
-    const { prompt, size, quality, style } = req.body
+    const { 
+      prompt, 
+      model = 'stabilityai/stable-diffusion-xl-base-1.0',
+      style = 'realistic',
+      width = 1024,
+      height = 1024,
+      seed,
+      userId 
+    } = req.body
 
-    if (!prompt) {
-      return res.status(400).json({ error: 'Prompt is required' })
+    console.log('AI Image generation request:', {
+      userId,
+      prompt: prompt?.substring(0, 50) + '...',
+      hasUserId: !!userId
+    })
+
+    if (!prompt || prompt.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Prompt is required'
+      })
     }
 
-    // For now, return a placeholder image URL
-    // In production, integrate with DALL-E or other image generation service
-    const imageUrl = `https://picsum.photos/1024/1024?random=${Date.now()}`
+    console.log('AI image generation request:', {
+      prompt: prompt.substring(0, 100) + '...',
+      style,
+      dimensions: `${width}x${height}`
+    })
+
+    // Always ensure storage bucket exists - we'll always upload to Supabase for social media compatibility
+    await ensureStorageSetup()
+
+    // Enhance prompt with style
+    const enhancedPrompt = enhancePromptWithStyle(prompt, style)
+    console.log('Enhanced prompt:', enhancedPrompt)
+
+    // Generate unique seed if not provided
+    const finalSeed = seed || Math.floor(Math.random() * 1000000)
+
+    let imageUrl: string;
+    let provider: string;
+
+    // Determine provider based on model selection - exactly like working reference
+    const selectedModel = availableModels.find(m => m.id === model);
+    const isHuggingFaceModel = selectedModel?.provider === 'huggingface';
+    
+    if (isHuggingFaceModel && model !== 'default') {
+      console.log('🤗 Generating image with Hugging Face:', model)
+      try {
+        imageUrl = await generateImageWithHuggingFace(model, enhancedPrompt, width, height)
+        provider = 'huggingface'
+      } catch (hfError: any) {
+        console.warn('Hugging Face failed, falling back to Pollinations:', hfError.message)
+        // Fallback to Pollinations if Hugging Face fails
+        imageUrl = await generateImageWithPollinations(enhancedPrompt, width, height, finalSeed)
+        provider = 'pollinations'
+      }
+    } else {
+      console.log('🌸 Generating image with Pollinations AI (free)')
+      imageUrl = await generateImageWithPollinations(enhancedPrompt, width, height, finalSeed)
+      provider = 'pollinations'
+    }
+
+    // Test if the image generates successfully (only for Pollinations)
+    if (provider === 'pollinations') {
+      try {
+        const testResponse = await axios.head(imageUrl, { timeout: 10000 })
+        console.log('Pollinations generation successful, content-type:', testResponse.headers['content-type'])
+      } catch (testError) {
+        console.warn('Pollinations test failed, but continuing...')
+      }
+    }
+
+    let finalImageUrl = imageUrl
+    let supabaseUrl = null
+
+    // Always upload to Supabase for social media compatibility (Facebook needs accessible URLs)
+    try {
+      console.log('⬆️ Uploading generated image to Supabase for social media compatibility...')
+      const uploadResult = await uploadImageFromUrl(imageUrl, {
+        folder: userId ? `users/${userId}/ai-generated` : 'ai-generated',
+        fileName: `${provider}-${finalSeed}-${Date.now()}`,
+        makePublic: true, // Ensure the bucket/file is public for Facebook access
+        // Don't use signed URLs for social media - use public URLs instead
+        signedUrlExpiresInSeconds: undefined
+      })
+
+      if (uploadResult.success && uploadResult.publicUrl) {
+        supabaseUrl = uploadResult.publicUrl
+        finalImageUrl = supabaseUrl
+        console.log('✅ Successfully uploaded to Supabase (using PUBLIC URL for social media):', supabaseUrl)
+      } else {
+        console.warn('⚠️ Supabase upload failed, using direct URL instead:', uploadResult.error)
+        console.log(`Direct ${provider} URL will be used:`, imageUrl)
+        // Continue with original URL if upload fails
+      }
+    } catch (uploadError) {
+      console.error('❌ Supabase upload error:', uploadError)
+      console.log(`Using direct ${provider} URL as fallback`)
+      // Continue with original URL if upload fails
+    }
 
     res.json({
       success: true,
-      imageUrl,
-      prompt,
-      style: style || 'realistic',
-      size: size || '1024x1024'
+      imageUrl: finalImageUrl,
+      directUrl: imageUrl,
+      supabaseUrl,
+      prompt: enhancedPrompt,
+      originalPrompt: prompt,
+      model,
+      style,
+      seed: finalSeed,
+      dimensions: { width, height },
+      size: `${width}x${height}`,
+      generatedAt: new Date().toISOString(),
+      provider
     })
+
   } catch (error: any) {
-    console.error('Image generation error:', error)
-    res.status(500).json({ error: 'Failed to generate image' })
+    console.error('AI image generation failed:', error)
+    
+    res.status(500).json({
+      success: false,
+      error: 'Image generation failed',
+      details: error.message || 'Unknown error occurred',
+      provider: 'pollinations'
+    })
   }
 })
 
 
+
+// Pollinations image generation helper - exactly like working reference
+async function generateImageWithPollinations(
+  prompt: string,
+  width: number,
+  height: number,
+  seed: number
+): Promise<string> {
+  try {
+    console.log('🌸 Generating image with Pollinations AI');
+    
+    const encodedPrompt = encodeURIComponent(prompt);
+    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${seed}&nologo=true`;
+    
+    // For Pollinations, the URL itself is the image
+    return url;
+    
+  } catch (error: any) {
+    console.error('Pollinations error:', error);
+    throw new Error(`Pollinations failed: ${error.message}`);
+  }
+}
+
+// Hugging Face image generation helper - matches reference implementation exactly
+async function generateImageWithHuggingFace(
+  model: string, 
+  prompt: string, 
+  width: number, 
+  height: number
+): Promise<string> {
+  const HF_API_KEY = process.env.HUGGING_FACE_API_KEY;
+  
+  // API key validation exactly like reference
+  if (!HF_API_KEY || !HF_API_KEY.startsWith('hf_')) {
+    console.warn('No valid Hugging Face API key provided, skipping Hugging Face API');
+    throw new Error('🔑 Invalid API token. Please check your Hugging Face API key at https://huggingface.co/settings/tokens');
+  }
+
+  // Clean up model ID for Hugging Face
+  let hfModel = model;
+  if (model.includes('-hf')) {
+    hfModel = model.replace('-hf', '');
+  }
+
+  console.log(`🤗 Using Hugging Face model: ${hfModel}`);
+
+  try {
+    const response = await axios.post(
+      `https://api-inference.huggingface.co/models/${hfModel}`,
+      {
+        inputs: prompt,
+        parameters: {
+          num_inference_steps: 20,
+          guidance_scale: 7.5
+        },
+        options: {
+          wait_for_model: true,
+          use_cache: false
+        }
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${HF_API_KEY}`,
+          'Content-Type': 'application/json',
+          'Accept': 'image/png'
+        },
+        responseType: 'arraybuffer',
+        timeout: 60000 // 60 second timeout
+      }
+    );
+
+    if (!response.data) {
+      throw new Error('Invalid response from Hugging Face API');
+    }
+
+    // Check for JSON error response
+    const contentType = response.headers['content-type'] || '';
+    if (contentType.includes('application/json')) {
+      const jsonResponse = JSON.parse(Buffer.from(response.data).toString());
+      if (jsonResponse.error) {
+        throw new Error(jsonResponse.error);
+      }
+    }
+
+    const buffer = Buffer.from(response.data);
+    if (buffer.length === 0) {
+      throw new Error('Received empty response from API');
+    }
+
+    // Create blob URL from buffer - matching reference implementation
+    const base64 = buffer.toString('base64');
+    return `data:image/png;base64,${base64}`;
+    
+  } catch (error: any) {
+    console.error('Hugging Face API error:', error.response?.data || error.message);
+    
+    // Error handling exactly like reference
+    if (error.response?.status === 401) {
+      throw new Error('🔑 Invalid API token. Please check your Hugging Face API key at https://huggingface.co/settings/tokens');
+    }
+    if (error.response?.status === 429) {
+      throw new Error('⏰ Rate limit exceeded. Please wait a moment and try again, or add your API key for higher limits.');
+    }
+    if (error.response?.status === 503) {
+      throw new Error('🔄 Model is currently loading. Please wait 1-2 minutes and try again. This is normal for less popular models.');
+    }
+    if (error.response?.status === 404) {
+      console.warn(`Model "${model}" not found, trying alternative services...`);
+      throw new Error(`❌ Model "${model}" not found on Hugging Face`);
+    }
+    if (error.response?.status >= 500) {
+      throw new Error('🛠️ Hugging Face servers are experiencing issues. Trying alternative services...');
+    }
+    
+    throw new Error(`🚫 Hugging Face API error (${error.response?.status}). ${error.message}`);
+  }
+}
+
+// Helper function to enhance prompts with style
+function enhancePromptWithStyle(prompt: string, style: string): string {
+  const styleEnhancements: Record<string, string> = {
+    realistic: 'realistic, high quality, detailed, photorealistic',
+    artistic: 'artistic, creative, stylized, beautiful composition',
+    cartoon: 'cartoon style, animated, colorful, fun illustration',
+    abstract: 'abstract art, modern, creative composition, artistic',
+    vintage: 'vintage style, retro, classic aesthetic, nostalgic',
+    modern: 'modern, contemporary, clean design, minimalist',
+    fantasy: 'fantasy art, magical, ethereal, mystical atmosphere',
+    cyberpunk: 'cyberpunk, futuristic, neon lights, digital art',
+    watercolor: 'watercolor painting, soft colors, artistic brush strokes',
+    oil_painting: 'oil painting, classical art style, rich textures'
+  }
+
+  const enhancement = styleEnhancements[style] || styleEnhancements.realistic
+  return `${prompt}, ${enhancement}`
+}
 
 // POST /api/ai/suggest-image-prompts - Suggest image prompts based on content
 router.post('/suggest-image-prompts', async (req: Request, res: Response) => {

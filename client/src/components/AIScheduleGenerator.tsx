@@ -29,7 +29,7 @@ interface GeneratedSchedule {
 interface AIScheduleGeneratorProps {
   onGenerateSchedule: (request: ScheduleRequest) => Promise<GeneratedSchedule[]>;
   onApproveSchedule: (schedule: GeneratedSchedule[]) => void;
-  companyData?: any;
+  campaignData?: any;
   isGenerating?: boolean;
 }
 
@@ -46,7 +46,7 @@ const EXAMPLE_PROMPTS = [
 export const AIScheduleGenerator: React.FC<AIScheduleGeneratorProps> = ({
   onGenerateSchedule,
   onApproveSchedule,
-  companyData,
+  campaignData,
   isGenerating = false
 }) => {
   const [prompt, setPrompt] = useState('');

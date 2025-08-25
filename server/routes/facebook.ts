@@ -3,6 +3,7 @@ import axios from 'axios'
 import { db } from '../db'
 import { oauth_tokens } from '../../shared/schema'
 import { eq, and } from 'drizzle-orm'
+import { deleteImageByUrl } from '../lib/supabaseStorage.js'
 
 const router = express.Router()
 
@@ -56,45 +57,77 @@ router.post('/post', async (req: Request, res: Response) => {
     let targetId = 'me' // Default to user profile
     let finalAccessToken = accessToken
     
-    // If pageId is provided, try to use page token
+    // If pageId is provided, try to get page access token
     if (pageId && pageId !== 'me') {
       try {
         console.log('Fetching page token for pageId:', pageId)
         const pagesResponse = await axios.get('https://graph.facebook.com/v19.0/me/accounts', {
           params: {
             access_token: accessToken,
-            fields: 'id,name,access_token'
+            fields: 'id,name,access_token,category,permissions,tasks'
           }
         })
+        
+        console.log('Available pages:', pagesResponse.data.data?.map((p: any) => ({ id: p.id, name: p.name, hasToken: !!p.access_token })))
         
         const selectedPage = pagesResponse.data.data.find((page: any) => page.id === pageId)
         if (selectedPage && selectedPage.access_token) {
           targetId = pageId
           finalAccessToken = selectedPage.access_token
           console.log(`Using page token for page: ${selectedPage.name}`)
+          
+          // Verify page permissions for posting
+          try {
+            const permissionsResponse = await axios.get(`https://graph.facebook.com/v19.0/${pageId}`, {
+              params: {
+                access_token: selectedPage.access_token,
+                fields: 'id,name,can_post,tasks'
+              }
+            })
+            
+            console.log('Page permissions verified:', permissionsResponse.data)
+          } catch (permError) {
+            console.warn('Could not verify page permissions:', permError.response?.data)
+          }
         } else {
-          console.log('Page not found or no access token, using user profile')
+          console.log('Page not found or no access token available. Available pages:', pagesResponse.data.data?.length || 0)
+          // Fallback to user profile posting
+          console.log('Falling back to user profile posting')
         }
-      } catch (pageError) {
-        console.warn('Could not fetch page token, posting to user profile instead:', pageError)
+      } catch (pageError: any) {
+        console.warn('Could not fetch page token:', pageError.response?.data || pageError.message)
+        console.log('Falling back to user profile posting')
       }
     }
     
     // Prepare common message
     const message = `${post.caption}${post.hashtags && post.hashtags.length > 0 ? '\n\n' + post.hashtags.join(' ') : ''}`
 
-    // Handle media properly - convert relative URLs to absolute
+    // Handle media properly - support Supabase URLs and convert relative URLs to absolute
     let resolvedImageUrl: string | null = null
     if (post.imageUrl) {
       resolvedImageUrl = post.imageUrl
+      
+      // Handle Supabase storage URLs - they're already absolute
+      if (resolvedImageUrl.includes('supabase.co/storage/v1/object/public/')) {
+        console.log('Using Supabase hosted image:', resolvedImageUrl)
+      }
+      // Handle Pollinations AI URLs - they're already absolute
+      else if (resolvedImageUrl.includes('image.pollinations.ai')) {
+        console.log('Using Pollinations AI image:', resolvedImageUrl)
+      }
       // Convert relative URL to absolute if needed
-      if (resolvedImageUrl.startsWith('/uploads/')) {
+      else if (resolvedImageUrl.startsWith('/uploads/')) {
         const baseUrl = process.env.NODE_ENV === 'production' 
           ? (process.env.BASE_URL || 'http://localhost:5000')
           : 'http://localhost:5000'
         resolvedImageUrl = `${baseUrl}${resolvedImageUrl}`
+        console.log('Resolved relative image URL:', resolvedImageUrl)
       }
-      console.log('Resolved image URL:', resolvedImageUrl)
+      // Other absolute URLs are used as-is
+      else {
+        console.log('Using external image URL:', resolvedImageUrl)
+      }
     }
 
     // Decide endpoint based on whether we have an image
@@ -121,13 +154,42 @@ router.post('/post', async (req: Request, res: Response) => {
 
     const response = await axios.post(url, postData)
 
+    // Construct proper Facebook post URL
+    let postUrl = '';
+    if (response.data.id) {
+      const postId = response.data.id;
+      if (postId.includes('_')) {
+        // Format: pageId_postId -> https://www.facebook.com/pageId/posts/postId
+        const [pageId, actualPostId] = postId.split('_');
+        postUrl = `https://www.facebook.com/${pageId}/posts/${actualPostId}`;
+      } else {
+        // Single ID format -> https://www.facebook.com/postId
+        postUrl = `https://www.facebook.com/${postId}`;
+      }
+    }
+
+    // Clean up uploaded image after successful posting (optional)
+    if (resolvedImageUrl && resolvedImageUrl.includes('supabase.co/storage/v1/object/public/')) {
+      // Only clean up Supabase images, leave other URLs alone
+      try {
+        const cleanupSuccess = await deleteImageByUrl(resolvedImageUrl)
+        if (cleanupSuccess) {
+          console.log('✅ Successfully cleaned up uploaded image after Facebook post')
+        } else {
+          console.warn('⚠️ Failed to clean up uploaded image (non-critical)')
+        }
+      } catch (cleanupError) {
+        console.warn('⚠️ Error during image cleanup (non-critical):', cleanupError)
+      }
+    }
+
     // Standardize response format to match other platforms
     res.json({
       success: true,
       platform: 'facebook',
       data: response.data,
       postId: response.data.id,
-      postUrl: `https://www.facebook.com/${response.data.id}`,
+      postUrl,
       message: 'Successfully posted to Facebook',
       timestamp: new Date().toISOString()
     })

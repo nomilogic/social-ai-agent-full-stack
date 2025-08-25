@@ -5,7 +5,7 @@ export interface TrainingDataPoint {
   id: string;
   timestamp: Date;
   userId: string;
-  companyId: string;
+  campaignId: string;
   type: TrainingDataType;
   context: TrainingContext;
   outcome: TrainingOutcome;
@@ -157,7 +157,7 @@ export interface LearningInsight {
 
 export interface TrainingReport {
   id: string;
-  companyId: string;
+  campaignId: string;
   period: DateRange;
   summary: TrainingSummary;
   insights: LearningInsight[];
@@ -234,7 +234,7 @@ export class AITrainingService {
   }
 
   async recordContentGeneration(params: {
-    companyId: string;
+    campaignId: string;
     userId: string;
     contentType: string;
     platform: string;
@@ -249,7 +249,7 @@ export class AITrainingService {
   }): Promise<void> {
     const trainingData: Omit<TrainingDataPoint, 'id' | 'timestamp'> = {
       userId: params.userId,
-      companyId: params.companyId,
+      campaignId: params.campaignId,
       type: 'content_generation',
       context: {
         platform: params.platform,
@@ -283,7 +283,7 @@ export class AITrainingService {
   }
 
   async recordUserInteraction(params: {
-    companyId: string;
+    campaignId: string;
     userId: string;
     action: string;
     feature: string;
@@ -294,7 +294,7 @@ export class AITrainingService {
   }): Promise<void> {
     const trainingData: Omit<TrainingDataPoint, 'id' | 'timestamp'> = {
       userId: params.userId,
-      companyId: params.companyId,
+      campaignId: params.campaignId,
       type: 'user_interaction',
       context: {
         userBehavior: {
@@ -320,7 +320,7 @@ export class AITrainingService {
   }
 
   async recordPerformanceMetrics(params: {
-    companyId: string;
+    campaignId: string;
     userId: string;
     contentId: string;
     platform: string;
@@ -329,7 +329,7 @@ export class AITrainingService {
   }): Promise<void> {
     const trainingData: Omit<TrainingDataPoint, 'id' | 'timestamp'> = {
       userId: params.userId,
-      companyId: params.companyId,
+      campaignId: params.campaignId,
       type: 'performance_metric',
       context: {
         platform: params.platform,
@@ -349,14 +349,14 @@ export class AITrainingService {
   }
 
   // Pattern Discovery Methods
-  async discoverPatterns(companyId: string, options?: {
+  async discoverPatterns(campaignId: string, options?: {
     category?: TrainingCategory;
     minConfidence?: number;
     dateRange?: DateRange;
   }): Promise<TrainingPattern[]> {
     try {
       const queryParams = new URLSearchParams({
-        companyId,
+        campaignId,
         ...(options?.category && { category: options.category }),
         ...(options?.minConfidence && { minConfidence: options.minConfidence.toString() }),
         ...(options?.dateRange?.start && { startDate: options.dateRange.start.toISOString() }),
@@ -376,14 +376,14 @@ export class AITrainingService {
     }
   }
 
-  async generateInsights(companyId: string, options?: {
+  async generateInsights(campaignId: string, options?: {
     category?: string;
     minImpact?: number;
     limit?: number;
   }): Promise<LearningInsight[]> {
     try {
       const queryParams = new URLSearchParams({
-        companyId,
+        campaignId,
         ...(options?.category && { category: options.category }),
         ...(options?.minImpact && { minImpact: options.minImpact.toString() }),
         ...(options?.limit && { limit: options.limit.toString() }),
@@ -476,7 +476,7 @@ export class AITrainingService {
   }
 
   // Reporting Methods
-  async generateTrainingReport(companyId: string, period: DateRange): Promise<TrainingReport> {
+  async generateTrainingReport(campaignId: string, period: DateRange): Promise<TrainingReport> {
     try {
       const response = await fetch(`${this.baseUrl}/training/reports`, {
         method: 'POST',
@@ -484,7 +484,7 @@ export class AITrainingService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          companyId,
+          campaignId,
           period: {
             start: period.start.toISOString(),
             end: period.end.toISOString(),
@@ -503,10 +503,10 @@ export class AITrainingService {
     }
   }
 
-  async getTrainingMetrics(companyId: string, period?: DateRange): Promise<TrainingMetrics> {
+  async getTrainingMetrics(campaignId: string, period?: DateRange): Promise<TrainingMetrics> {
     try {
       const queryParams = new URLSearchParams({
-        companyId,
+        campaignId,
         ...(period?.start && { startDate: period.start.toISOString() }),
         ...(period?.end && { endDate: period.end.toISOString() }),
       });
@@ -525,13 +525,13 @@ export class AITrainingService {
   }
 
   // Analysis Helper Methods
-  async analyzeContentPreferences(companyId: string): Promise<{
+  async analyzeContentPreferences(campaignId: string): Promise<{
     topicPreferences: { topic: string; score: number; }[];
     stylePreferences: { style: string; score: number; }[];
     platformPreferences: { platform: string; score: number; }[];
   }> {
     try {
-      const response = await fetch(`${this.baseUrl}/training/analysis/preferences/${companyId}`);
+      const response = await fetch(`${this.baseUrl}/training/analysis/preferences/${campaignId}`);
       
       if (!response.ok) {
         throw new Error(`Failed to analyze content preferences: ${response.statusText}`);
@@ -545,7 +545,7 @@ export class AITrainingService {
   }
 
   async predictContentPerformance(params: {
-    companyId: string;
+    campaignId: string;
     contentCharacteristics: ContentCharacteristics;
     platform: string;
     targetAudience?: string;
