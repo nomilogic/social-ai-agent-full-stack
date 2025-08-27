@@ -16,7 +16,7 @@ export const ContentPage: React.FC = () => {
 
   const handleContentNext = (contentData: any) => {
     dispatch({ type: "SET_CONTENT_DATA", payload: contentData });
-    navigate("/content/generate");
+    navigate("/generate");
   };
 
   const handleGenerationComplete = async (posts: any[]) => {
@@ -77,25 +77,45 @@ export const ContentPage: React.FC = () => {
             <Route
               path="generate"
               element={
-                state.contentData ? (
-                  <AIGenerator
-                    contentData={state.contentData}
-                    onComplete={handleGenerationComplete}
-                    onBack={() => navigate("/content")}
-                  />
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-600">
-                      No content data found. Please start from the beginning.
-                    </p>
-                    <button
-                      onClick={() => navigate("/content")}
-                      className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Start Over
-                    </button>
-                  </div>
-                )
+                (() => {
+                  // Debug logging
+                  console.log('🔍 Generate route accessed:', {
+                    hasContentData: !!state.contentData,
+                    contentData: state.contentData,
+                    location: location.pathname
+                  });
+                  
+                  return state.contentData ? (
+                    <AIGenerator
+                      contentData={state.contentData}
+                      onComplete={handleGenerationComplete}
+                      onBack={() => navigate("/content")}
+                    />
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-left max-w-md mx-auto">
+                        <h3 className="font-semibold text-yellow-800 mb-2">No Content Data Found</h3>
+                        <p className="text-yellow-700 text-sm mb-3">
+                          The content generation requires initial content data. This usually happens when:
+                        </p>
+                        <ul className="text-yellow-700 text-sm list-disc list-inside space-y-1">
+                          <li>You accessed /generate directly without going through the content creation flow</li>
+                          <li>Your session expired and the data was cleared</li>
+                          <li>You refreshed the page during the content creation process</li>
+                        </ul>
+                      </div>
+                      <p className="text-gray-600 mb-4">
+                        Please start the content creation process from the beginning.
+                      </p>
+                      <button
+                        onClick={() => navigate("/content")}
+                        className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Start Content Creation
+                      </button>
+                    </div>
+                  );
+                })()
               }
             />
             <Route
@@ -105,8 +125,11 @@ export const ContentPage: React.FC = () => {
                   <PostPreview
                     posts={state.generatedPosts}
                     onEdit={() => navigate("/content")}
-                    onBack={() => navigate("/content/generate")}
+                    onBack={() => navigate("/generate")}
                     onPublish={handleGoToPublish}
+                    onPostsUpdate={(updatedPosts) => {
+                      dispatch({ type: "SET_GENERATED_POSTS", payload: updatedPosts });
+                    }}
                   />
                 ) : (
                   <div className="text-center py-8">

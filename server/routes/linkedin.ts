@@ -59,17 +59,26 @@ router.post("/post", async (req: Request, res: Response) => {
     console.log("LinkedIn person ID:", personId);
 
     let mediaAsset = null;
+    let isVideo = false;
+    const mediaUrl = post.imageUrl || post.videoUrl; // Support both imageUrl and videoUrl
 
-    // Step 2: Upload image if provided
-    if (post.imageUrl) {
-      console.log("Uploading image to LinkedIn:", post.imageUrl);
+    // Step 2: Upload media if provided (image or video)
+    if (mediaUrl) {
+      // Determine if this is a video based on URL or file extension
+      isVideo = mediaUrl.includes('.mp4') || 
+                mediaUrl.includes('.webm') || 
+                mediaUrl.includes('.mov') ||
+                mediaUrl.includes('video/') ||
+                (post.videoUrl && post.videoUrl === mediaUrl);
+      
+      console.log(`Uploading ${isVideo ? 'video' : 'image'} to LinkedIn:`, mediaUrl);
 
       // Step 2a: Register upload with LinkedIn
       const uploadResponse = await axios.post(
         "https://api.linkedin.com/v2/assets?action=registerUpload",
         {
           registerUploadRequest: {
-            recipes: ["urn:li:digitalmediaRecipe:feedshare-image"],
+            recipes: [isVideo ? "urn:li:digitalmediaRecipe:feedshare-video" : "urn:li:digitalmediaRecipe:feedshare-image"],
             owner: `urn:li:person:${personId}`,
             serviceRelationships: [
               {
@@ -96,37 +105,37 @@ router.post("/post", async (req: Request, res: Response) => {
       console.log("LinkedIn upload URL obtained:", uploadUrl);
       console.log("LinkedIn asset ID:", asset);
 
-      // Step 2b: Download the image from the provided URL
-      console.log("Downloading image from URL:", post.imageUrl);
+      // Step 2b: Download the media from the provided URL
+      console.log(`Downloading ${isVideo ? 'video' : 'image'} from URL:`, mediaUrl);
       
       // Convert relative URL to full URL if needed
-      let imageUrl = post.imageUrl;
-      if (imageUrl.startsWith('/uploads/')) {
+      let fullMediaUrl = mediaUrl;
+      if (fullMediaUrl.startsWith('/uploads/')) {
         const baseUrl = process.env.NODE_ENV === 'production' 
           ? process.env.BASE_URL || 'http://localhost:5000'
           : 'http://localhost:5000';
-        imageUrl = `${baseUrl}${imageUrl}`;
+        fullMediaUrl = `${baseUrl}${fullMediaUrl}`;
       }
       
-      console.log("Full image URL:", imageUrl);
-      const imageResponse = await axios.get(imageUrl, {
+      console.log(`Full ${isVideo ? 'video' : 'image'} URL:`, fullMediaUrl);
+      const mediaResponse = await axios.get(fullMediaUrl, {
         responseType: "arraybuffer",
-        timeout: 30000,
+        timeout: isVideo ? 60000 : 30000, // Longer timeout for videos
         headers: {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
       });
-      console.log("Image downloaded, size:", imageResponse.data.length);
+      console.log(`${isVideo ? 'Video' : 'Image'} downloaded, size:`, mediaResponse.data.length);
 
-      // Step 2c: Upload the image binary data to LinkedIn
-      await axios.put(uploadUrl, imageResponse.data, {
+      // Step 2c: Upload the media binary data to LinkedIn
+      await axios.put(uploadUrl, mediaResponse.data, {
         headers: {
           "Content-Type": "application/octet-stream",
         },
       });
 
-      console.log("Image uploaded successfully to LinkedIn");
+      console.log(`${isVideo ? 'Video' : 'Image'} uploaded successfully to LinkedIn`);
       mediaAsset = asset;
     }
 
@@ -137,13 +146,13 @@ router.post("/post", async (req: Request, res: Response) => {
       specificContent: {
         "com.linkedin.ugc.ShareContent": {
           shareCommentary: { text: post.caption +" "+post.hashtags.join(" ") },
-          shareMediaCategory: mediaAsset ? "IMAGE" : "NONE",
+          shareMediaCategory: mediaAsset ? (isVideo ? "VIDEO" : "IMAGE") : "NONE",
           media: mediaAsset
             ? [
                 {
                   status: "READY",
                   description: {
-                    text: "Shared image",
+                    text: `Shared ${isVideo ? 'video' : 'image'}`,
                   },
                   media: mediaAsset,
                   title: {

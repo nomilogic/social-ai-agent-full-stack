@@ -316,6 +316,10 @@ export async function postToAllPlatforms(
   context?: { facebookPageId?: string; youtubeChannelId?: string }
 ): Promise<Record<string, any>> {
   const results: Record<string, any> = {};
+  const errors: string[] = [];
+  const successes: string[] = [];
+  
+  console.log(`Starting to post to ${posts.length} platforms for user ${userId}`);
   
   for (const post of posts) {
     try {
@@ -354,8 +358,11 @@ export async function postToAllPlatforms(
         results[post.platform] = { 
           success: true, 
           data: realPostResult,
-          method: 'real' 
+          method: 'real',
+          message: realPostResult.message || `Successfully posted to ${post.platform}`,
+          postId: realPostResult.postId || 'Unknown'
         };
+        successes.push(post.platform);
         onProgress?.(post.platform, 'success');
         console.log(`Successfully posted to ${post.platform} via real OAuth`);
       } else {
@@ -364,12 +371,20 @@ export async function postToAllPlatforms(
       }
       
     } catch (error: any) {
+      const errorMessage = error.message || `Failed to post to ${post.platform}`;
       console.error(`Failed to post to ${post.platform}:`, error);
+      
       results[post.platform] = { 
         success: false, 
-        error: error.message || `Failed to post to ${post.platform}` 
+        error: errorMessage,
+        platform: post.platform,
+        retryable: !errorMessage.includes('connect') && !errorMessage.includes('expired')
       };
+      errors.push(`${post.platform}: ${errorMessage}`);
       onProgress?.(post.platform, 'error');
+      
+      // Continue with other platforms instead of stopping
+      console.log(`Continuing with remaining platforms despite ${post.platform} failure`);
     }
     
     // Add small delay between posts to avoid rate limits
@@ -377,6 +392,21 @@ export async function postToAllPlatforms(
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
+  
+  // Log summary
+  console.log(`Publishing complete. Successes: ${successes.join(', ') || 'none'}. Errors: ${errors.length}`);
+  if (errors.length > 0) {
+    console.warn('Publishing errors:', errors);
+  }
+  
+  // Add summary to results for UI feedback
+  results._summary = {
+    total: posts.length,
+    successful: successes.length,
+    failed: errors.length,
+    errors: errors,
+    successes: successes
+  };
   
   return results;
 }

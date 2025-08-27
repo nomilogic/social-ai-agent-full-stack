@@ -37,6 +37,7 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
       const targetPlatforms = contentData?.selectedPlatforms || contentData?.platforms || ['linkedin'];
 
       // Create a minimal campaign info for generation
+      console.log('Preparing campaign info for AI generation', contentData);
       const campaignInfo: CampaignInfo = {
         name: contentData?.campaignName || 'Default Campaign',
         website: contentData?.website || 'https://example.com',
@@ -71,26 +72,26 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
           }
           // Second priority: try to generate image if no media provided
           else if (post.caption && !post.imageUrl && !contentData?.mediaUrl) {
-            // try {
-            //   // Generate an image based on the post content
-            //   const imagePrompt = `Professional ${post.platform} image for: ${post.caption.substring(0, 100)}`;
-            //   const imageResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate-image`, {
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify({
-            //       prompt: imagePrompt,
-            //       style: 'professional',
-            //       size: post.platform === 'instagram' ? '1024x1024' : '1792x1024'
-            //     })
-            //   });
+            try {
+              // Generate an image based on the post content
+              const imagePrompt = `Professional ${post.platform} image for: ${post.caption.substring(0, 100)}`;
+              const imageResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate-image`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  prompt: imagePrompt,
+                  style: 'professional',
+                  size: post.platform === 'instagram' ? '1024x1024' : '1792x1024'
+                })
+              });
 
-            //   if (imageResponse.ok) {
-            //     const imageData = await imageResponse.json();
-            //     posts[i].imageUrl = imageData.imageUrl;
-            //   }
-            // } catch (imageError) {
-            //   console.warn('Failed to generate image for post:', imageError);
-            // }
+              if (imageResponse.ok) {
+                const imageData = await imageResponse.json();
+                posts[i].imageUrl = imageData.imageUrl;
+              }
+            } catch (imageError) {
+              console.warn('Failed to generate image for post:', imageError);
+            }
           }
         }
       }

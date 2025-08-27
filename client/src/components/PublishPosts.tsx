@@ -101,12 +101,18 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
   };
 
   const handlePublish = async () => {
-    // Check if any selected platforms are not connected
+    // Filter to only connected platforms that are selected
+    const connectedSelectedPlatforms = selectedPlatforms.filter(p => connectedPlatforms.includes(p));
     const unconnectedPlatforms = selectedPlatforms.filter(p => !connectedPlatforms.includes(p));
     
-    if (unconnectedPlatforms.length > 0) {
-      setError(`Please connect your ${unconnectedPlatforms.join(', ')} account(s) first before publishing.`);
+    if (connectedSelectedPlatforms.length === 0) {
+      setError(`No connected platforms selected. Please connect and select at least one platform to publish.`);
       return;
+    }
+    
+    // Show warning about unconnected platforms but continue with connected ones
+    if (unconnectedPlatforms.length > 0) {
+      console.warn(`Skipping unconnected platforms: ${unconnectedPlatforms.join(', ')}`);
     }
     
     setPublishing(true);
@@ -114,7 +120,16 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
     setPublishProgress({});
     
     try {
-      const selectedPosts = posts.filter(post => selectedPlatforms.includes(post.platform));
+      // Only process posts for connected platforms
+      const selectedPosts = posts.filter(post => 
+        selectedPlatforms.includes(post.platform) && connectedPlatforms.includes(post.platform)
+      );
+      
+      // Show info about what we're doing
+      if (unconnectedPlatforms.length > 0) {
+        setError(`⚠️ Skipping ${unconnectedPlatforms.join(', ')} (not connected). Publishing to ${connectedSelectedPlatforms.join(', ')}...`);
+        setTimeout(() => setError(null), 3000); // Clear warning after 3 seconds
+      }
       
       const publishResults = await postToAllPlatforms(
         userId || '',
@@ -304,15 +319,63 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
       
       {results && (
         <div className="mt-6">
-          <h3 className="font-semibold mb-3 text-green-700">✅ Publishing Results:</h3>
-          <div className="space-y-3">
-            {Object.entries(results).map(([platform, result]: [string, any]) => (
-              <div key={platform} className="bg-green-50 border border-green-200 rounded-lg p-3">
-                <h4 className="font-medium text-green-800 capitalize">{platform}</h4>
-                <p className="text-green-600 text-sm">{result.message}</p>
-                <p className="text-green-500 text-xs">Post ID: {result.postId}</p>
+          <h3 className="font-semibold mb-3 text-gray-900">📊 Publishing Results:</h3>
+          
+          {/* Summary */}
+          {results._summary && (
+            <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-blue-600">{results._summary.total}</div>
+                  <div className="text-sm text-gray-600">Total</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-green-600">{results._summary.successful}</div>
+                  <div className="text-sm text-gray-600">Successful</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-red-600">{results._summary.failed}</div>
+                  <div className="text-sm text-gray-600">Failed</div>
+                </div>
               </div>
-            ))}
+            </div>
+          )}
+          
+          {/* Individual Results */}
+          <div className="space-y-3">
+            {Object.entries(results)
+              .filter(([key]) => key !== '_summary')
+              .map(([platform, result]: [string, any]) => (
+                <div key={platform} className={`border rounded-lg p-3 ${
+                  result.success 
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-red-50 border-red-200'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <h4 className={`font-medium capitalize ${
+                      result.success ? 'text-green-800' : 'text-red-800'
+                    }`}>
+                      {result.success ? '✅' : '❌'} {platform}
+                    </h4>
+                    {result.success && result.postId && (
+                      <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
+                        ID: {result.postId}
+                      </span>
+                    )}
+                  </div>
+                  <p className={`text-sm mt-1 ${
+                    result.success ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {result.message || result.error}
+                  </p>
+                  {!result.success && result.retryable && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      💡 This error might be temporary - you can try again
+                    </p>
+                  )}
+                </div>
+              ))
+            }
           </div>
         </div>
       )}

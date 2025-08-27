@@ -126,7 +126,6 @@ export const postsApi = {
       campaignId,
       prompt: contentData.prompt,
       tags: contentData.tags,
-      campaignId: contentData.campaignId,
       generatedContent: generatedPosts,
       userId
     });

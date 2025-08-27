@@ -129,21 +129,46 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   };
 
   const handleFileUpload = async (file: File) => {
+    console.log('📁 File upload started:', file.name, file.type, file.size);
+    console.log('Current formData state BEFORE:', { media: !!formData.media, mediaUrl: !!formData.mediaUrl });
+    
     setUploading(true);
+    
+    console.log('🔄 Setting file immediately for preview...');
+    setFormData((prev) => {
+      console.log('Previous formData:', { media: !!prev.media, mediaUrl: !!prev.mediaUrl });
+      const newData = { ...prev, media: file };
+      console.log('New formData after setting file:', { media: !!newData.media, mediaUrl: !!newData.mediaUrl });
+      return newData;
+    });
+    
     try {
       const userResult = await getCurrentUser();
       if (!userResult || !userResult.user) {
-        throw new Error("User not authenticated");
+        console.warn('⚠️ User not authenticated, keeping local file only');
+        return;
       }
 
+      console.log('🌍 Uploading to server...');
       const mediaUrl = await uploadMedia(file, userResult.user.id);
-      setFormData((prev) => ({ ...prev, media: file, mediaUrl }));
+      console.log('✅ Upload successful, URL:', mediaUrl);
+      
+      setFormData((prev) => {
+        console.log('Adding URL to existing file. Previous:', { media: !!prev.media, mediaUrl: !!prev.mediaUrl });
+        const newData = { ...prev, media: file, mediaUrl };
+        console.log('Final formData with URL:', { media: !!newData.media, mediaUrl: !!newData.mediaUrl });
+        return newData;
+      });
     } catch (error) {
-      console.error("Error uploading file:", error);
-      // Still set the file for preview, but without URL
-      setFormData((prev) => ({ ...prev, media: file }));
+      console.error("❌ Error uploading file:", error);
+      console.log('📱 File should still be set for local preview');
     } finally {
       setUploading(false);
+      
+      // Final state check
+      setTimeout(() => {
+        console.log('Final state after upload process:', { media: !!formData.media, mediaUrl: !!formData.mediaUrl });
+      }, 100);
     }
   };
 
@@ -458,9 +483,19 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                 className="hidden"
               />
 
+              {/* Debug Info - Enhanced debugging */}
+              {/* <div className="mb-2 p-2 bg-yellow-500/10 border border-yellow-400/20 rounded text-xs text-yellow-200 space-y-1">
+                <div><strong>Debug State:</strong></div>
+                <div>• media: {formData.media ? `✅ ${formData.media.type} (${formData.media.name})` : '❌ null'}</div>
+                <div>• mediaUrl: {formData.mediaUrl ? `✅ ${formData.mediaUrl.substring(0, 50)}...` : '❌ null'}</div>
+                <div>• uploading: {uploading ? '🔄 true' : '✅ false'}</div>
+                <div>• Should show preview: {(formData.media || formData.mediaUrl) ? '✅ YES' : '❌ NO'}</div>
+              </div> */}
+
               {formData.media || formData.mediaUrl ? (
                 <div className="space-y-3">
                   <div className="relative">
+                    {/* Check if it's an image */}
                     {(formData.media?.type.startsWith("image/")) ||
                     (formData.mediaUrl && !formData.media && !formData.mediaUrl.match(/\.(mp4|mov|avi|wmv|flv|webm|mkv|m4v)$/i)) ? (
                       <div className="relative">
@@ -472,6 +507,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           }
                           alt="Preview"
                           className="max-h-40 mx-auto rounded-lg shadow-sm"
+                          onError={(e) => {
+                            console.error('Image failed to load:', formData.mediaUrl || formData.media?.name);
+                          }}
                         />
                         <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs flex items-center">
                           <ImageIcon className="w-3 h-3 mr-1" />
@@ -479,16 +517,26 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                         </div>
                       </div>
                     ) : (
+                      /* Video preview */
                       <div className="relative">
                         <video
                           src={
-                            formData.media
-                              ? URL.createObjectURL(formData.media)
-                              : formData.mediaUrl!
+                            formData.mediaUrl
+                              ? 
+                               formData.mediaUrl: URL.createObjectURL(formData.media)
                           }
                           className="max-h-40 mx-auto rounded-lg shadow-sm"
                           controls
-                        />
+                          //preload="metadata"
+                          onError={(e) => {
+                            console.error('Video failed to load:', formData.mediaUrl || formData.media?.name);
+                          }}
+                          onLoadStart={() => {
+                            console.log('Video loading started:', formData.mediaUrl || formData.media?.name);
+                          }}
+                        >
+                          Your browser does not support the video tag.
+                        </video>
                         <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs flex items-center">
                           <Video className="w-3 h-3 mr-1" />
                           Video
