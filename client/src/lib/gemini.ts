@@ -398,8 +398,9 @@ Analyze this image and provide a detailed description that would be useful for s
 3. Colors and visual elements
 4. Potential marketing angles or messages
 5. Suggested content themes
-
-Keep the description concise but informative for social media marketing purposes.
+6. Tell in general terms what the image is about.
+7. don't use special characters like #, @, **, —, -, *, etc. 
+Keep the description concise in on paragraph informative for social media marketing purposes.
 `;
 
     const result = await model.generateContent([prompt, imageData as any]);

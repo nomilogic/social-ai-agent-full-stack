@@ -27,6 +27,8 @@ import { analyzeImage as analyzeImageWithGemini } from "../lib/gemini"; // Renam
 import { AIImageGenerator } from "./AIImageGenerator";
 import { PostPreview } from "./PostPreview";
 import { getPlatformColors, platformOptions } from "../utils/platformIcons";
+import { getCampaignById } from "../lib/database";
+import { useAppContext } from "../context/AppContext";
 
 // Helper function to convert file to base64
 const fileToBase64 = (file: File): Promise<string> => {
@@ -60,6 +62,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   selectedPlatforms,
   editMode,
 }) => {
+  const { state } = useAppContext();
   const [formData, setFormData] = useState<PostContent>({
     prompt: initialData?.prompt || "",
     tags: initialData?.tags || [],
@@ -79,6 +82,8 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const [useInPost, setUseInPost] = useState(true);
   const [generatedResults, setGeneratedResults] = useState<any[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+  const [campaignInfo, setCampaignInfo] = useState<any>(null);
+  const [loadingCampaign, setLoadingCampaign] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize with existing data when in edit mode
@@ -99,6 +104,40 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       }
     }
   }, [initialData, selectedPlatforms, editMode]);
+
+  // Fetch campaign information when a campaign is selected in context
+  useEffect(() => {
+    const fetchCampaignInfo = async () => {
+      if (state.selectedCampaign && state.user?.id) {
+        try {
+          setLoadingCampaign(true);
+          console.log('Fetching campaign info for:', state.selectedCampaign.id);
+          
+          const campaign = await getCampaignById(state.selectedCampaign.id, state.user.id);
+          setCampaignInfo(campaign);
+          console.log('Campaign info fetched:', campaign);
+          
+          // Update form data with campaign platforms if user hasn't selected any yet
+          if (campaign.platforms && (!formData.selectedPlatforms || formData.selectedPlatforms.length === 0)) {
+            setFormData(prev => ({
+              ...prev,
+              selectedPlatforms: campaign.platforms,
+              campaignId: campaign.id || ''
+            }));
+          }
+        } catch (error) {
+          console.error('Error fetching campaign info:', error);
+          setCampaignInfo(null);
+        } finally {
+          setLoadingCampaign(false);
+        }
+      } else {
+        setCampaignInfo(null);
+      }
+    };
+
+    fetchCampaignInfo();
+  }, [state.selectedCampaign, state.user?.id]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -325,15 +364,21 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.prompt.trim()) {
-      // For now, passing an empty object for campaignInfo and mediaAssets to simulate the structure
-      // This should be replaced with actual data fetching or state management
-      const campaignInfo = {
-        name: "Sample Campaign",
-        industry: "Technology",
+      // Use fetched campaign info if available, otherwise use default values
+      const currentCampaignInfo = campaignInfo || {
+        name: "Default Campaign",
+        industry: "General",
         brand_tone: "professional",
-        target_audience: "Professionals",
-        description: "A sample campaign for content generation",
+        target_audience: "General Audience",
+        description: "General content generation without specific campaign context",
       };
+      
+      console.log('Using campaign info:', {
+        hasCampaign: !!campaignInfo,
+        campaignInfo: currentCampaignInfo,
+        fromContext: !!state.selectedCampaign
+      });
+      
       const mediaAssets = formData.mediaUrl
         ? [{ url: formData.mediaUrl, type: formData.media?.type || "image" }]
         : [];
@@ -343,15 +388,21 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         prompt: formData.prompt,
         selectedPlatforms: formData.selectedPlatforms,
         platforms: formData.selectedPlatforms,
-        campaignName: campaignInfo.name,
-        campaignInfo,
+        campaignName: currentCampaignInfo.name,
+        campaignInfo: currentCampaignInfo,
         mediaAssets,
         analysisResults: imageAnalysis,
-        industry: campaignInfo.industry,
-        tone: campaignInfo.brand_tone,
-        targetAudience: campaignInfo.target_audience,
-        description: campaignInfo.description,
+        industry: currentCampaignInfo.industry,
+        tone: currentCampaignInfo.brand_tone || currentCampaignInfo.brandTone,
+        targetAudience: currentCampaignInfo.target_audience || currentCampaignInfo.targetAudience,
+        description: currentCampaignInfo.description,
         imageAnalysis: imageAnalysis,
+        // Additional campaign fields if available
+        website: currentCampaignInfo.website,
+        objective: currentCampaignInfo.objective,
+        goals: currentCampaignInfo.goals,
+        keywords: currentCampaignInfo.keywords,
+        hashtags: currentCampaignInfo.hashtags,
       };
 
       // If onNext callback is provided, use it
@@ -449,6 +500,31 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         <p className="text-sm theme-text-secondary">
           Add your media and describe what you want to share
         </p>
+        
+        {/* Campaign Context Indicator */}
+        {loadingCampaign && (
+          <div className="flex items-center justify-center gap-2 mt-3 text-xs text-blue-400">
+            <Loader className="w-3 h-3 animate-spin" />
+            <span>Loading campaign info...</span>
+          </div>
+        )}
+        {campaignInfo && (
+          <div className="flex items-center justify-center gap-2 mt-3 px-3 py-1 bg-green-500/10 border border-green-400/20 rounded-full text-xs text-green-300">
+            <Target className="w-3 h-3" />
+            <span>Using campaign: {campaignInfo.name}</span>
+          </div>
+        )}
+        {!campaignInfo && !loadingCampaign && state.selectedCampaign && (
+          <div className="flex items-center justify-center gap-2 mt-3 px-3 py-1 bg-yellow-500/10 border border-yellow-400/20 rounded-full text-xs text-yellow-300">
+            <AlertCircle className="w-3 h-3" />
+            <span>Campaign not found - using default settings</span>
+          </div>
+        )}
+        {!campaignInfo && !state.selectedCampaign && (
+          <div className="flex items-center justify-center gap-2 mt-3 px-3 py-1 bg-gray-500/10 border border-gray-400/20 rounded-full text-xs text-gray-400">
+            <span>No campaign selected - using general content generation</span>
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">

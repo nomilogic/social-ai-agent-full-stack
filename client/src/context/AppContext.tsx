@@ -76,9 +76,9 @@ const getStoredContentData = () => {
 const setStoredContentData = (data: any) => {
   try {
     if (data) {
-      localStorage.setItem('s_ai_content_data', JSON.stringify(data));
+     // localStorage.setItem('s_ai_content_data', JSON.stringify(data));
     } else {
-      localStorage.removeItem('s_ai_content_data');
+    //  localStorage.removeItem('s_ai_content_data');
     }
   } catch (error) {
     console.warn('Failed to store content data:', error);
@@ -94,7 +94,7 @@ const initialState: AppState = {
   loading: true,
   error: null,
   generatedPosts: [],
-  contentData: getStoredContentData(), // Load from localStorage
+  contentData:null, // Load from localStorage
   hasCompletedOnboarding: false,
   isBusinessAccount: false,
 };

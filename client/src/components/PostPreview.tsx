@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   Copy,
   Download,
@@ -38,6 +38,16 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
   const [editingMode, setEditingMode] = useState<boolean>(false);
   const [posts, setPosts] = useState<GeneratedPost[]>(generatedPosts);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
+
+  // Calculate initial character counts for all posts
+  useEffect(() => {
+    const postsWithCharacterCount = generatedPosts.map(post => ({
+      ...post,
+      characterCount: post.characterCount || 
+        (post.caption?.length || 0) + (post.hashtags?.join(' ')?.length || 0)
+    }));
+    setPosts(postsWithCharacterCount);
+  }, [generatedPosts]);
 
   const copyToClipboard = async (text: string) => {
     try {
