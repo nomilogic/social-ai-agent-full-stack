@@ -36,17 +36,21 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
       // Use selected platforms from content data or default to LinkedIn
       const targetPlatforms = contentData?.selectedPlatforms || contentData?.platforms || ['linkedin'];
 
-      // Create a minimal campaign info for generation
+      // Create campaign info for generation - use real data when available
       console.log('Preparing campaign info for AI generation', contentData);
       const campaignInfo: CampaignInfo = {
-        name: contentData?.campaignName || 'Default Campaign',
-        website: contentData?.website || 'https://example.com',
-        industry: contentData?.industry || 'Technology',
-        description: contentData?.description || 'A technology campaign',
-        targetAudience: contentData?.targetAudience || 'Professionals',
-        brandTone: (contentData?.tone as any) || 'professional',
-        goals: contentData?.goals || ['brand_building'],
-        platforms: targetPlatforms
+        name: contentData?.campaignName || contentData?.campaignInfo?.name || 'Default Campaign',
+        website: contentData?.website || contentData?.campaignInfo?.website || 'https://example.com',
+        industry: contentData?.industry || contentData?.campaignInfo?.industry || 'General',
+        description: contentData?.description || contentData?.campaignInfo?.description || 'General content generation',
+        targetAudience: contentData?.targetAudience || contentData?.campaignInfo?.target_audience || contentData?.campaignInfo?.targetAudience || 'General Audience',
+        brandTone: (contentData?.tone || contentData?.campaignInfo?.brand_tone || contentData?.campaignInfo?.brandTone as any) || 'professional',
+        goals: contentData?.goals || contentData?.campaignInfo?.goals || ['brand_building'],
+        platforms: targetPlatforms,
+        // Additional campaign fields if available
+        objective: contentData?.objective || contentData?.campaignInfo?.objective,
+        keywords: contentData?.keywords || contentData?.campaignInfo?.keywords || [],
+        hashtags: contentData?.hashtags || contentData?.campaignInfo?.hashtags || []
       };
 
       console.log('Starting AI generation with campaign info:', campaignInfo);
@@ -63,38 +67,38 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
       );
 
       // Set media URL for posts that need them
-      if (posts && posts.length > 0) {
-        for (let i = 0; i < posts.length; i++) {
-          const post = posts[i];
-          // First priority: use existing media URL from content data
-          if (contentData?.mediaUrl && !post.imageUrl) {
-            posts[i].imageUrl = contentData.mediaUrl;
-          }
-          // Second priority: try to generate image if no media provided
-          else if (post.caption && !post.imageUrl && !contentData?.mediaUrl) {
-            try {
-              // Generate an image based on the post content
-              const imagePrompt = `Professional ${post.platform} image for: ${post.caption.substring(0, 100)}`;
-              const imageResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate-image`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  prompt: imagePrompt,
-                  style: 'professional',
-                  size: post.platform === 'instagram' ? '1024x1024' : '1792x1024'
-                })
-              });
+      // if (posts && posts.length > 0) {
+      //   for (let i = 0; i < posts.length; i++) {
+      //     const post = posts[i];
+      //     // First priority: use existing media URL from content data
+      //     if (contentData?.mediaUrl && !post.imageUrl) {
+      //       posts[i].imageUrl = contentData.mediaUrl;
+      //     }
+      //     // Second priority: try to generate image if no media provided
+      //     else if (post.caption && !post.imageUrl && !contentData?.mediaUrl) {
+      //       try {
+      //         // Generate an image based on the post content
+      //         const imagePrompt = `Professional ${post.platform} image for: ${post.caption.substring(0, 100)}`;
+      //         const imageResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate-image`, {
+      //           method: 'POST',
+      //           headers: { 'Content-Type': 'application/json' },
+      //           body: JSON.stringify({
+      //             prompt: imagePrompt,
+      //             style: 'professional',
+      //             size: post.platform === 'instagram' ? '1024x1024' : '1792x1024'
+      //           })
+      //         });
 
-              if (imageResponse.ok) {
-                const imageData = await imageResponse.json();
-                posts[i].imageUrl = imageData.imageUrl;
-              }
-            } catch (imageError) {
-              console.warn('Failed to generate image for post:', imageError);
-            }
-          }
-        }
-      }
+      //         if (imageResponse.ok) {
+      //           const imageData = await imageResponse.json();
+      //           posts[i].imageUrl = imageData.imageUrl;
+      //         }
+      //       } catch (imageError) {
+      //         console.warn('Failed to generate image for post:', imageError);
+      //       }
+      //     }
+      //   }
+      // }
 
       setIsGenerating(false);
       setCurrentPlatform(null);

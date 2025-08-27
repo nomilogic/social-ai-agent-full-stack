@@ -67,6 +67,30 @@ export const getCampaigns = async (userId: string) => {
   }
 }
 
+export const getCampaignById = async (campaignId: string, userId: string) => {
+  try {
+    console.log('Fetching campaign by ID:', campaignId, 'for userId:', userId);
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`/api/campaigns/${campaignId}?userId=${userId}`, {
+      headers: { 
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    const result = await response.json()
+
+    console.log('Campaign API response:', response.status, result);
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to fetch campaign')
+    }
+
+    return result.data
+  } catch (error) {
+    console.error('Error fetching campaign by ID:', error)
+    throw error
+  }
+}
+
 export async function updateCampaign(campaignId: string, updates: Partial<CampaignInfo>, userId: string) {
   const token = localStorage.getItem('auth_token');
   const response = await fetch(`/api/campaigns/${campaignId}`, {
