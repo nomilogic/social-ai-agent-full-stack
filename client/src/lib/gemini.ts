@@ -3,11 +3,14 @@ import { Platform, CampaignInfo, PostContent, GeneratedPost } from '../types';
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
-if (!apiKey) {
-  console.warn('Missing Gemini API key. Image analysis will be disabled.');
+if (!apiKey || apiKey === 'REPLACE_WITH_YOUR_API_KEY' || apiKey === 'your_gemini_api_key_here') {
+  console.warn('🔑 Gemini API key not configured properly. Using fallback content generation.');
 }
 
-const genAI = new GoogleGenerativeAI(apiKey);
+// Only initialize if we have a valid API key
+const genAI = apiKey && apiKey !== 'REPLACE_WITH_YOUR_API_KEY' && apiKey !== 'your_gemini_api_key_here' 
+  ? new GoogleGenerativeAI(apiKey) 
+  : null;
 
 export interface PlatformConfig {
   maxLength: number;
@@ -56,6 +59,11 @@ export const platformConfigs: Record<Platform, PlatformConfig> = {
 };
 
 export async function analyzeImage(imageFile: File): Promise<string> {
+  if (!genAI) {
+    console.warn('Gemini API not available for image analysis');
+    return 'Image analysis requires a valid Gemini API key. Please add a description manually.';
+  }
+
   const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
   try {
@@ -231,7 +239,12 @@ export async function generateAllPosts(
   const platforms = campaignInfo.platforms || contentData.selectedPlatforms || ['linkedin'];
   const posts: GeneratedPost[] = [];
   
-  console.log('Generating posts for platforms:', platforms);
+  console.log('🚀 generateAllPosts called for platforms:', platforms);
+  console.log('📄 Content data:', {
+    prompt: contentData.prompt?.substring(0, 100) + '...',
+    platforms: platforms,
+    tags: contentData.tags
+  });
   
   try {
     const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : 'http://localhost:5000');
@@ -250,6 +263,7 @@ export async function generateAllPosts(
       
       try {
         // Make individual API call for each platform to get proper generation
+        console.log(`Making API call ${i + 1}/${platforms.length} for platform: ${platform}`);
         const response = await fetch(`${apiUrl}/api/ai/generate`, {
           method: 'POST',
           headers: {
@@ -270,7 +284,7 @@ export async function generateAllPosts(
               targetAudience: contentData.targetAudience || campaignInfo.targetAudience,
               tags: contentData.tags || []
             },
-            platforms: [platform]
+            platforms: [platform] // Send one platform per request
           })
         });
 
@@ -280,18 +294,19 @@ export async function generateAllPosts(
         }
 
         const data = await response.json();
+        console.log(`API response for ${platform}:`, data);
         
         if (data.success && data.posts && data.posts.length > 0) {
           const post = data.posts[0];
           
           // Parse the generated content to extract caption and hashtags
-          let caption = post.content || contentData.prompt || 'Check out our latest updates!';
+          let caption = post.content || post.caption || contentData.prompt || 'Check out our latest updates!';
           let hashtags: string[] = [];
           
           // Extract hashtags from content
           const hashtagMatches = caption.match(/#\w+/g);
           if (hashtagMatches) {
-            hashtags = hashtagMatches.slice(0, 5);
+            hashtags = [...new Set(hashtagMatches)].slice(0, 5); // Remove duplicates
             // Clean hashtags from caption
             caption = caption.replace(/#\w+(\s+#\w+)*/g, '').trim();
           }
@@ -325,8 +340,10 @@ export async function generateAllPosts(
         });
       }
       
-      // Small delay between platforms for better UX
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Small delay between platforms for better UX and to avoid rate limiting
+      if (i < platforms.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
 
     console.log('Generated posts:', posts);
@@ -343,24 +360,7 @@ export async function generateAllPosts(
       imageUrl: contentData.mediaUrl || null,
       success: false,
       error: error.message || 'AI generation failed'
-    }));ole.error('Error in generateAllPosts:', error);
-
-    // Check for quota errors
-    if (error.message && (error.message.includes('quota') || error.message.includes('429'))) {
-      // Create fallback posts when quota is exceeded
-      const platforms = campaignInfo.platforms || ['linkedin'];
-      return platforms.map(platform => ({
-        platform,
-        caption: contentData.prompt || `📈 Exciting updates from ${campaignInfo.name}!\n\nWe're continuously working to bring you the best in ${campaignInfo.industry}. Stay tuned for more updates!`,
-        hashtags: getDefaultHashtags(platform, campaignInfo.industry),
-        imageUrl: null,
-        emojis: '✨ 🚀 💫',
-        characterCount: 0,
-        engagement: 'medium' as const
-      }));
-    }
-
-    throw error;
+    }));
   }
 }
 

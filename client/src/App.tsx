@@ -84,6 +84,13 @@ function App() {
           </ProtectedRoute>
         } />
 
+        {/* Direct /generate route - redirects to /content/generate */}
+        <Route path="/generate" element={
+          <ProtectedRoute>
+            <Navigate to="/content/generate" replace />
+          </ProtectedRoute>
+        } />
+
         <Route path="/schedule" element={
           <ProtectedRoute>
             <AppLayout>

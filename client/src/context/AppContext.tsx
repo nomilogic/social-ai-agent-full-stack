@@ -63,6 +63,28 @@ type AppAction =
   | { type: 'RESET_STATE' }
   | { type: 'SET_BUSINESS_ACCOUNT'; payload: boolean };
 
+// Helper functions for localStorage persistence
+const getStoredContentData = () => {
+  try {
+    const stored = localStorage.getItem('s_ai_content_data');
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+};
+
+const setStoredContentData = (data: any) => {
+  try {
+    if (data) {
+      localStorage.setItem('s_ai_content_data', JSON.stringify(data));
+    } else {
+      localStorage.removeItem('s_ai_content_data');
+    }
+  } catch (error) {
+    console.warn('Failed to store content data:', error);
+  }
+};
+
 // Initial state
 const initialState: AppState = {
   user: null,
@@ -72,7 +94,7 @@ const initialState: AppState = {
   loading: true,
   error: null,
   generatedPosts: [],
-  contentData: null,
+  contentData: getStoredContentData(), // Load from localStorage
   hasCompletedOnboarding: false,
   isBusinessAccount: false,
 };
@@ -100,11 +122,15 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_GENERATED_POSTS':
       return { ...state, generatedPosts: action.payload };
     case 'SET_CONTENT_DATA':
+      // Persist contentData to localStorage
+      setStoredContentData(action.payload);
       return { ...state, contentData: action.payload };
     case 'SET_ONBOARDING_COMPLETE':
       return { ...state, hasCompletedOnboarding: action.payload };
     case 'RESET_STATE':
-      return { ...initialState, loading: false };
+      // Clear localStorage when resetting state
+      setStoredContentData(null);
+      return { ...initialState, loading: false, contentData: null };
     case 'SET_BUSINESS_ACCOUNT':
       return { ...state, isBusinessAccount: action.payload };
     default:

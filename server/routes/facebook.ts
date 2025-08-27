@@ -103,46 +103,67 @@ router.post('/post', async (req: Request, res: Response) => {
     // Prepare common message
     const message = `${post.caption}${post.hashtags && post.hashtags.length > 0 ? '\n\n' + post.hashtags.join(' ') : ''}`
 
-    // Handle media properly - support Supabase URLs and convert relative URLs to absolute
-    let resolvedImageUrl: string | null = null
-    if (post.imageUrl) {
-      resolvedImageUrl = post.imageUrl
+    // Handle media properly - support both images and videos, Supabase URLs and convert relative URLs to absolute
+    let resolvedMediaUrl: string | null = null
+    let isVideo = false
+    const mediaUrl = post.imageUrl || post.videoUrl // Support both imageUrl and videoUrl
+    
+    if (mediaUrl) {
+      resolvedMediaUrl = mediaUrl
+      
+      // Determine if this is a video based on URL or file extension
+      isVideo = resolvedMediaUrl.includes('.mp4') || 
+                resolvedMediaUrl.includes('.webm') || 
+                resolvedMediaUrl.includes('.mov') ||
+                resolvedMediaUrl.includes('video/') ||
+                (post.videoUrl && post.videoUrl === mediaUrl)
       
       // Handle Supabase storage URLs - they're already absolute
-      if (resolvedImageUrl.includes('supabase.co/storage/v1/object/public/')) {
-        console.log('Using Supabase hosted image:', resolvedImageUrl)
+      if (resolvedMediaUrl.includes('supabase.co/storage/v1/object/public/')) {
+        console.log(`Using Supabase hosted ${isVideo ? 'video' : 'image'}:`, resolvedMediaUrl)
       }
       // Handle Pollinations AI URLs - they're already absolute
-      else if (resolvedImageUrl.includes('image.pollinations.ai')) {
-        console.log('Using Pollinations AI image:', resolvedImageUrl)
+      else if (resolvedMediaUrl.includes('image.pollinations.ai')) {
+        console.log('Using Pollinations AI image:', resolvedMediaUrl)
       }
       // Convert relative URL to absolute if needed
-      else if (resolvedImageUrl.startsWith('/uploads/')) {
+      else if (resolvedMediaUrl.startsWith('/uploads/')) {
         const baseUrl = process.env.NODE_ENV === 'production' 
           ? (process.env.BASE_URL || 'http://localhost:5000')
           : 'http://localhost:5000'
-        resolvedImageUrl = `${baseUrl}${resolvedImageUrl}`
-        console.log('Resolved relative image URL:', resolvedImageUrl)
+        resolvedMediaUrl = `${baseUrl}${resolvedMediaUrl}`
+        console.log(`Resolved relative ${isVideo ? 'video' : 'image'} URL:`, resolvedMediaUrl)
       }
       // Other absolute URLs are used as-is
       else {
-        console.log('Using external image URL:', resolvedImageUrl)
+        console.log(`Using external ${isVideo ? 'video' : 'image'} URL:`, resolvedMediaUrl)
       }
     }
 
-    // Decide endpoint based on whether we have an image
+    // Decide endpoint based on whether we have media
     let url = `https://graph.facebook.com/v19.0/${targetId}/feed`
     let postData: any = { access_token: finalAccessToken }
 
-    if (resolvedImageUrl) {
-      // Use photos endpoint when an image is provided to avoid (#100) error
-      url = `https://graph.facebook.com/v19.0/${targetId}/photos`
-      postData = {
-        url: resolvedImageUrl,
-        caption: message,
-        access_token: finalAccessToken
+    if (resolvedMediaUrl) {
+      if (isVideo) {
+        // Use videos endpoint for video uploads
+        url = `https://graph.facebook.com/v19.0/${targetId}/videos`
+        postData = {
+          file_url: resolvedMediaUrl,
+          description: message,
+          access_token: finalAccessToken
+        }
+        console.log('Posting video to URL:', url)
+      } else {
+        // Use photos endpoint for images to avoid (#100) error
+        url = `https://graph.facebook.com/v19.0/${targetId}/photos`
+        postData = {
+          url: resolvedMediaUrl,
+          caption: message,
+          access_token: finalAccessToken
+        }
+        console.log('Posting photo to URL:', url)
       }
-      console.log('Posting photo to URL:', url)
     } else {
       // Text-only post
       postData = {
@@ -168,18 +189,18 @@ router.post('/post', async (req: Request, res: Response) => {
       }
     }
 
-    // Clean up uploaded image after successful posting (optional)
-    if (resolvedImageUrl && resolvedImageUrl.includes('supabase.co/storage/v1/object/public/')) {
-      // Only clean up Supabase images, leave other URLs alone
+    // Clean up uploaded media after successful posting (optional)
+    if (resolvedMediaUrl && resolvedMediaUrl.includes('supabase.co/storage/v1/object/public/')) {
+      // Only clean up Supabase media, leave other URLs alone
       try {
-        const cleanupSuccess = await deleteImageByUrl(resolvedImageUrl)
+        const cleanupSuccess = await deleteImageByUrl(resolvedMediaUrl)
         if (cleanupSuccess) {
-          console.log('✅ Successfully cleaned up uploaded image after Facebook post')
+          console.log(`✅ Successfully cleaned up uploaded ${isVideo ? 'video' : 'image'} after Facebook post`)
         } else {
-          console.warn('⚠️ Failed to clean up uploaded image (non-critical)')
+          console.warn(`⚠️ Failed to clean up uploaded ${isVideo ? 'video' : 'image'} (non-critical)`)
         }
       } catch (cleanupError) {
-        console.warn('⚠️ Error during image cleanup (non-critical):', cleanupError)
+        console.warn(`⚠️ Error during ${isVideo ? 'video' : 'image'} cleanup (non-critical):`, cleanupError)
       }
     }
 

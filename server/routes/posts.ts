@@ -49,7 +49,7 @@ router.get('/', async (req: Request, res: Response) => {
 })
 
 // POST /api/posts - Create a new post
-router.post('/', validateRequestBody(['campaignId', 'userId']), async (req: Request, res: Response) => {
+router.post('/', validateRequestBody(['userId']), async (req: Request, res: Response) => {
   const {
     campaignId,
     prompt,
@@ -59,10 +59,71 @@ router.post('/', validateRequestBody(['campaignId', 'userId']), async (req: Requ
   } = req.body
 
   try {
+    let finalCampaignId = campaignId;
+    
+    // If campaignId is provided, check if it exists
+    if (campaignId) {
+      const existingCampaign = await db
+        .select({ id: campaigns.id })
+        .from(campaigns)
+        .where(eq(campaigns.id, campaignId))
+        .limit(1);
+      
+      if (existingCampaign.length === 0) {
+        console.log('Campaign not found, creating default campaign for user:', userId);
+        // Create a default campaign
+        const [newCampaign] = await db
+          .insert(campaigns)
+          .values({
+            user_id: userId,
+            name: 'Default Campaign',
+            description: 'Default campaign for posts',
+            brand_tone: 'professional',
+            goals: ['engagement'],
+            platforms: ['linkedin']
+          })
+          .returning({ id: campaigns.id });
+        
+        finalCampaignId = newCampaign.id;
+        console.log('Created default campaign:', finalCampaignId);
+      }
+    } else {
+      // No campaignId provided, create or use default campaign
+      console.log('No campaign ID provided, looking for default campaign for user:', userId);
+      
+      // Try to find existing default campaign
+      const existingDefault = await db
+        .select({ id: campaigns.id })
+        .from(campaigns)
+        .where(and(eq(campaigns.user_id, userId), eq(campaigns.name, 'Default Campaign')))
+        .limit(1);
+      
+      if (existingDefault.length > 0) {
+        finalCampaignId = existingDefault[0].id;
+        console.log('Using existing default campaign:', finalCampaignId);
+      } else {
+        // Create new default campaign
+        const [newCampaign] = await db
+          .insert(campaigns)
+          .values({
+            user_id: userId,
+            name: 'Default Campaign',
+            description: 'Default campaign for posts',
+            brand_tone: 'professional',
+            goals: ['engagement'],
+            platforms: ['linkedin']
+          })
+          .returning({ id: campaigns.id });
+        
+        finalCampaignId = newCampaign.id;
+        console.log('Created new default campaign:', finalCampaignId);
+      }
+    }
+
     const [data] = await db
       .insert(posts)
       .values({
-        campaign_id: campaignId,
+        campaign_id: finalCampaignId,
         prompt: prompt || '',
         tags: tags || [],
         generated_content: generatedContent || null,
@@ -73,7 +134,7 @@ router.post('/', validateRequestBody(['campaignId', 'userId']), async (req: Requ
     res.status(201).json({ success: true, data })
   } catch (err: any) {
     console.error('Server error creating post:', err)
-    res.status(500).json({ error: 'Internal server error' })
+    res.status(500).json({ error: 'Internal server error', details: err.message })
   }
 })
 

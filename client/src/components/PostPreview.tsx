@@ -21,30 +21,23 @@ interface PostPreviewProps {
   onBack: () => void;
   onEdit: () => void;
   onPublish?: () => void;
-  onPostsUpdate?: (updatedPosts: GeneratedPost[]) => void; // Made optional
-  editingPost?: GeneratedPost | null; // Made optional
-  setEditingIndex?: React.Dispatch<React.SetStateAction<number | null>>; // Made optional
-  editingIndex?: number | null; // Made optional
+  onPostsUpdate?: (updatedPosts: GeneratedPost[]) => void;
 }
 
 export const PostPreview: React.FC<PostPreviewProps> = ({
-  posts: generatedPosts, // Renamed to avoid conflict with selectedPlatform initialization
+  posts: generatedPosts,
   onBack,
   onEdit,
   onPublish,
-  onPostsUpdate, // Receive the new prop
-  editingPost, // Receive the new prop
-  setEditingIndex, // Receive the new prop
-  editingIndex, // Receive the new prop
+  onPostsUpdate,
 }) => {
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>(
     generatedPosts[0]?.platform || "facebook",
   );
   const [copiedPost, setCopiedPost] = useState<string | null>(null);
-  const [editingPostIndex, setEditingPostIndex] = useState<number | null>(null);
-  const [editingCaption, setEditingCaption] = useState<string>("");
-  const [editingHashtags, setEditingHashtags] = useState<string[]>([]);
-  const [newHashtag, setNewHashtag] = useState<string>("");
+  const [editingMode, setEditingMode] = useState<boolean>(false);
+  const [posts, setPosts] = useState<GeneratedPost[]>(generatedPosts);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -56,95 +49,112 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
     }
   };
 
-  // Editing functions
-  const startEditing = useCallback((postIndex: number) => {
-    const post = generatedPosts[postIndex];
-    if (post) {
-      setEditingPostIndex(postIndex);
-      setEditingCaption(post.caption);
-      setEditingHashtags([...post.hashtags]);
+  // Handle caption edit
+  const handleCaptionEdit = useCallback((newCaption: string) => {
+    const currentPostIndex = posts.findIndex(p => p.platform === selectedPlatform);
+    if (currentPostIndex !== -1) {
+      const updatedPosts = [...posts];
+      updatedPosts[currentPostIndex] = {
+        ...updatedPosts[currentPostIndex],
+        caption: newCaption,
+        characterCount: newCaption.length + updatedPosts[currentPostIndex].hashtags.join(' ').length
+      };
+      setPosts(updatedPosts);
+      setHasUnsavedChanges(true);
     }
+  }, [posts, selectedPlatform]);
+
+  // Handle hashtags edit (single field with all hashtags)
+  const handleHashtagsEdit = useCallback((hashtagText: string) => {
+    const currentPostIndex = posts.findIndex(p => p.platform === selectedPlatform);
+    if (currentPostIndex !== -1) {
+      // Parse hashtags from text - split by spaces and ensure they start with #
+      const hashtags = hashtagText
+        .split(/\s+/)
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0)
+        .map(tag => tag.startsWith('#') ? tag : `#${tag}`);
+      
+      const updatedPosts = [...posts];
+      updatedPosts[currentPostIndex] = {
+        ...updatedPosts[currentPostIndex],
+        hashtags: hashtags,
+        characterCount: updatedPosts[currentPostIndex].caption.length + hashtags.join(' ').length
+      };
+      setPosts(updatedPosts);
+      setHasUnsavedChanges(true);
+    }
+  }, [posts, selectedPlatform]);
+
+  const saveChanges = useCallback(() => {
+    if (onPostsUpdate) {
+      onPostsUpdate(posts);
+      setHasUnsavedChanges(false);
+    }
+  }, [posts, onPostsUpdate]);
+
+  const discardChanges = useCallback(() => {
+    setPosts(generatedPosts);
+    setHasUnsavedChanges(false);
+    setEditingMode(false);
   }, [generatedPosts]);
 
-  const cancelEditing = useCallback(() => {
-    setEditingPostIndex(null);
-    setEditingCaption("");
-    setEditingHashtags([]);
-    setNewHashtag("");
+
+
+
+  // Utility function to detect if URL is a video
+  const isVideoUrl = useCallback((url: string) => {
+    if (!url) return false;
+    
+    // Check if it's a video file - match actual video file extensions
+    // Exclude data URLs and certain image generation services
+    return !url.startsWith('data:') && 
+           !url.includes('pollinations.ai') && 
+           /\.(mp4|webm|ogg|mov|avi|mkv|flv|wmv|3gp)(\?.*)?$/i.test(url);
   }, []);
 
-  const saveEditing = useCallback(() => {
-    if (editingPostIndex !== null && onPostsUpdate) {
-      const updatedPosts = [...generatedPosts];
-      updatedPosts[editingPostIndex] = {
-        ...updatedPosts[editingPostIndex],
-        caption: editingCaption,
-        hashtags: editingHashtags,
-        characterCount: editingCaption.length,
-      };
-      onPostsUpdate(updatedPosts);
-      cancelEditing();
+  // Render media for platforms that need general media placement (Facebook, Twitter, LinkedIn)
+  const renderMedia = useCallback((post: GeneratedPost, className = "rounded-lg max-h-80 object-contain", containerClass = "w-full flex justify-center my-3") => {
+//    alert('Rendering media'+ post.imageUrl);
+    if (!post.mediaUrl) return null;
+    
+    if (isVideoUrl(post.mediaUrl)) {
+      return (
+        <div className={containerClass}>
+          <video
+            src={post.mediaUrl}
+            controls
+            className={className}
+            onError={(e) => {
+              console.error('Media (video) failed to load:', post.mediaUrl);
+              //e.currentTarget.style.display = 'none';
+            }}
+            onLoadStart={() => console.log('Media (video) loading started:', post.mediaUrl)}
+          >
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      );
+    } else {
+      return (
+        <div className={containerClass}>
+          <img
+            src={post.mediaUrl}
+            alt="Post media"
+            className={className}
+            onError={(e) => {
+              console.error('Media (image) failed to load:', post.mediaUrl);
+              e.currentTarget.style.display = 'none';
+            }}
+            onLoad={() => console.log('Media (image) loaded successfully:', post.mediaUrl)}
+          />
+        </div>
+      );
     }
-  }, [editingPostIndex, editingCaption, editingHashtags, generatedPosts, onPostsUpdate, cancelEditing]);
-
-  const addHashtag = useCallback(() => {
-    if (newHashtag.trim() && !editingHashtags.includes(newHashtag.trim())) {
-      const formattedTag = newHashtag.startsWith('#') ? newHashtag : `#${newHashtag}`;
-      setEditingHashtags([...editingHashtags, formattedTag]);
-      setNewHashtag("");
-    }
-  }, [newHashtag, editingHashtags]);
-
-  const removeHashtag = useCallback((indexToRemove: number) => {
-    setEditingHashtags(editingHashtags.filter((_, index) => index !== indexToRemove));
-  }, [editingHashtags]);
-
-
+  }, [isVideoUrl]);
 
   const renderPlatformPreview = (post: GeneratedPost) => {
-    const renderMedia = useCallback(() => {
-      if (!post.imageUrl) return null;
-      
-      // Check if it's a video file - only match actual video file extensions at end of URL
-      // Exclude data URLs and URLs with query parameters that might contain video extensions
-      const isVideo = !post.imageUrl.startsWith('data:') && 
-                     !post.imageUrl.includes('pollinations.ai') && 
-                     /\.(mp4|webm|ogg|mov|avi)(\?.*)?$/i.test(post.imageUrl);
-      
-      if (isVideo) {
-        return (
-          <div className="w-full flex justify-center my-3">
-            <video
-              src={post.imageUrl}
-              controls
-              className="rounded-lg max-h-80 object-contain"
-              onError={(e) => {
-                console.error('Video failed to load:', post.imageUrl);
-                e.currentTarget.style.display = 'none';
-              }}
-              onLoadStart={() => console.log('Video loading started:', post.imageUrl)}
-            >
-              Your browser does not support the video tag.
-            </video>
-          </div>
-        );
-      } else {
-        return (
-          <div className="w-full flex justify-center my-3">
-            <img
-              src={post.imageUrl}
-              alt="Post media"
-              className="rounded-lg max-h-80 object-contain"
-              onError={(e) => {
-                console.error('Image failed to load:', post.imageUrl);
-                e.currentTarget.style.display = 'none';
-              }}
-              onLoad={() => console.log('Image loaded successfully:', post.imageUrl)}
-            />
-          </div>
-        );
-      }
-    }, [post.imageUrl]);
+    post.mediaUrl = post.imageUrl?? post.mediaUrl; // Fallback to imageUrl if mediaUrl not set
     switch (post.platform) {
       case "facebook":
         return (
@@ -161,19 +171,26 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
               </div>
             </div>
             <div className="p-4">
-              <p className="text-gray-800 whitespace-pre-wrap">
+              <p 
+                className={`text-gray-800 whitespace-pre-wrap ${editingMode ? 'border border-blue-300 rounded p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent' : ''}`}
+                contentEditable={editingMode}
+                suppressContentEditableWarning={true}
+                onBlur={(e) => editingMode && handleCaptionEdit(e.currentTarget.textContent || '')}
+                style={{ outline: editingMode ? 'none' : undefined }}
+              >
                 {post.caption}
               </p>
-              {renderMedia()}
-              <div className="mt-3 flex flex-wrap gap-1">
-                {post.hashtags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="text-blue-600 text-sm hover:underline cursor-pointer"
-                  >
-                    {tag}
-                  </span>
-                ))}
+              {renderMedia(post)}
+              <div className="mt-3">
+                <div 
+                  className={`text-blue-600 text-sm ${editingMode ? 'border border-blue-300 rounded p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent' : ''}`}
+                  contentEditable={editingMode}
+                  suppressContentEditableWarning={true}
+                  onBlur={(e) => editingMode && handleHashtagsEdit(e.currentTarget.textContent || '')}
+                  style={{ outline: editingMode ? 'none' : undefined }}
+                >
+                  {post.hashtags.join(' ')}
+                </div>
               </div>
             </div>
             <div className="px-4 pb-4">
@@ -213,28 +230,27 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
               </div>
             </div>
             <div className="aspect-square bg-gray-100 flex items-center justify-center">
-              {post.imageUrl ? (
-                !post.imageUrl.startsWith('data:') && 
-                !post.imageUrl.includes('pollinations.ai') && 
-                /\.(mp4|webm|ogg|mov|avi)(\?.*)?$/i.test(post.imageUrl) ? (
+              {post.mediaUrl ? (
+                isVideoUrl(post.mediaUrl) ? (
                   <video
-                    src={post.imageUrl}
+                  
+                    src={post.mediaUrl}
                     controls
                     className="object-cover w-full h-full"
                     onError={(e) => {
-                      console.error('Instagram video failed to load:', post.imageUrl);
+                      console.error('Instagram media (video) failed to load:', post.mediaUrl);
                       e.currentTarget.style.display = 'none';
-                    }}
+                    }} 
                   >
                     Your browser does not support the video tag.
                   </video>
                 ) : (
                   <img
-                    src={post.imageUrl}
+                    src={post.mediaUrl}
                     alt="Instagram media"
                     className="object-cover w-full h-full"
                     onError={(e) => {
-                      console.error('Instagram image failed to load:', post.imageUrl);
+                      console.error('Instagram media (image) failed to load:', post.mediaUrl);
                       e.currentTarget.style.display = 'none';
                     }}
                   />
@@ -254,15 +270,28 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                   <Send className="w-6 h-6 text-gray-700" />
                 </div>
               </div>
-              <p className="text-sm">
-                <span className="font-medium">yourcampaign</span> {post.caption}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-1">
-                {post.hashtags.map((tag, index) => (
-                  <span key={index} className="text-blue-600 text-sm">
-                    {tag}
-                  </span>
-                ))}
+              <div className="text-sm">
+                <span className="font-medium">yourcampaign</span> 
+                <span 
+                  className={`${editingMode ? 'border border-blue-300 rounded p-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent' : ''}`}
+                  contentEditable={editingMode}
+                  suppressContentEditableWarning={true}
+                  onBlur={(e) => editingMode && handleCaptionEdit(e.currentTarget.textContent || '')}
+                  style={{ outline: editingMode ? 'none' : undefined }}
+                >
+                  {post.caption}
+                </span>
+              </div>
+              <div className="mt-2">
+                <div 
+                  className={`text-blue-600 text-sm ${editingMode ? 'border border-blue-300 rounded p-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent' : ''}`}
+                  contentEditable={editingMode}
+                  suppressContentEditableWarning={true}
+                  onBlur={(e) => editingMode && handleHashtagsEdit(e.currentTarget.textContent || '')}
+                  style={{ outline: editingMode ? 'none' : undefined }}
+                >
+                  {post.hashtags.join(' ')}
+                </div>
               </div>
             </div>
           </div>
@@ -283,20 +312,27 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                     <span className="text-gray-500">·</span>
                     <span className="text-gray-500">now</span>
                   </div>
-                  <p className="text-gray-800 whitespace-pre-wrap">
+                  <p 
+                    className={`text-gray-800 whitespace-pre-wrap ${editingMode ? 'border border-blue-300 rounded p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent' : ''}`}
+                    contentEditable={editingMode}
+                    suppressContentEditableWarning={true}
+                    onBlur={(e) => editingMode && handleCaptionEdit(e.currentTarget.textContent || '')}
+                    style={{ outline: editingMode ? 'none' : undefined }}
+                  >
                     {post.caption}
                   </p>
-                  {renderMedia()}
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {post.hashtags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="text-blue-500 text-sm hover:underline cursor-pointer"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                  <div className="mt-2">
+                    <div 
+                      className={`text-blue-500 text-sm ${editingMode ? 'border border-blue-300 rounded p-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent' : ''}`}
+                      contentEditable={editingMode}
+                      suppressContentEditableWarning={true}
+                      onBlur={(e) => editingMode && handleHashtagsEdit(e.currentTarget.textContent || '')}
+                      style={{ outline: editingMode ? 'none' : undefined }}
+                    >
+                      {post.hashtags.join(' ')}
+                    </div>
                   </div>
+                  {renderMedia(post)}
                   <div className="flex items-center justify-between mt-3 max-w-md">
                     <button className="flex items-center space-x-2 text-gray-500 hover:text-blue-500">
                       <MessageCircle className="w-4 h-4" />
@@ -335,20 +371,27 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                   <p className="text-xs text-gray-400">Just now</p>
                 </div>
               </div>
-              <p className="text-gray-800 whitespace-pre-wrap mb-3">
+              <p 
+                className={`text-gray-800 whitespace-pre-wrap mb-3 ${editingMode ? 'border border-blue-300 rounded p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent' : ''}`}
+                contentEditable={editingMode}
+                suppressContentEditableWarning={true}
+                onBlur={(e) => editingMode && handleCaptionEdit(e.currentTarget.textContent || '')}
+                style={{ outline: editingMode ? 'none' : undefined }}
+              >
                 {post.caption}
               </p>
-              {renderMedia()}
-              <div className="flex flex-wrap gap-1 mb-4">
-                {post.hashtags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="text-blue-600 text-sm hover:underline cursor-pointer"
-                  >
-                    {tag}
-                  </span>
-                ))}
+              <div className="mb-3">
+                <div 
+                  className={`text-blue-600 text-sm ${editingMode ? 'border border-blue-300 rounded p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent' : ''}`}
+                  contentEditable={editingMode}
+                  suppressContentEditableWarning={true}
+                  onBlur={(e) => editingMode && handleHashtagsEdit(e.currentTarget.textContent || '')}
+                  style={{ outline: editingMode ? 'none' : undefined }}
+                >
+                  {post.hashtags.join(' ')}
+                </div>
               </div>
+              {renderMedia(post)}
               <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                 <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-600">
                   <ThumbsUp className="w-4 h-4" />
@@ -371,16 +414,14 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
         return (
           <div className="bg-black rounded-lg overflow-hidden max-w-sm shadow-sm">
             <div className="aspect-[9/16] bg-gray-900 relative">
-              {post.imageUrl && (
-                !post.imageUrl.startsWith('data:') && 
-                !post.imageUrl.includes('pollinations.ai') && 
-                /\.(mp4|webm|ogg|mov|avi)(\?.*)?$/i.test(post.imageUrl) ? (
+              {post.mediaUrl && (
+                isVideoUrl(post.mediaUrl) ? (
                   <video
-                    src={post.imageUrl}
+                    src={post.mediaUrl}
                     controls
                     className="absolute inset-0 w-full h-full object-cover"
                     onError={(e) => {
-                      console.error('TikTok video failed to load:', post.imageUrl);
+                      console.error('TikTok media (video) failed to load:', post.mediaUrl);
                       e.currentTarget.style.display = 'none';
                     }}
                   >
@@ -388,11 +429,11 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                   </video>
                 ) : (
                   <img
-                    src={post.imageUrl}
-                    alt="Tiktok media"
+                    src={post.mediaUrl}
+                    alt="TikTok media"
                     className="absolute inset-0 w-full h-full object-cover"
                     onError={(e) => {
-                      console.error('TikTok image failed to load:', post.imageUrl);
+                      console.error('TikTok media (image) failed to load:', post.mediaUrl);
                       e.currentTarget.style.display = 'none';
                     }}
                   />
@@ -418,16 +459,14 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
         return (
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm max-w-lg">
             <div className="aspect-video bg-gray-900 flex items-center justify-center">
-              {post.imageUrl ? (
-                !post.imageUrl.startsWith('data:') && 
-                !post.imageUrl.includes('pollinations.ai') && 
-                /\.(mp4|webm|ogg|mov|avi)(\?.*)?$/i.test(post.imageUrl) ? (
+              {post.mediaUrl ? (
+                isVideoUrl(post.mediaUrl) ? (
                   <video
-                    src={post.imageUrl}
+                    src={post.mediaUrl}
                     controls
                     className="object-cover w-full h-full"
                     onError={(e) => {
-                      console.error('YouTube video failed to load:', post.imageUrl);
+                      console.error('YouTube media (video) failed to load:', post.mediaUrl);
                       e.currentTarget.style.display = 'none';
                     }}
                   >
@@ -435,11 +474,11 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                   </video>
                 ) : (
                   <img
-                    src={post.imageUrl}
-                    alt="Youtube media"
+                    src={post.mediaUrl}
+                    alt="YouTube media"
                     className="object-cover w-full h-full"
                     onError={(e) => {
-                      console.error('YouTube image failed to load:', post.imageUrl);
+                      console.error('YouTube media (image) failed to load:', post.mediaUrl);
                       e.currentTarget.style.display = 'none';
                     }}
                   />
@@ -451,16 +490,25 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
               )}
             </div>
             <div className="p-4">
-              <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">
-                {post.caption.split("\n")[0]}
+              <h3 
+                className={`font-medium text-gray-900 mb-2 line-clamp-2 block ${editingMode ? 'border border-blue-300 rounded p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent' : ''}`}
+                contentEditable={editingMode}
+                suppressContentEditableWarning={true}
+                onBlur={(e) => editingMode && handleCaptionEdit(e.currentTarget.textContent || '')}
+                style={{ outline: editingMode ? 'none' : undefined }}
+              >
+                {post.caption}
               </h3>
-              <p className="text-sm text-gray-600 mb-3">{post.caption}</p>
-              <div className="flex flex-wrap gap-1">
-                {post.hashtags.map((tag, index) => (
-                  <span key={index} className="text-blue-600 text-sm">
-                    {tag}
-                  </span>
-                ))}
+              <div className="mb-3">
+                <div 
+                  className={`text-blue-600 text-sm ${editingMode ? 'border border-blue-300 rounded p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent' : ''}`}
+                  contentEditable={editingMode}
+                  suppressContentEditableWarning={true}
+                  onBlur={(e) => editingMode && handleHashtagsEdit(e.currentTarget.textContent || '')}
+                  style={{ outline: editingMode ? 'none' : undefined }}
+                >
+                  {post.hashtags.join(' ')}
+                </div>
               </div>
             </div>
           </div>
@@ -492,24 +540,10 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
   };
 
   // Find the currently selected post based on the selectedPlatform
-  const selectedPost = generatedPosts.find(
+  const selectedPost = posts.find(
     (post) => post.platform === selectedPlatform,
   );
 
-  // Handle save logic
-  const handleSave = (postIndex: number, updatedPost: any) => {
-    console.log("Saving post:", postIndex, updatedPost);
-    const updatedPosts = [...generatedPosts]; // Use generatedPosts here
-    updatedPosts[postIndex] = {
-      ...updatedPosts[postIndex],
-      caption: updatedPost.caption || updatedPost.content || "", // Ensure caption is always set
-      hashtags: updatedPost.hashtags || [],
-      imageUrl: updatedPost.imageUrl || updatedPosts[postIndex].imageUrl, // Preserve existing imageUrl if not in updatedPost
-    };
-    console.log("Updated posts:", updatedPosts);
-    onPostsUpdate?.(updatedPosts);
-    setEditingIndex?.(null);
-  };
 
   return (
     <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-lg p-8">
@@ -573,7 +607,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
           
           
           
-          {selectedPost && (
+          {/* {selectedPost && (
             <div className="mt-6 space-y-3">
               <button
                 onClick={() => copyToClipboard(getFullPostText(selectedPost))}
@@ -607,7 +641,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                 <span>Download</span>
               </button>
             </div>
-          )}
+          )} */}
         </div>
 
         {/* Preview */}
@@ -622,93 +656,51 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
           {/* Inline Editing Controls */}
           {selectedPost && (
             <div className="flex justify-center mb-6">
-              <div className="max-w-lg w-full">
-                {editingPostIndex === generatedPosts.findIndex(p => p.platform === selectedPlatform) ? (
-                  // Editing Mode
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-blue-900">Quick Edit</h4>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={saveEditing}
-                          className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm"
-                        >
-                          <Save className="w-3 h-3" />
-                          Save
-                        </button>
-                        <button
-                          onClick={cancelEditing}
-                          className="flex items-center gap-1 px-3 py-1 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors text-sm"
-                        >
-                          <X className="w-3 h-3" />
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                    
-                    {/* Caption Editor */}
-                    <div>
-                      <label className="block text-sm font-medium text-blue-900 mb-1">Caption</label>
-                      <textarea
-                        value={editingCaption}
-                        onChange={useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-                          setEditingCaption(e.target.value);
-                        }, [])}
-                        className="w-full p-3 border border-blue-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        rows={4}
-                        placeholder="Enter your post caption..."
-                      />
-                      <p className="text-xs text-blue-600 mt-1">{editingCaption.length} characters</p>
-                    </div>
-
-                    {/* Hashtags Editor */}
-                    <div>
-                      <label className="block text-sm font-medium text-blue-900 mb-1">Hashtags</label>
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {editingHashtags.map((tag, index) => (
-                          <span
-                            key={index}
-                            className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
-                          >
-                            {tag}
-                            <button
-                              onClick={() => removeHashtag(index)}
-                              className="hover:text-red-600 transition-colors"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={newHashtag}
-                          onChange={(e) => setNewHashtag(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && addHashtag()}
-                          className="flex-1 p-2 border border-blue-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Add hashtag (without #)"
-                        />
-                        <button
-                          onClick={addHashtag}
-                          className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
-                        >
-                          Add
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  // View Mode with Edit Button
-                  <div className="text-center">
+              <div className="max-w-lg w-full text-center space-y-3">
+                {editingMode ? (
+                  // Editing Mode - Show save/cancel buttons
+                  <div className="flex gap-3 justify-center">
                     <button
-                      onClick={() => startEditing(generatedPosts.findIndex(p => p.platform === selectedPlatform))}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                      onClick={() => {
+                        saveChanges();
+                        setEditingMode(false);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
                     >
-                      <Edit className="w-4 h-4" />
-                      Quick Edit Post
+                      <Save className="w-4 h-4" />
+                      Save Changes
+                    </button>
+                    <button
+                      onClick={() => {
+                        discardChanges();
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
+                    >
+                      <X className="w-4 h-4" />
+                      Cancel
                     </button>
                   </div>
+                ) : (
+                  // View Mode - Show edit button
+                  <button
+                    onClick={() => setEditingMode(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Edit Post Directly
+                  </button>
+                )}
+                
+                {editingMode && (
+                  <p className="text-sm text-blue-600">
+                    💡 Click on the text above to edit it directly in the preview!
+                  </p>
+                )}
+                
+                {hasUnsavedChanges && (
+                  <p className="text-sm text-orange-600">
+                    ⚠️ You have unsaved changes
+                  </p>
                 )}
               </div>
             </div>

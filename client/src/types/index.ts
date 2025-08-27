@@ -1,4 +1,5 @@
 export interface ProfileInfo {
+import { mediaApi } from './../lib/api';
   type: 'individual' | 'business';
   name: string;
   website: string;
@@ -56,6 +57,7 @@ export interface GeneratedPost {
   engagement: 'high' | 'medium' | 'low';
   imageUrl?: string;
   pageId?: string; // For Facebook/Instagram pages
+  mediaUrl?: string; // URL of uploaded media
 }
 
 export type Platform = 'facebook' | 'instagram' | 'twitter' | 'linkedin' | 'tiktok' | 'youtube';
