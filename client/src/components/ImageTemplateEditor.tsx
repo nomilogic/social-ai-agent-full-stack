@@ -604,12 +604,12 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
             {/* Selected Element Properties */}
             {selectedElementData && (
               <div className="border border-gray-200 rounded p-2">
-                <h4 className="text-xs font-medium text-gray-900 mb-2">
-                  {selectedElementData.type.charAt(0).toUpperCase() + selectedElementData.type.slice(1)}
-                </h4>
-                
-                {/* Element Controls */}
                 <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-medium text-gray-900">
+                    {selectedElementData.type.charAt(0).toUpperCase() + selectedElementData.type.slice(1)}
+                  </h4>
+                  
+                  {/* All Control Buttons */}
                   <div className="flex items-center space-x-1">
                     <button
                       onClick={() => setIsLocked(!isLocked)}
@@ -625,10 +625,6 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                     >
                       <Trash className="w-3 h-3" />
                     </button>
-                  </div>
-                  
-                  {/* Layer Controls */}
-                  <div className="flex items-center space-x-1">
                     <button
                       onClick={bringToFront}
                       className="p-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs"
