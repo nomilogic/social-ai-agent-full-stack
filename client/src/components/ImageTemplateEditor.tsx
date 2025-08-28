@@ -1012,7 +1012,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                   </div>
                 </div>
                 {/* Size Controls - Universal for all elements */}
-                <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="grid grid-cols-4 gap-2 mb-2">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Width</label>
                     <input
@@ -1155,7 +1155,6 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Alignment</label>
                         <select
@@ -1176,11 +1175,10 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                           onChange={(e) => updateSelectedElement({ color: e.target.value })}
                           className="w-full h-8 border border-gray-300 rounded cursor-pointer"
                         />
-                      </div>
                     </div>
 
                     {/* Background Controls */}
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-4 gap-2">
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">BG Color</label>
                         <input
