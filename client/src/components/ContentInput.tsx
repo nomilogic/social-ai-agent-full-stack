@@ -20,6 +20,8 @@ import {
   Palette,
   Brain,
   Zap,
+  Edit3,
+  Trash2,
 } from "lucide-react";
 import { PostContent, Platform } from "../types";
 import { uploadMedia, getCurrentUser } from "../lib/database";
@@ -29,6 +31,9 @@ import { PostPreview } from "./PostPreview";
 import { getPlatformColors, platformOptions } from "../utils/platformIcons";
 import { getCampaignById } from "../lib/database";
 import { useAppContext } from "../context/AppContext";
+import { TemplateSelector } from "./TemplateSelector";
+import { ImageTemplateEditor } from "./ImageTemplateEditor";
+import { Template } from "../types/templates";
 
 // Helper function to convert file to base64
 const fileToBase64 = (file: File): Promise<string> => {
@@ -84,6 +89,13 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const [showPreview, setShowPreview] = useState(false);
   const [campaignInfo, setCampaignInfo] = useState<any>(null);
   const [loadingCampaign, setLoadingCampaign] = useState(false);
+  
+  // Template-related state
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [showTemplateEditor, setShowTemplateEditor] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | undefined>();
+  const [templatedImageUrl, setTemplatedImageUrl] = useState<string>("");
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize with existing data when in edit mode
@@ -487,6 +499,43 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     }
   };
 
+  // Template handler functions
+  const handleTemplateSelect = (template: Template) => {
+    console.log('Template selected:', template.name);
+    setSelectedTemplate(template);
+    setShowTemplateSelector(false);
+    setShowTemplateEditor(true);
+  };
+
+  const handleTemplateEditorSave = (imageUrl: string) => {
+    console.log('Template editor saved with image URL:', imageUrl);
+    setTemplatedImageUrl(imageUrl);
+    setFormData((prev) => ({ ...prev, mediaUrl: imageUrl }));
+    setShowTemplateEditor(false);
+  };
+
+  const handleTemplateEditorCancel = () => {
+    setShowTemplateEditor(false);
+    setSelectedTemplate(undefined);
+  };
+
+  const handleTemplateSelectorCancel = () => {
+    setShowTemplateSelector(false);
+  };
+
+  const handleEditTemplate = () => {
+    if (templatedImageUrl && selectedTemplate) {
+      setShowTemplateEditor(true);
+    }
+  };
+
+  const handleDeleteTemplate = () => {
+    setTemplatedImageUrl("");
+    setSelectedTemplate(undefined);
+    // Reset to original image if available
+    setFormData((prev) => ({ ...prev, mediaUrl: prev.media ? URL.createObjectURL(prev.media) : undefined }));
+  };
+
   return (
     <div className="w-full mx-auto theme-bg-card backdrop-blur-sm rounded-xl border border-white/10 p-6 m0">
       {/* Header */}
@@ -690,16 +739,56 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                       ((formData.media?.type.startsWith("image/")) ||
                       (formData.mediaUrl && !formData.media && !formData.mediaUrl.match(/\.(mp4|mov|avi|wmv|flv|webm|mkv|m4v)$/i))) &&
                       !analyzingImage && (
-                        <button
-                          type="button"
-                          onClick={performAIAnalysis}
-                          disabled={analyzingImage}
-                          className="w-full bg-gradient-to-r from-blue-500/80 to-indigo-500/80 text-white px-3 py-2 rounded text-xs hover:from-blue-600/80 hover:to-indigo-600/80 transition-all duration-200 flex items-center justify-center space-x-1 disabled:opacity-50"
-                        >
-                          <Eye className="w-3 h-3" />
-                          <span>AI Analysis</span>
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={performAIAnalysis}
+                            disabled={analyzingImage}
+                            className="flex-1 bg-gradient-to-r from-blue-500/80 to-indigo-500/80 text-white px-3 py-2 rounded text-xs hover:from-blue-600/80 hover:to-indigo-600/80 transition-all duration-200 flex items-center justify-center space-x-1 disabled:opacity-50"
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>AI Analysis</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowTemplateSelector(true)}
+                            className="flex-1 bg-gradient-to-r from-purple-500/80 to-pink-500/80 text-white px-3 py-2 rounded text-xs hover:from-purple-600/80 hover:to-pink-600/80 transition-all duration-200 flex items-center justify-center space-x-1"
+                          >
+                            <Palette className="w-3 h-3" />
+                            <span>Apply Template</span>
+                          </button>
+                        </div>
                       )}
+                    
+                    {/* Template Applied UI */}
+                    {templatedImageUrl && selectedTemplate && (
+                      <div className="bg-purple-500/10 border border-purple-400/20 rounded-lg p-2">
+                        <div className="flex justify-between mb-2">
+                          <h4 className="font-medium text-purple-300 flex  text-xs">
+                            <Palette className="w-3 h-3 mr-1" />
+                            Template Applied: {selectedTemplate.name}
+                          </h4>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={handleEditTemplate}
+                            className="flex-1 bg-purple-500/80 text-white px-3 py-1.5 rounded text-xs hover:bg-purple-600/80 transition-colors flex items-center justify-center space-x-1"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleDeleteTemplate}
+                            className="flex-1 bg-red-500/80 text-white px-3 py-1.5 rounded text-xs hover:bg-red-600/80 transition-colors flex items-center justify-center space-x-1"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Remove</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <button
                     type="button"
@@ -924,6 +1013,24 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           contentText={formData.prompt}
           selectedPlatforms={formData.selectedPlatforms}
           onClose={() => setShowAIGenerator(false)}
+        />
+      )}
+
+      {/* Template Selector Modal */}
+      {showTemplateSelector && (
+        <TemplateSelector
+          onSelectTemplate={handleTemplateSelect}
+          onCancel={handleTemplateSelectorCancel}
+        />
+      )}
+
+      {/* Template Editor Modal */}
+      {showTemplateEditor && selectedTemplate && (formData.media || formData.mediaUrl) && (
+        <ImageTemplateEditor
+          imageUrl={templatedImageUrl || (formData.media ? URL.createObjectURL(formData.media) : formData.mediaUrl!)}
+          selectedTemplate={selectedTemplate}
+          onSave={handleTemplateEditorSave}
+          onCancel={handleTemplateEditorCancel}
         />
       )}
 
