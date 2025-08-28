@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Template, TemplateElement, TextElement, LogoElement, ShapeElement } from '../types/templates';
 import { Palette, Type, Upload, Square, Download, Undo, Redo, Loader, ArrowUp, ArrowDown, ChevronUp, ChevronDown, Trash, Lock, Unlock } from 'lucide-react';
 import { uploadMedia, getCurrentUser } from '../lib/database';
+import '../styles/drag-prevention.css';
 
 interface ImageTemplateEditorProps {
   imageUrl: string;
@@ -371,17 +372,27 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (isLocked || !selectedElement) return; // Don't allow dragging when locked
+    e.preventDefault(); // Prevent scrolling during drag
     setIsDragging(true);
+    
+    // Apply CSS class to prevent scrolling smoothly
+    document.body.classList.add('drag-no-scroll');
   };
 
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (isLocked) return; // Don't allow dragging when locked
+    if (isDragging) {
+      e.preventDefault(); // Prevent scrolling while dragging
+    }
     const { x, y } = getEventCoordinates(e);
     handleElementDrag(x, y);
   };
 
   const handleCanvasMouseUp = () => {
     setIsDragging(false);
+    
+    // Remove CSS class to restore normal scrolling smoothly
+    document.body.classList.remove('drag-no-scroll');
   };
 
   // Touch event handlers
@@ -393,6 +404,9 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
     
     if (handleElementSelection(x, y)) {
       setIsDragging(true);
+      
+      // Apply CSS class to prevent scrolling smoothly
+      document.body.classList.add('drag-no-scroll');
     }
   };
 
@@ -407,6 +421,9 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   const handleCanvasTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     setIsDragging(false);
+    
+    // Remove CSS class to restore normal scrolling smoothly
+    document.body.classList.remove('drag-no-scroll');
   };
 
   const updateSelectedElement = (updates: Partial<TemplateElement>) => {
@@ -591,7 +608,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
         <div className="w-full lg:w-64 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 p-3 overflow-y-auto">
           <div className="space-y-3">
             {/* Header */}
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-0">
               <h3 className="text-xs font-medium text-gray-900">Template Editor</h3>
               <button
                 onClick={onCancel}
@@ -655,6 +672,69 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                     </button>
                   </div>
                 </div>
+                 {/* Ultra-compact control grid */}
+                    <div className="grid grid-cols-4 gap-1">
+                      {/* Size Control */}
+                      <div>
+                        <input
+                          type="number"
+                          value={(selectedElementData as TextElement).fontSize || 16}
+                          onChange={(e) => updateSelectedElement({ fontSize: parseInt(e.target.value) })}
+                          className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
+                          title="Font Size"
+                        />
+                      </div>
+                      
+                      {/* Weight Control */}
+                      <div>
+                        <select
+                          value={(selectedElementData as TextElement).fontWeight || 'normal'}
+                          onChange={(e) => updateSelectedElement({ fontWeight: e.target.value })}
+                          className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
+                          title="Font Weight"
+                        >
+                          <option value="normal">Normal</option>
+                          <option value="bold">Bold</option>
+                          <option value="600">Semi</option>
+                          <option value="300">Light</option>
+                        </select>
+                      </div>
+                      
+                      {/* Align Control */}
+                      <div>
+                        <select
+                          value={(selectedElementData as TextElement).textAlign || 'left'}
+                          onChange={(e) => updateSelectedElement({ textAlign: e.target.value })}
+                          className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
+                          title="Text Align"
+                        >
+                          <option value="left">Left</option>
+                          <option value="center">Center</option>
+                          <option value="right">Right</option>
+                        </select>
+                      </div>
+                      
+                      {/* Color Controls Container */}
+                      <div className="flex gap-1">
+                        {/* Text Color */}
+                        <input
+                          type="color"
+                          value={(selectedElementData as TextElement).color || '#000000'}
+                          onChange={(e) => updateSelectedElement({ color: e.target.value })}
+                          className="w-6 h-6 border border-gray-300 rounded cursor-pointer"
+                          title="Text Color"
+                        />
+                        
+                        {/* Background Color */}
+                        <input
+                          type="color"
+                          value={(selectedElementData as TextElement).backgroundColor || '#ffffff'}
+                          onChange={(e) => updateSelectedElement({ backgroundColor: e.target.value })}
+                          className="w-6 h-6 border border-gray-300 rounded cursor-pointer"
+                          title="Background Color"
+                        />
+                      </div>
+                    </div>
 
                 {selectedElementData.type === 'logo' && (
                   <div className="space-y-2">
@@ -727,69 +807,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                       />
                     </div>
                     
-                    {/* Ultra-compact control grid */}
-                    <div className="grid grid-cols-2 gap-1">
-                      {/* Size Control */}
-                      <div>
-                        <input
-                          type="number"
-                          value={(selectedElementData as TextElement).fontSize || 16}
-                          onChange={(e) => updateSelectedElement({ fontSize: parseInt(e.target.value) })}
-                          className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
-                          title="Font Size"
-                        />
-                      </div>
-                      
-                      {/* Weight Control */}
-                      <div>
-                        <select
-                          value={(selectedElementData as TextElement).fontWeight || 'normal'}
-                          onChange={(e) => updateSelectedElement({ fontWeight: e.target.value })}
-                          className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
-                          title="Font Weight"
-                        >
-                          <option value="normal">Normal</option>
-                          <option value="bold">Bold</option>
-                          <option value="600">Semi</option>
-                          <option value="300">Light</option>
-                        </select>
-                      </div>
-                      
-                      {/* Align Control */}
-                      <div>
-                        <select
-                          value={(selectedElementData as TextElement).textAlign || 'left'}
-                          onChange={(e) => updateSelectedElement({ textAlign: e.target.value })}
-                          className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
-                          title="Text Align"
-                        >
-                          <option value="left">Left</option>
-                          <option value="center">Center</option>
-                          <option value="right">Right</option>
-                        </select>
-                      </div>
-                      
-                      {/* Color Controls Container */}
-                      <div className="flex gap-1">
-                        {/* Text Color */}
-                        <input
-                          type="color"
-                          value={(selectedElementData as TextElement).color || '#000000'}
-                          onChange={(e) => updateSelectedElement({ color: e.target.value })}
-                          className="w-6 h-6 border border-gray-300 rounded cursor-pointer"
-                          title="Text Color"
-                        />
-                        
-                        {/* Background Color */}
-                        <input
-                          type="color"
-                          value={(selectedElementData as TextElement).backgroundColor || '#ffffff'}
-                          onChange={(e) => updateSelectedElement({ backgroundColor: e.target.value })}
-                          className="w-6 h-6 border border-gray-300 rounded cursor-pointer"
-                          title="Background Color"
-                        />
-                      </div>
-                    </div>
+                   
                   </div>
                 )}
               </div>
