@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Template, TemplateElement, TextElement, LogoElement, ShapeElement } from '../types/templates';
-import { Palette, Type, Upload, Square, Download, Undo, Redo, Loader, ArrowUp, ArrowDown, ChevronUp, ChevronDown, Trash, Lock, Unlock } from 'lucide-react';
+import { Palette, Type, Upload, Square, Download, Undo, Redo, Loader, ArrowUp, ArrowDown, ChevronUp, ChevronDown, Trash, Lock, Unlock, Circle, Plus } from 'lucide-react';
 import { uploadMedia, getCurrentUser } from '../lib/database';
 import '../styles/drag-prevention.css';
 
@@ -31,6 +31,8 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   const [isLocked, setIsLocked] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoImages, setLogoImages] = useState<{[key: string]: HTMLImageElement}>({});
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeHandle, setResizeHandle] = useState<string | null>(null); // 'nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'
 
   // Utility function to convert hex color to rgba with opacity
   const hexToRgba = (hex: string, opacity: number = 1): string => {
@@ -578,6 +580,75 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
     setSelectedElement(null);
   };
 
+  // Element creation functions
+  const createNewTextElement = () => {
+    if (!canvas) return;
+    
+    const newElement: TextElement = {
+      id: `text-${Date.now()}`,
+      type: 'text',
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      width: 200,
+      height: 40,
+      content: 'New Text',
+      fontSize: 24,
+      fontWeight: 'normal',
+      fontFamily: 'Arial',
+      color: '#000000',
+      textAlign: 'center',
+      backgroundColor: '#ffffff',
+      backgroundOpacity: 0.8,
+      textOpacity: 1,
+      padding: 8,
+      borderRadius: 4,
+      zIndex: Math.max(...elements.map(el => el.zIndex || 0)) + 1
+    };
+    
+    setElements(prev => [...prev, newElement]);
+    setSelectedElement(newElement.id);
+  };
+
+  const createNewShapeElement = (shape: 'rectangle' | 'circle') => {
+    if (!canvas) return;
+    
+    const newElement: ShapeElement = {
+      id: `shape-${Date.now()}`,
+      type: 'shape',
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      width: 100,
+      height: shape === 'circle' ? 100 : 60,
+      shape,
+      color: '#3b82f6',
+      opacity: 1,
+      zIndex: Math.max(...elements.map(el => el.zIndex || 0)) + 1
+    };
+    
+    setElements(prev => [...prev, newElement]);
+    setSelectedElement(newElement.id);
+  };
+
+  const createNewLogoElement = () => {
+    if (!canvas) return;
+    
+    const newElement: LogoElement = {
+      id: `logo-${Date.now()}`,
+      type: 'logo',
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      width: 80,
+      height: 80,
+      src: '',
+      opacity: 1,
+      borderRadius: 0,
+      zIndex: Math.max(...elements.map(el => el.zIndex || 0)) + 1
+    };
+    
+    setElements(prev => [...prev, newElement]);
+    setSelectedElement(newElement.id);
+  };
+
   // Logo upload function
   const handleLogoUpload = async (file: File) => {
     if (!selectedElement) return;
@@ -715,6 +786,41 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
               >
                 ×
               </button>
+            </div>
+
+            {/* Element Creation Toolbar */}
+            <div className="border border-gray-200 rounded p-2">
+              <h4 className="text-xs font-medium text-gray-700 mb-2">Add Elements</h4>
+              <div className="grid grid-cols-4 gap-1">
+                <button
+                  onClick={createNewTextElement}
+                  className="p-2 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 flex items-center justify-center"
+                  title="Add Text"
+                >
+                  <Type className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={createNewLogoElement}
+                  className="p-2 bg-green-50 text-green-700 rounded hover:bg-green-100 flex items-center justify-center"
+                  title="Add Logo"
+                >
+                  <Upload className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => createNewShapeElement('rectangle')}
+                  className="p-2 bg-purple-50 text-purple-700 rounded hover:bg-purple-100 flex items-center justify-center"
+                  title="Add Rectangle"
+                >
+                  <Square className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => createNewShapeElement('circle')}
+                  className="p-2 bg-orange-50 text-orange-700 rounded hover:bg-orange-100 flex items-center justify-center"
+                  title="Add Circle"
+                >
+                  <Circle className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Selected Element Properties */}
@@ -904,6 +1010,43 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                         rows={2}
                         placeholder="Text content"
                       />
+                    </div>
+                    
+                    {/* Background Size Controls */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">BG Width</label>
+                        <input
+                          type="number"
+                          value={(selectedElementData as TextElement).width || 100}
+                          onChange={(e) => updateSelectedElement({ width: parseInt(e.target.value) })}
+                          className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
+                          min="10"
+                          max="500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">BG Height</label>
+                        <input
+                          type="number"
+                          value={(selectedElementData as TextElement).height || 50}
+                          onChange={(e) => updateSelectedElement({ height: parseInt(e.target.value) })}
+                          className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
+                          min="10"
+                          max="300"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Padding</label>
+                        <input
+                          type="number"
+                          value={(selectedElementData as TextElement).padding || 8}
+                          onChange={(e) => updateSelectedElement({ padding: parseInt(e.target.value) })}
+                          className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
+                          min="0"
+                          max="50"
+                        />
+                      </div>
                     </div>
                     
                     {/* Opacity Controls */}
