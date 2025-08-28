@@ -33,6 +33,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   const [logoImages, setLogoImages] = useState<{[key: string]: HTMLImageElement}>({});
   const [isResizing, setIsResizing] = useState(false);
   const [resizeHandle, setResizeHandle] = useState<string | null>(null); // 'nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'
+  const [resizeStart, setResizeStart] = useState<{x: number, y: number, width: number, height: number} | null>(null);
 
   // Utility function to convert hex color to rgba with opacity
   const hexToRgba = (hex: string, opacity: number = 1): string => {
@@ -153,6 +154,13 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   const drawElement = (context: CanvasRenderingContext2D, element: TemplateElement) => {
     context.save();
     
+    // Apply rotation if specified
+    if (element.rotation && element.rotation !== 0) {
+      context.translate(element.x, element.y);
+      context.rotate((element.rotation * Math.PI) / 180);
+      context.translate(-element.x, -element.y);
+    }
+    
     switch (element.type) {
       case 'text':
         drawTextElement(context, element as TextElement);
@@ -165,16 +173,27 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
         break;
     }
     
-    // Draw selection border if selected
+    context.restore();
+    
+    // Draw selection border if selected (after restore to avoid rotation)
     if (selectedElement === element.id) {
+      context.save();
+      
+      // Apply same rotation for selection border
+      if (element.rotation && element.rotation !== 0) {
+        context.translate(element.x, element.y);
+        context.rotate((element.rotation * Math.PI) / 180);
+        context.translate(-element.x, -element.y);
+      }
+      
       context.strokeStyle = '#3b82f6';
       context.lineWidth = 2;
       context.setLineDash([5, 5]);
       context.strokeRect(element.x - element.width/2, element.y - element.height/2, element.width, element.height);
       context.setLineDash([]);
+      
+      context.restore();
     }
-    
-    context.restore();
   };
 
   const drawTextElement = (context: CanvasRenderingContext2D, element: TextElement) => {
@@ -354,12 +373,23 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
     
     switch (element.shape) {
       case 'rectangle':
-        context.fillRect(
-          element.x - element.width/2,
-          element.y - element.height/2,
-          element.width,
-          element.height
-        );
+        if (element.borderRadius && element.borderRadius > 0) {
+          drawRoundedRect(
+            context,
+            element.x - element.width/2,
+            element.y - element.height/2,
+            element.width,
+            element.height,
+            element.borderRadius
+          );
+        } else {
+          context.fillRect(
+            element.x - element.width/2,
+            element.y - element.height/2,
+            element.width,
+            element.height
+          );
+        }
         break;
       case 'circle':
         context.beginPath();
@@ -877,69 +907,49 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                     </button>
                   </div>
                 </div>
-                 {/* Ultra-compact control grid */}
-                    <div className="grid grid-cols-4 gap-1">
-                      {/* Size Control */}
-                      <div>
-                        <input
-                          type="number"
-                          value={(selectedElementData as TextElement).fontSize || 16}
-                          onChange={(e) => updateSelectedElement({ fontSize: parseInt(e.target.value) })}
-                          className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
-                          title="Font Size"
-                        />
-                      </div>
-                      
-                      {/* Weight Control */}
-                      <div>
-                        <select
-                          value={(selectedElementData as TextElement).fontWeight || 'normal'}
-                          onChange={(e) => updateSelectedElement({ fontWeight: e.target.value })}
-                          className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
-                          title="Font Weight"
-                        >
-                          <option value="normal">Normal</option>
-                          <option value="bold">Bold</option>
-                          <option value="600">Semi</option>
-                          <option value="300">Light</option>
-                        </select>
-                      </div>
-                      
-                      {/* Align Control */}
-                      <div>
-                        <select
-                          value={(selectedElementData as TextElement).textAlign || 'left'}
-                          onChange={(e) => updateSelectedElement({ textAlign: e.target.value })}
-                          className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
-                          title="Text Align"
-                        >
-                          <option value="left">Left</option>
-                          <option value="center">Center</option>
-                          <option value="right">Right</option>
-                        </select>
-                      </div>
-                      
-                      {/* Color Controls Container */}
-                      <div className="flex gap-1">
-                        {/* Text Color */}
-                        <input
-                          type="color"
-                          value={(selectedElementData as TextElement).color || '#000000'}
-                          onChange={(e) => updateSelectedElement({ color: e.target.value })}
-                          className="w-6 h-6 border border-gray-300 rounded cursor-pointer"
-                          title="Text Color"
-                        />
-                        
-                        {/* Background Color */}
-                        <input
-                          type="color"
-                          value={(selectedElementData as TextElement).backgroundColor || '#ffffff'}
-                          onChange={(e) => updateSelectedElement({ backgroundColor: e.target.value })}
-                          className="w-6 h-6 border border-gray-300 rounded cursor-pointer"
-                          title="Background Color"
-                        />
-                      </div>
-                    </div>
+                {/* Size Controls - Universal for all elements */}
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Width</label>
+                    <input
+                      type="number"
+                      value={selectedElementData.width || 100}
+                      onChange={(e) => updateSelectedElement({ width: parseInt(e.target.value) })}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                      min="10"
+                      max="800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Height</label>
+                    <input
+                      type="number"
+                      value={selectedElementData.height || 100}
+                      onChange={(e) => updateSelectedElement({ height: parseInt(e.target.value) })}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                      min="10"
+                      max="600"
+                    />
+                  </div>
+                </div>
+
+                {/* Rotation Control - Universal */}
+                <div className="mb-2">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Rotation</label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="360"
+                    value={selectedElementData.rotation || 0}
+                    onChange={(e) => updateSelectedElement({ rotation: parseInt(e.target.value) })}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>0°</span>
+                    <span className="font-medium">{selectedElementData.rotation || 0}°</span>
+                    <span>360°</span>
+                  </div>
+                </div>
 
                 {selectedElementData.type === 'logo' && (
                   <div className="space-y-2">
@@ -1003,37 +1013,77 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                 {selectedElementData.type === 'text' && (
                   <div className="space-y-2">
                     <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Text Content</label>
                       <textarea
                         value={(selectedElementData as TextElement).content || ''}
                         onChange={(e) => updateSelectedElement({ content: e.target.value })}
                         className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                         rows={2}
-                        placeholder="Text content"
+                        placeholder="Enter your text..."
                       />
                     </div>
                     
-                    {/* Background Size Controls */}
-                    <div className="grid grid-cols-3 gap-2">
+                    {/* Typography Controls */}
+                    <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">BG Width</label>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Font Size</label>
                         <input
                           type="number"
-                          value={(selectedElementData as TextElement).width || 100}
-                          onChange={(e) => updateSelectedElement({ width: parseInt(e.target.value) })}
-                          className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
-                          min="10"
-                          max="500"
+                          value={(selectedElementData as TextElement).fontSize || 16}
+                          onChange={(e) => updateSelectedElement({ fontSize: parseInt(e.target.value) })}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                          min="8"
+                          max="72"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">BG Height</label>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Weight</label>
+                        <select
+                          value={(selectedElementData as TextElement).fontWeight || 'normal'}
+                          onChange={(e) => updateSelectedElement({ fontWeight: e.target.value })}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                        >
+                          <option value="300">Light</option>
+                          <option value="normal">Normal</option>
+                          <option value="600">Semi-Bold</option>
+                          <option value="bold">Bold</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Alignment</label>
+                        <select
+                          value={(selectedElementData as TextElement).textAlign || 'left'}
+                          onChange={(e) => updateSelectedElement({ textAlign: e.target.value })}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                        >
+                          <option value="left">Left</option>
+                          <option value="center">Center</option>
+                          <option value="right">Right</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Text Color</label>
                         <input
-                          type="number"
-                          value={(selectedElementData as TextElement).height || 50}
-                          onChange={(e) => updateSelectedElement({ height: parseInt(e.target.value) })}
-                          className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
-                          min="10"
-                          max="300"
+                          type="color"
+                          value={(selectedElementData as TextElement).color || '#000000'}
+                          onChange={(e) => updateSelectedElement({ color: e.target.value })}
+                          className="w-full h-8 border border-gray-300 rounded cursor-pointer"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Background Controls */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">BG Color</label>
+                        <input
+                          type="color"
+                          value={(selectedElementData as TextElement).backgroundColor || '#ffffff'}
+                          onChange={(e) => updateSelectedElement({ backgroundColor: e.target.value })}
+                          className="w-full h-8 border border-gray-300 rounded cursor-pointer"
                         />
                       </div>
                       <div>
@@ -1042,7 +1092,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                           type="number"
                           value={(selectedElementData as TextElement).padding || 8}
                           onChange={(e) => updateSelectedElement({ padding: parseInt(e.target.value) })}
-                          className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                           min="0"
                           max="50"
                         />
@@ -1060,9 +1110,9 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                           step="0.1"
                           value={(selectedElementData as TextElement).textOpacity || 1}
                           onChange={(e) => updateSelectedElement({ textOpacity: parseFloat(e.target.value) })}
-                          className="w-full h-1"
+                          className="w-full"
                         />
-                        <span className="text-xs text-gray-600">
+                        <span className="text-xs text-gray-600 text-center block">
                           {Math.round(((selectedElementData as TextElement).textOpacity || 1) * 100)}%
                         </span>
                       </div>
@@ -1075,13 +1125,73 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                           step="0.1"
                           value={(selectedElementData as TextElement).backgroundOpacity || 1}
                           onChange={(e) => updateSelectedElement({ backgroundOpacity: parseFloat(e.target.value) })}
-                          className="w-full h-1"
+                          className="w-full"
                         />
-                        <span className="text-xs text-gray-600">
+                        <span className="text-xs text-gray-600 text-center block">
                           {Math.round(((selectedElementData as TextElement).backgroundOpacity || 1) * 100)}%
                         </span>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {selectedElementData.type === 'shape' && (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Shape</label>
+                        <select
+                          value={(selectedElementData as ShapeElement).shape || 'rectangle'}
+                          onChange={(e) => updateSelectedElement({ shape: e.target.value as 'rectangle' | 'circle' })}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                        >
+                          <option value="rectangle">Rectangle</option>
+                          <option value="circle">Circle</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Color</label>
+                        <input
+                          type="color"
+                          value={(selectedElementData as ShapeElement).color || '#3b82f6'}
+                          onChange={(e) => updateSelectedElement({ color: e.target.value })}
+                          className="w-full h-8 border border-gray-300 rounded cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Opacity</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={(selectedElementData as ShapeElement).opacity || 1}
+                        onChange={(e) => updateSelectedElement({ opacity: parseFloat(e.target.value) })}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>0%</span>
+                        <span className="font-medium">{Math.round(((selectedElementData as ShapeElement).opacity || 1) * 100)}%</span>
+                        <span>100%</span>
+                      </div>
+                    </div>
+                    
+                    {(selectedElementData as ShapeElement).shape === 'rectangle' && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Corner Radius</label>
+                        <input
+                          type="number"
+                          value={(selectedElementData as ShapeElement).borderRadius || 0}
+                          onChange={(e) => updateSelectedElement({ borderRadius: parseInt(e.target.value) })}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                          min="0"
+                          max="50"
+                          placeholder="0"
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
