@@ -364,17 +364,14 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
               return newLogoImages;
             });
             
-            // Redraw canvas after image loads
+            // Trigger a redraw without interfering with current state
+            // Use a timeout to avoid interfering with any ongoing drag operations
             setTimeout(() => {
-              if (ctx) {
-                console.log('🎨 Triggering canvas redraw after logo load');
-                if (backgroundImage) {
-                  redrawCanvas(ctx, backgroundImage, elements);
-                } else {
-                  redrawCanvasWithoutBackground(ctx, elements);
-                }
-              }
-            }, 10); // Small delay to ensure state update
+              console.log('🎨 Triggering canvas redraw after logo load');
+              // Force a component re-render which will trigger the useEffect redraw
+              // This ensures we use the latest elements state from React
+              setLogoImages(prev => ({ ...prev })); // Trigger re-render
+            }, 50); // Slightly longer delay to avoid drag interference
           };
           
           img.onerror = (error) => {
@@ -561,15 +558,22 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
 
   // Mouse event handlers
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    console.log('🖱️ Canvas click event', { isLocked, selectedElement, isDragging });
     if (isLocked) return; // Don't allow selection when locked
     const { x, y } = getEventCoordinates(e);
-    handleElementSelection(x, y);
+    const selected = handleElementSelection(x, y);
+    console.log('👆 Element selection result:', selected);
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (isLocked || !selectedElement) return; // Don't allow dragging when locked
+    console.log('⬇️ Mouse down event', { isLocked, selectedElement, isDragging });
+    if (isLocked || !selectedElement) {
+      console.log('❌ Mouse down blocked:', { isLocked, selectedElement });
+      return; // Don't allow dragging when locked
+    }
     e.preventDefault(); // Prevent scrolling during drag
     setIsDragging(true);
+    console.log('✅ Starting drag for element:', selectedElement);
     
     // Apply CSS class to prevent scrolling smoothly
     document.body.classList.add('drag-no-scroll');
@@ -578,6 +582,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (isLocked) return; // Don't allow dragging when locked
     if (isDragging) {
+      console.log('🔄 Dragging element:', selectedElement, { x: getEventCoordinates(e).x, y: getEventCoordinates(e).y });
       e.preventDefault(); // Prevent scrolling while dragging
     }
     const { x, y } = getEventCoordinates(e);
@@ -585,6 +590,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   };
 
   const handleCanvasMouseUp = () => {
+    console.log('⬆️ Mouse up event, ending drag for:', selectedElement);
     setIsDragging(false);
     
     // Remove CSS class to restore normal scrolling smoothly
