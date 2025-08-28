@@ -19,7 +19,10 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
   const [currentPlatform, setCurrentPlatform] = useState<Platform | null>(null);
   const [progress, setProgress] = useState(0);
 
+  const useRefFlag= React.useRef(false);
   useEffect(() => {
+    if (useRefFlag.current) return;
+    useRefFlag.current = true;
     if (contentData) {
       generatePosts();
     }
