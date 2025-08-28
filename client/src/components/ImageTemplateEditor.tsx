@@ -31,6 +31,14 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   const [isLocked, setIsLocked] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
 
+  // Utility function to convert hex color to rgba with opacity
+  const hexToRgba = (hex: string, opacity: number = 1): string => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+  };
+
   useEffect(() => {
     if (canvasRef.current) {
       const canvasElement = canvasRef.current;
@@ -170,13 +178,13 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
     if (!element.content) return;
     
     context.font = `${element.fontWeight || 'normal'} ${element.fontSize || 16}px ${element.fontFamily || 'Arial'}`;
-    context.fillStyle = element.color || '#000000';
     context.textAlign = (element.textAlign as CanvasTextAlign) || 'left';
     context.textBaseline = 'middle';
     
     // Draw background if specified
     if (element.backgroundColor) {
-      context.fillStyle = element.backgroundColor;
+      const backgroundOpacity = element.backgroundOpacity || 1;
+      context.fillStyle = hexToRgba(element.backgroundColor, backgroundOpacity);
       const padding = element.padding || 0;
       const borderRadius = element.borderRadius || 0;
       
@@ -197,8 +205,11 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
           element.height + padding * 2
         );
       }
-      context.fillStyle = element.color || '#000000';
     }
+    
+    // Set text color with opacity
+    const textOpacity = element.textOpacity || 1;
+    context.fillStyle = hexToRgba(element.color || '#000000', textOpacity);
     
     // Draw text
     const lines = element.content.split('\n');
@@ -807,7 +818,39 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                       />
                     </div>
                     
-                   
+                    {/* Opacity Controls */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Text Opacity</label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.1"
+                          value={(selectedElementData as TextElement).textOpacity || 1}
+                          onChange={(e) => updateSelectedElement({ textOpacity: parseFloat(e.target.value) })}
+                          className="w-full h-1"
+                        />
+                        <span className="text-xs text-gray-600">
+                          {Math.round(((selectedElementData as TextElement).textOpacity || 1) * 100)}%
+                        </span>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">BG Opacity</label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.1"
+                          value={(selectedElementData as TextElement).backgroundOpacity || 1}
+                          onChange={(e) => updateSelectedElement({ backgroundOpacity: parseFloat(e.target.value) })}
+                          className="w-full h-1"
+                        />
+                        <span className="text-xs text-gray-600">
+                          {Math.round(((selectedElementData as TextElement).backgroundOpacity || 1) * 100)}%
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
