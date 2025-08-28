@@ -124,8 +124,17 @@ export const ContentPage: React.FC = () => {
                 state.generatedPosts && state.generatedPosts.length > 0 ? (
                   <PostPreview
                     posts={state.generatedPosts}
-                    onEdit={() => navigate("/content")}
-                    onBack={() => navigate("/generate")}
+                    onEdit={() => {
+                      console.log('Edit Content clicked - navigating to /content');
+                      navigate("/content");
+                    }}
+                    onBack={() => {
+                      console.log('Regenerate clicked - clearing posts and navigating to generate');
+                      // Clear the generated posts to trigger fresh generation
+                      dispatch({ type: "SET_GENERATED_POSTS", payload: [] });
+                      // Navigate to generate route which will start fresh AI generation
+                      navigate("/content/generate");
+                    }}
                     onPublish={handleGoToPublish}
                     onPostsUpdate={(updatedPosts) => {
                       dispatch({ type: "SET_GENERATED_POSTS", payload: updatedPosts });
