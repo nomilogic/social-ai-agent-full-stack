@@ -591,13 +591,11 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
         <div className="w-full lg:w-64 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 p-3 overflow-y-auto">
           <div className="space-y-3">
             {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900">Template Editor</h3>
-              </div>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-semibold text-gray-900">Template Editor</h3>
               <button
                 onClick={onCancel}
-                className="text-gray-400 hover:text-gray-600 text-lg font-medium"
+                className="text-gray-400 hover:text-gray-600 text-sm font-medium"
               >
                 ×
               </button>
