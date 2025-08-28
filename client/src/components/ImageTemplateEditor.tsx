@@ -563,10 +563,10 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex  justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full overflow-hidden flex flex-col lg:flex-row">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center p-2">
+      <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full overflow-hidden flex flex-col lg:flex-row">
         {/* Canvas Area */}
-        <div className="flex-0 p-6 flex items-center justify-center bg-gray-50">
+        <div className="flex-0 p-3 flex items-center justify-center bg-gray-50">
           <canvas
             ref={canvasRef}
             onClick={handleCanvasClick}
@@ -579,8 +579,8 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
             onTouchEnd={handleCanvasTouchEnd}
             className="border border-gray-200 rounded cursor-pointer max-w-full max-h-full"
             style={{ 
-              maxWidth: '500px', 
-              maxHeight: '500px',
+              maxWidth: '400px', 
+              maxHeight: '400px',
               width: 'auto',
               height: 'auto'
             }}
@@ -588,17 +588,16 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
         </div>
 
         {/* Properties Panel */}
-        <div className="w-full lg:w-80 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 p-6 overflow-y-auto">
-          <div className="space-y-6">
+        <div className="w-full lg:w-64 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 p-3 overflow-y-auto">
+          <div className="space-y-3">
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Template Editor</h3>
-                <p className="text-sm text-gray-600 mt-1">Customize your template</p>
+                <h3 className="text-sm font-semibold text-gray-900">Template Editor</h3>
               </div>
               <button
                 onClick={onCancel}
-                className="text-gray-400 hover:text-gray-600 text-xl font-medium"
+                className="text-gray-400 hover:text-gray-600 text-lg font-medium"
               >
                 ×
               </button>
@@ -606,27 +605,27 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
 
             {/* Selected Element Properties */}
             {selectedElementData && (
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-3">
-                  {selectedElementData.type.charAt(0).toUpperCase() + selectedElementData.type.slice(1)} Properties
+              <div className="border border-gray-200 rounded p-2">
+                <h4 className="text-xs font-medium text-gray-900 mb-2">
+                  {selectedElementData.type.charAt(0).toUpperCase() + selectedElementData.type.slice(1)}
                 </h4>
                 
                 {/* Element Controls */}
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-1">
                     <button
                       onClick={() => setIsLocked(!isLocked)}
-                      className={`p-1 rounded ${isLocked ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'} hover:bg-opacity-80`}
-                      title={isLocked ? 'Unlock elements' : 'Lock elements'}
+                      className={`p-1 rounded text-xs ${isLocked ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'} hover:bg-opacity-80`}
+                      title={isLocked ? 'Unlock' : 'Lock'}
                     >
-                      {isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                      {isLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
                     </button>
                     <button
                       onClick={deleteSelectedElement}
-                      className="p-1 rounded bg-red-100 text-red-600 hover:bg-red-200"
-                      title="Delete element"
+                      className="p-1 rounded bg-red-100 text-red-600 hover:bg-red-200 text-xs"
+                      title="Delete"
                     >
-                      <Trash className="w-4 h-4" />
+                      <Trash className="w-3 h-3" />
                     </button>
                   </div>
                   
@@ -634,39 +633,39 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                   <div className="flex items-center space-x-1">
                     <button
                       onClick={bringToFront}
-                      className="p-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      title="Bring to front"
+                      className="p-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs"
+                      title="Front"
                     >
-                      <ChevronUp className="w-4 h-4" />
+                      <ChevronUp className="w-3 h-3" />
                     </button>
                     <button
                       onClick={moveUp}
-                      className="p-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      title="Move up"
+                      className="p-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs"
+                      title="Up"
                     >
-                      <ArrowUp className="w-4 h-4" />
+                      <ArrowUp className="w-3 h-3" />
                     </button>
                     <button
                       onClick={moveDown}
-                      className="p-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      title="Move down"
+                      className="p-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs"
+                      title="Down"
                     >
-                      <ArrowDown className="w-4 h-4" />
+                      <ArrowDown className="w-3 h-3" />
                     </button>
                     <button
                       onClick={sendToBack}
-                      className="p-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      title="Send to back"
+                      className="p-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs"
+                      title="Back"
                     >
-                      <ChevronDown className="w-4 h-4" />
+                      <ChevronDown className="w-3 h-3" />
                     </button>
                   </div>
                 </div>
 
                 {selectedElementData.type === 'logo' && (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Logo Image</label>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Logo</label>
                       <input
                         ref={logoInputRef}
                         type="file"
@@ -677,24 +676,24 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                       <button
                         onClick={() => logoInputRef.current?.click()}
                         disabled={logoUploading}
-                        className="w-full bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center space-x-2"
+                        className="w-full bg-blue-600 text-white px-2 py-1 rounded text-xs flex items-center justify-center space-x-1 hover:bg-blue-700 disabled:opacity-50"
                       >
                         {logoUploading ? (
                           <>
-                            <Loader className="w-4 h-4 animate-spin" />
+                            <Loader className="w-3 h-3 animate-spin" />
                             <span>Uploading...</span>
                           </>
                         ) : (
                           <>
-                            <Upload className="w-4 h-4" />
-                            <span>Upload Logo</span>
+                            <Upload className="w-3 h-3" />
+                            <span>Upload</span>
                           </>
                         )}
                       </button>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Opacity</label>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Opacity</label>
                         <input
                           type="range"
                           min="0"
@@ -702,19 +701,19 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                           step="0.1"
                           value={(selectedElementData as LogoElement).opacity || 1}
                           onChange={(e) => updateSelectedElement({ opacity: parseFloat(e.target.value) })}
-                          className="w-full"
+                          className="w-full h-1"
                         />
                         <span className="text-xs text-gray-600">
                           {Math.round(((selectedElementData as LogoElement).opacity || 1) * 100)}%
                         </span>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Border Radius</label>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Radius</label>
                         <input
                           type="number"
                           value={(selectedElementData as LogoElement).borderRadius || 0}
                           onChange={(e) => updateSelectedElement({ borderRadius: parseInt(e.target.value) })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                           placeholder="0"
                         />
                       </div>
@@ -723,69 +722,69 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                 )}
 
                 {selectedElementData.type === 'text' && (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Text</label>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Text</label>
                       <textarea
                         value={(selectedElementData as TextElement).content || ''}
                         onChange={(e) => updateSelectedElement({ content: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                         rows={2}
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Font Size</label>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Size</label>
                         <input
                           type="number"
                           value={(selectedElementData as TextElement).fontSize || 16}
                           onChange={(e) => updateSelectedElement({ fontSize: parseInt(e.target.value) })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Font Weight</label>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Weight</label>
                         <select
                           value={(selectedElementData as TextElement).fontWeight || 'normal'}
                           onChange={(e) => updateSelectedElement({ fontWeight: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                         >
                           <option value="normal">Normal</option>
                           <option value="bold">Bold</option>
-                          <option value="600">Semi Bold</option>
+                          <option value="600">Semi</option>
                           <option value="300">Light</option>
                         </select>
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Text Alignment</label>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Align</label>
                       <select
                         value={(selectedElementData as TextElement).textAlign || 'left'}
                         onChange={(e) => updateSelectedElement({ textAlign: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                       >
                         <option value="left">Left</option>
                         <option value="center">Center</option>
                         <option value="right">Right</option>
                       </select>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Text Color</label>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Text Color</label>
                         <input
                           type="color"
                           value={(selectedElementData as TextElement).color || '#000000'}
                           onChange={(e) => updateSelectedElement({ color: e.target.value })}
-                          className="w-full h-10 border border-gray-300 rounded-md"
+                          className="w-full h-6 border border-gray-300 rounded"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Background Color</label>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">BG Color</label>
                         <input
                           type="color"
                           value={(selectedElementData as TextElement).backgroundColor || '#000000'}
                           onChange={(e) => updateSelectedElement({ backgroundColor: e.target.value })}
-                          className="w-full h-10 border border-gray-300 rounded-md"
+                          className="w-full h-6 border border-gray-300 rounded"
                         />
                       </div>
                     </div>
