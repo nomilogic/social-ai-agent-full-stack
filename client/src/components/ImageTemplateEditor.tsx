@@ -732,65 +732,67 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                     </div>
                     
                     {/* Ultra-compact control grid */}
-                    <div className="grid grid-cols-4 gap-1 items-center">
+                    <div className="grid grid-cols-2 gap-1">
                       {/* Size Control */}
-                      <input
-                        type="number"
-                        value={(selectedElementData as TextElement).fontSize || 16}
-                        onChange={(e) => updateSelectedElement({ fontSize: parseInt(e.target.value) })}
-                        className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
-                        title="Font Size"
-                      />
+                      <div>
+                        <input
+                          type="number"
+                          value={(selectedElementData as TextElement).fontSize || 16}
+                          onChange={(e) => updateSelectedElement({ fontSize: parseInt(e.target.value) })}
+                          className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
+                          title="Font Size"
+                        />
+                      </div>
                       
                       {/* Weight Control */}
-                      <select
-                        value={(selectedElementData as TextElement).fontWeight || 'normal'}
-                        onChange={(e) => updateSelectedElement({ fontWeight: e.target.value })}
-                        className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
-                        title="Font Weight"
-                      >
-                        <option value="normal">N</option>
-                        <option value="bold">B</option>
-                        <option value="600">S</option>
-                        <option value="300">L</option>
-                      </select>
-                      
-                      {/* Text Color */}
-                      <input
-                        type="color"
-                        value={(selectedElementData as TextElement).color || '#000000'}
-                        onChange={(e) => updateSelectedElement({ color: e.target.value })}
-                        className="w-6 h-6 border border-gray-300 rounded cursor-pointer"
-                        title="Text Color"
-                      />
-                      
-                      {/* Background Color */}
-                      <input
-                        type="color"
-                        value={(selectedElementData as TextElement).backgroundColor || '#ffffff'}
-                        onChange={(e) => updateSelectedElement({ backgroundColor: e.target.value })}
-                        className="w-6 h-6 border border-gray-300 rounded cursor-pointer"
-                        title="Background Color"
-                      />
-                      
-                      {/* Align Controls - 3 buttons spanning next row */}
-                      {['left', 'center', 'right'].map((align) => (
-                        <button
-                          key={align}
-                          onClick={() => updateSelectedElement({ textAlign: align })}
-                          className={`px-1 py-0.5 text-xs rounded ${
-                            (selectedElementData as TextElement).textAlign === align
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                          }`}
-                          title={`Align ${align}`}
+                      <div>
+                        <select
+                          value={(selectedElementData as TextElement).fontWeight || 'normal'}
+                          onChange={(e) => updateSelectedElement({ fontWeight: e.target.value })}
+                          className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
+                          title="Font Weight"
                         >
-                          {align[0].toUpperCase()}
-                        </button>
-                      ))}
+                          <option value="normal">Normal</option>
+                          <option value="bold">Bold</option>
+                          <option value="600">Semi</option>
+                          <option value="300">Light</option>
+                        </select>
+                      </div>
                       
-                      {/* Empty cell to fill the grid */}
-                      <div></div>
+                      {/* Align Control */}
+                      <div>
+                        <select
+                          value={(selectedElementData as TextElement).textAlign || 'left'}
+                          onChange={(e) => updateSelectedElement({ textAlign: e.target.value })}
+                          className="w-full px-1 py-0.5 border border-gray-300 rounded text-xs"
+                          title="Text Align"
+                        >
+                          <option value="left">Left</option>
+                          <option value="center">Center</option>
+                          <option value="right">Right</option>
+                        </select>
+                      </div>
+                      
+                      {/* Color Controls Container */}
+                      <div className="flex gap-1">
+                        {/* Text Color */}
+                        <input
+                          type="color"
+                          value={(selectedElementData as TextElement).color || '#000000'}
+                          onChange={(e) => updateSelectedElement({ color: e.target.value })}
+                          className="w-6 h-6 border border-gray-300 rounded cursor-pointer"
+                          title="Text Color"
+                        />
+                        
+                        {/* Background Color */}
+                        <input
+                          type="color"
+                          value={(selectedElementData as TextElement).backgroundColor || '#ffffff'}
+                          onChange={(e) => updateSelectedElement({ backgroundColor: e.target.value })}
+                          className="w-6 h-6 border border-gray-300 rounded cursor-pointer"
+                          title="Background Color"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
