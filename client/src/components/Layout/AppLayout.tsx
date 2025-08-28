@@ -90,7 +90,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-140 lg:hidden"
+          className="fixed inset-0 bg-card bg-opacity-50 z-140 lg:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
@@ -99,7 +99,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
       <div className="lg:pl-100 relative z-10">
         <div
-          className={`fixed inset-y-0 left-0 z-50 w-64 theme-bg-card backdrop-blur-lg border-r border-white/0 transform ${
+          className={`fixed inset-y-0 left-0 z-50 w-64 bg-card backdrop-blur-lg border-r border-white/0 transform ${
             isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
           } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 lg:w-auto`}
         >
