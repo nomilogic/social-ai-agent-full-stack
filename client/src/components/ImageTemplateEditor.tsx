@@ -30,6 +30,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [logoImages, setLogoImages] = useState<{[key: string]: HTMLImageElement}>({});
 
   // Utility function to convert hex color to rgba with opacity
   const hexToRgba = (hex: string, opacity: number = 1): string => {
@@ -255,6 +256,93 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
       context.textAlign = 'center';
       context.textBaseline = 'middle';
       context.fillText('Logo', element.x, element.y);
+    } else {
+      // Draw logo image
+      const logoImg = logoImages[element.src];
+      if (logoImg) {
+        context.save();
+        
+        // Apply opacity
+        context.globalAlpha = element.opacity || 1;
+        
+        // Create clipping path for border radius if specified
+        if (element.borderRadius && element.borderRadius > 0) {
+          context.beginPath();
+          const x = element.x - element.width/2;
+          const y = element.y - element.height/2;
+          const radius = element.borderRadius;
+          
+          context.moveTo(x + radius, y);
+          context.lineTo(x + element.width - radius, y);
+          context.quadraticCurveTo(x + element.width, y, x + element.width, y + radius);
+          context.lineTo(x + element.width, y + element.height - radius);
+          context.quadraticCurveTo(x + element.width, y + element.height, x + element.width - radius, y + element.height);
+          context.lineTo(x + radius, y + element.height);
+          context.quadraticCurveTo(x, y + element.height, x, y + element.height - radius);
+          context.lineTo(x, y + radius);
+          context.quadraticCurveTo(x, y, x + radius, y);
+          context.closePath();
+          context.clip();
+        }
+        
+        // Draw the image
+        context.drawImage(
+          logoImg,
+          element.x - element.width/2,
+          element.y - element.height/2,
+          element.width,
+          element.height
+        );
+        
+        context.restore();
+      } else {
+        // Image is loading or failed to load, try to load it
+        const img = new Image();
+        img.onload = () => {
+          setLogoImages(prev => ({
+            ...prev,
+            [element.src!]: img
+          }));
+          // Redraw canvas after image loads
+          if (ctx) {
+            if (backgroundImage) {
+              redrawCanvas(ctx, backgroundImage, elements);
+            } else {
+              redrawCanvasWithoutBackground(ctx, elements);
+            }
+          }
+        };
+        
+        img.onerror = (error) => {
+          console.error('Failed to load logo image:', element.src, error);
+        };
+        
+        // Only set crossOrigin for external URLs
+        if (!element.src.startsWith('blob:') && !element.src.startsWith('data:')) {
+          img.crossOrigin = 'anonymous';
+        }
+        
+        img.src = element.src;
+        
+        // Draw loading placeholder while image loads
+        context.strokeStyle = '#d1d5db';
+        context.lineWidth = 1;
+        context.setLineDash([5, 5]);
+        context.strokeRect(
+          element.x - element.width/2,
+          element.y - element.height/2,
+          element.width,
+          element.height
+        );
+        context.setLineDash([]);
+        
+        // Draw loading text
+        context.fillStyle = '#9ca3af';
+        context.font = '12px Arial';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillText('Loading...', element.x, element.y);
+      }
     }
   };
 
