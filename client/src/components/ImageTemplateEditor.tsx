@@ -810,7 +810,15 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
     
     setIsSaving(true);
     
+    // Store current selection to restore later
+    const currentSelection = selectedElement;
+    
     try {
+      // Temporarily clear selection to avoid border in exported image
+      setSelectedElement(null);
+      
+      // Wait for the canvas to redraw without selection border
+      await new Promise(resolve => setTimeout(resolve, 50));
       // First create blob URL for immediate use
       const blob = await new Promise<Blob>((resolve) => {
         canvas.toBlob((blob) => {
@@ -855,6 +863,10 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
       console.error('Error exporting template image:', error);
     } finally {
       setIsSaving(false);
+      // Restore the selection after export is complete
+      if (currentSelection) {
+        setSelectedElement(currentSelection);
+      }
     }
   };
 
@@ -897,7 +909,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
         </div>
 
         {/* Properties Panel */}
-        <div className="w-full lg:w-64 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 p-3 overflow-y-auto">
+        <div className="w-full bg-white border-t lg:border-t-0 lg:border-l border-gray-200 p-3 overflow-y-auto">
           <div className="space-y-3">
             {/* Header */}
             <div className="flex items-center justify-between mb-0">
