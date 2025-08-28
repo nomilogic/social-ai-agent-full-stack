@@ -244,7 +244,17 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   };
 
   const drawLogoElement = (context: CanvasRenderingContext2D, element: LogoElement) => {
+    console.log('🇺 Logo Element Debug:', {
+      id: element.id,
+      src: element.src,
+      position: { x: element.x, y: element.y },
+      dimensions: { width: element.width, height: element.height },
+      hasImageInCache: element.src ? !!logoImages[element.src] : false,
+      logoImagesKeys: Object.keys(logoImages)
+    });
+    
     if (!element.src) {
+      console.log('💷 Drawing placeholder for logo element (no src)');
       // Draw placeholder
       context.strokeStyle = '#d1d5db';
       context.lineWidth = 2;
@@ -281,6 +291,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
       // Draw logo image
       const logoImg = logoImages[element.src];
       if (logoImg) {
+        console.log('✅ Drawing actual logo image from cache');
         context.save();
         
         // Apply opacity
@@ -317,15 +328,22 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
         
         context.restore();
       } else {
+        console.log('🔄 Logo image not in cache, attempting to load:', element.src);
         // Image is loading or failed to load, try to load it
         const img = new Image();
         img.onload = () => {
-          setLogoImages(prev => ({
-            ...prev,
-            [element.src!]: img
-          }));
+          console.log('✅ Logo image loaded successfully, adding to cache:', element.src);
+          setLogoImages(prev => {
+            const newLogoImages = {
+              ...prev,
+              [element.src!]: img
+            };
+            console.log('📊 Updated logoImages cache:', Object.keys(newLogoImages));
+            return newLogoImages;
+          });
           // Redraw canvas after image loads
           if (ctx) {
+            console.log('🎨 Triggering canvas redraw after logo load');
             if (backgroundImage) {
               redrawCanvas(ctx, backgroundImage, elements);
             } else {
@@ -335,7 +353,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
         };
         
         img.onerror = (error) => {
-          console.error('Failed to load logo image:', element.src, error);
+          console.error('❌ Failed to load logo image:', element.src, error);
         };
         
         // Only set crossOrigin for external URLs
@@ -343,9 +361,11 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
           img.crossOrigin = 'anonymous';
         }
         
+        console.log('🔎 Starting to load logo image:', element.src);
         img.src = element.src;
         
         // Draw loading placeholder while image loads
+        console.log('📄 Drawing loading placeholder for logo');
         context.strokeStyle = '#d1d5db';
         context.lineWidth = 1;
         context.setLineDash([5, 5]);
@@ -558,11 +578,18 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   };
 
   const updateSelectedElement = (updates: Partial<TemplateElement>) => {
-    if (!selectedElement) return;
+    if (!selectedElement) {
+      console.log('❌ No selected element to update');
+      return;
+    }
+    
+    console.log('🔄 Updating element:', selectedElement, 'Updates:', updates);
     
     setElements(prev => prev.map(element => {
       if (element.id === selectedElement) {
-        return { ...element, ...updates };
+        const updatedElement = { ...element, ...updates };
+        console.log('✅ Element updated:', updatedElement);
+        return updatedElement;
       }
       return element;
     }));
@@ -681,28 +708,42 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
 
   // Logo upload function
   const handleLogoUpload = async (file: File) => {
-    if (!selectedElement) return;
+    if (!selectedElement) {
+      console.log('❌ No selected element for logo upload');
+      return;
+    }
     const element = elements.find(el => el.id === selectedElement);
-    if (!element || element.type !== 'logo') return;
+    if (!element || element.type !== 'logo') {
+      console.log('❌ Selected element is not a logo element:', element?.type);
+      return;
+    }
 
+    console.log('🚀 Starting logo upload for element:', selectedElement, 'File:', file.name);
     setLogoUploading(true);
     try {
       const user = await getCurrentUser();
       if (user?.user?.id) {
+        console.log('📤 Uploading logo to server...');
         const logoUrl = await uploadMedia(file, user.user.id);
+        console.log('✅ Logo uploaded successfully:', logoUrl);
         updateSelectedElement({ src: logoUrl });
       } else {
         // Fallback to local URL
+        console.log('🔄 No user found, using local URL fallback');
         const localUrl = URL.createObjectURL(file);
+        console.log('📎 Created local URL:', localUrl);
         updateSelectedElement({ src: localUrl });
       }
     } catch (error) {
-      console.error('Error uploading logo:', error);
+      console.error('❌ Error uploading logo:', error);
       // Fallback to local URL
+      console.log('🔄 Using local URL fallback due to upload error');
       const localUrl = URL.createObjectURL(file);
+      console.log('📎 Created fallback local URL:', localUrl);
       updateSelectedElement({ src: localUrl });
     } finally {
       setLogoUploading(false);
+      console.log('🏁 Logo upload process completed');
     }
   };
 
