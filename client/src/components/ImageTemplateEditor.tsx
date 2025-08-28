@@ -249,16 +249,30 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
       src: element.src,
       position: { x: element.x, y: element.y },
       dimensions: { width: element.width, height: element.height },
+      opacity: element.opacity,
       hasImageInCache: element.src ? !!logoImages[element.src] : false,
       logoImagesKeys: Object.keys(logoImages)
     });
     
+    // Apply element opacity to context
+    context.save();
+    context.globalAlpha = element.opacity || 1;
+    
     if (!element.src) {
       console.log('💷 Drawing placeholder for logo element (no src)');
-      // Draw placeholder
-      context.strokeStyle = '#d1d5db';
+      // Draw a more visible placeholder background
+      context.fillStyle = 'rgba(209, 213, 219, 0.3)'; // Light gray background
+      context.fillRect(
+        element.x - element.width/2,
+        element.y - element.height/2,
+        element.width,
+        element.height
+      );
+      
+      // Draw placeholder border
+      context.strokeStyle = '#9ca3af';
       context.lineWidth = 2;
-      context.setLineDash([10, 10]);
+      context.setLineDash([8, 4]);
       
       if (element.borderRadius && element.borderRadius > 0) {
         drawRoundedRect(
@@ -281,21 +295,22 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
       
       context.setLineDash([]);
       
-      // Draw "Logo" text
-      context.fillStyle = '#9ca3af';
-      context.font = '14px Arial';
+      // Draw "Logo" text more visibly
+      context.fillStyle = '#6b7280';
+      context.font = 'bold 16px Arial';
       context.textAlign = 'center';
       context.textBaseline = 'middle';
       context.fillText('Logo', element.x, element.y);
+      
+      // Draw upload hint
+      context.fillStyle = '#9ca3af';
+      context.font = '12px Arial';
+      context.fillText('Click to upload', element.x, element.y + 20);
     } else {
       // Draw logo image
       const logoImg = logoImages[element.src];
       if (logoImg) {
         console.log('✅ Drawing actual logo image from cache');
-        context.save();
-        
-        // Apply opacity
-        context.globalAlpha = element.opacity || 1;
         
         // Create clipping path for border radius if specified
         if (element.borderRadius && element.borderRadius > 0) {
@@ -325,50 +340,78 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
           element.width,
           element.height
         );
-        
-        context.restore();
       } else {
         console.log('🔄 Logo image not in cache, attempting to load:', element.src);
-        // Image is loading or failed to load, try to load it
-        const img = new Image();
-        img.onload = () => {
-          console.log('✅ Logo image loaded successfully, adding to cache:', element.src);
-          setLogoImages(prev => {
-            const newLogoImages = {
-              ...prev,
-              [element.src!]: img
-            };
-            console.log('📊 Updated logoImages cache:', Object.keys(newLogoImages));
-            return newLogoImages;
-          });
-          // Redraw canvas after image loads
-          if (ctx) {
-            console.log('🎨 Triggering canvas redraw after logo load');
-            if (backgroundImage) {
-              redrawCanvas(ctx, backgroundImage, elements);
-            } else {
-              redrawCanvasWithoutBackground(ctx, elements);
-            }
+        
+        // Check if we're already trying to load this image
+        if (!logoImages[`loading-${element.src}`]) {
+          // Mark as loading to prevent multiple load attempts
+          setLogoImages(prev => ({
+            ...prev,
+            [`loading-${element.src}`]: new Image() // Placeholder to mark as loading
+          }));
+          
+          // Image is loading or failed to load, try to load it
+          const img = new Image();
+          img.onload = () => {
+            console.log('✅ Logo image loaded successfully, adding to cache:', element.src);
+            setLogoImages(prev => {
+              const newLogoImages = { ...prev };
+              // Remove loading marker and add actual image
+              delete newLogoImages[`loading-${element.src}`];
+              newLogoImages[element.src!] = img;
+              console.log('📊 Updated logoImages cache:', Object.keys(newLogoImages));
+              return newLogoImages;
+            });
+            
+            // Redraw canvas after image loads
+            setTimeout(() => {
+              if (ctx) {
+                console.log('🎨 Triggering canvas redraw after logo load');
+                if (backgroundImage) {
+                  redrawCanvas(ctx, backgroundImage, elements);
+                } else {
+                  redrawCanvasWithoutBackground(ctx, elements);
+                }
+              }
+            }, 10); // Small delay to ensure state update
+          };
+          
+          img.onerror = (error) => {
+            console.error('❌ Failed to load logo image:', element.src, error);
+            // Remove loading marker on error
+            setLogoImages(prev => {
+              const newLogoImages = { ...prev };
+              delete newLogoImages[`loading-${element.src}`];
+              return newLogoImages;
+            });
+          };
+          
+          // Only set crossOrigin for external URLs
+          if (!element.src.startsWith('blob:') && !element.src.startsWith('data:')) {
+            img.crossOrigin = 'anonymous';
           }
-        };
-        
-        img.onerror = (error) => {
-          console.error('❌ Failed to load logo image:', element.src, error);
-        };
-        
-        // Only set crossOrigin for external URLs
-        if (!element.src.startsWith('blob:') && !element.src.startsWith('data:')) {
-          img.crossOrigin = 'anonymous';
+          
+          console.log('🔎 Starting to load logo image:', element.src);
+          img.src = element.src;
         }
-        
-        console.log('🔎 Starting to load logo image:', element.src);
-        img.src = element.src;
         
         // Draw loading placeholder while image loads
         console.log('📄 Drawing loading placeholder for logo');
-        context.strokeStyle = '#d1d5db';
-        context.lineWidth = 1;
-        context.setLineDash([5, 5]);
+        
+        // Draw semi-transparent background
+        context.fillStyle = 'rgba(59, 130, 246, 0.1)';
+        context.fillRect(
+          element.x - element.width/2,
+          element.y - element.height/2,
+          element.width,
+          element.height
+        );
+        
+        // Draw loading border
+        context.strokeStyle = '#3b82f6';
+        context.lineWidth = 2;
+        context.setLineDash([4, 4]);
         context.strokeRect(
           element.x - element.width/2,
           element.y - element.height/2,
@@ -378,13 +421,15 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
         context.setLineDash([]);
         
         // Draw loading text
-        context.fillStyle = '#9ca3af';
-        context.font = '12px Arial';
+        context.fillStyle = '#3b82f6';
+        context.font = 'bold 14px Arial';
         context.textAlign = 'center';
         context.textBaseline = 'middle';
         context.fillText('Loading...', element.x, element.y);
       }
     }
+    
+    context.restore();
   };
 
   const drawShapeElement = (context: CanvasRenderingContext2D, element: ShapeElement) => {
