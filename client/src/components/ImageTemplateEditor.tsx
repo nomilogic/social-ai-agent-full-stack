@@ -29,7 +29,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   const [backgroundImage, setBackgroundImage] = useState<HTMLImageElement | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isLocked, setIsLocked] = useState(false);
+  const [lockedElements, setLockedElements] = useState<Set<string>>(new Set());
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoImages, setLogoImages] = useState<{[key: string]: HTMLImageElement}>({});  
   const [isResizing, setIsResizing] = useState(false);
@@ -570,6 +570,25 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
     context.fill();
   };
 
+  // Locking functionality
+  const isElementLocked = (elementId: string | null): boolean => {
+    return elementId ? lockedElements.has(elementId) : false;
+  };
+  
+  const toggleElementLock = () => {
+    if (!selectedElement) return;
+    
+    setLockedElements(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(selectedElement)) {
+        newSet.delete(selectedElement);
+      } else {
+        newSet.add(selectedElement);
+      }
+      return newSet;
+    });
+  };
+
   // Generic function to get coordinates from mouse or touch events (accounting for zoom)
   const getEventCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!canvas) return { x: 0, y: 0 };
@@ -642,15 +661,15 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
 
   // Mouse event handlers
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    console.log('🖱️ Canvas click event', { isLocked, selectedElement, isDragging });
-    if (isLocked) return; // Don't allow selection when locked
+    console.log('🖱️ Canvas click event', { selectedElement, isDragging });
     const { x, y } = getEventCoordinates(e);
     const selected = handleElementSelection(x, y);
     console.log('👆 Element selection result:', selected);
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    console.log('⬇️ Mouse down event', { isLocked, selectedElement, isDragging });
+    console.log('⬇️ Mouse down event', { isElementLocked: isElementLocked(selectedElement), selectedElement, isDragging });
+    const isLocked = isElementLocked(selectedElement);
     if (isLocked || !selectedElement) {
       console.log('❌ Mouse down blocked:', { isLocked, selectedElement });
       return; // Don't allow dragging when locked
@@ -664,6 +683,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   };
 
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const isLocked = isElementLocked(selectedElement);
     if (isLocked) return; // Don't allow dragging when locked
     if (isDragging) {
       console.log('🔄 Dragging element:', selectedElement, { x: getEventCoordinates(e).x, y: getEventCoordinates(e).y });
@@ -684,20 +704,23 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   // Touch event handlers
   const handleCanvasTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    if (isLocked) return; // Don't allow interaction when locked
     
     const { x, y } = getEventCoordinates(e);
     
     if (handleElementSelection(x, y)) {
-      setIsDragging(true);
-      
-      // Apply CSS class to prevent scrolling smoothly
-      document.body.classList.add('drag-no-scroll');
+      const newIsLocked = isElementLocked(selectedElement);
+      if (!newIsLocked) {
+        setIsDragging(true);
+        
+        // Apply CSS class to prevent scrolling smoothly
+        document.body.classList.add('drag-no-scroll');
+      }
     }
   };
 
   const handleCanvasTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
+    const isLocked = isElementLocked(selectedElement);
     if (isLocked) return; // Don't allow dragging when locked
     
     const { x, y } = getEventCoordinates(e);
@@ -984,7 +1007,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
         {/* Desktop: Tools left (30%), Canvas right (70%) */}
         
         {/* Canvas Area */}
-        <div className="order-1 lg:order-2 flex-1 lg:w-0 bg-gray-50 flex flex-col relative min-h-0">
+        <div className="order-1 lg:order-2 flex-1 lg:w-0 bg-gray-50 flex flex-col relative min-h-[35vh] fixed">
           {/* Canvas Controls */}
           <div className="flex-shrink-0 p-4 bg-white border-b border-gray-200">
             <div className="flex items-center justify-between">
@@ -1039,7 +1062,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
             <div 
               className="flex items-center justify-center"
               style={{
-                transform: `scale(${zoomLevel})`,
+                zoom: `${zoomLevel}`,
                 transformOrigin: 'center center'
               }}
             >
@@ -1083,7 +1106,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
               {/* Element Creation Toolbar */}
               <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
                 <h4 className="text-sm font-semibold text-gray-700 mb-3">Add Elements</h4>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   <button
                     onClick={createNewTextElement}
                     className="p-2 lg:p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 flex flex-col items-center justify-center space-y-1 transition-colors min-h-16"
@@ -1130,11 +1153,11 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                     {/* Element Control Buttons */}
                     <div className="flex items-center space-x-1">
                       <button
-                        onClick={() => setIsLocked(!isLocked)}
-                        className={`p-2 rounded-lg ${isLocked ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'} hover:bg-opacity-80 transition-colors`}
-                        title={isLocked ? 'Unlock' : 'Lock'}
+                        onClick={toggleElementLock}
+                        className={`p-2 rounded-lg ${isElementLocked(selectedElement) ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'} hover:bg-opacity-80 transition-colors`}
+                        title={isElementLocked(selectedElement) ? 'Unlock Element' : 'Lock Element'}
                       >
-                        {isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                        {isElementLocked(selectedElement) ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
                       </button>
                       <button
                         onClick={deleteSelectedElement}
@@ -1180,30 +1203,50 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                       </button>
                     </div>
                   </div>
-                  {/* Size Controls - Universal for all elements */}
-                  <div className="grid grid-cols-2 gap-2.5 mb-4">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1.5">Width</label>
-                          <input
-                            type="number"
-                            value={selectedElementData.width || 100}
-                            onChange={(e) => updateSelectedElement({ width: parseInt(e.target.value) })}
-                            className="w-full px-2.5 py-1.5 border border-gray-300 rounded-md text-sm"
-                            min="10"
-                            max="800"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1.5">Height</label>
-                          <input
-                            type="number"
-                            value={selectedElementData.height || 100}
-                            onChange={(e) => updateSelectedElement({ height: parseInt(e.target.value) })}
-                            className="w-full px-2.5 py-1.5 border border-gray-300 rounded-md text-sm"
-                            min="10"
-                            max="600"
-                          />
-                        </div>
+                  {/* W H X Y Controls in one row */}
+                  <div className="grid grid-cols-4 gap-2 mb-4 text-center">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1 text-center">W</label>
+                      <input
+                        type="number"
+                        value={selectedElementData.width || 100}
+                        onChange={(e) => updateSelectedElement({ width: parseInt(e.target.value) })}
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                        min="1"
+                        disabled={isElementLocked(selectedElement)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1 text-center">H</label>
+                      <input
+                        type="number"
+                        value={selectedElementData.height || 100}
+                        onChange={(e) => updateSelectedElement({ height: parseInt(e.target.value) })}
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                        min="1"
+                        disabled={isElementLocked(selectedElement)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1 text-center">X</label>
+                      <input
+                        type="number"
+                        value={Math.round(selectedElementData.x || 0)}
+                        onChange={(e) => updateSelectedElement({ x: parseInt(e.target.value) })}
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-center"
+                        disabled={isElementLocked(selectedElement)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Y</label>
+                      <input
+                        type="number"
+                        value={Math.round(selectedElementData.y || 0)}
+                        onChange={(e) => updateSelectedElement({ y: parseInt(e.target.value) })}
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                        disabled={isElementLocked(selectedElement)}
+                      />
+                    </div>
                   </div>
 
                   {/* Rotation Control - Universal */}
@@ -1216,6 +1259,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                       value={selectedElementData.rotation || 0}
                       onChange={(e) => updateSelectedElement({ rotation: parseInt(e.target.value) })}
                       className="w-full template-range"
+                      disabled={isElementLocked(selectedElement)}
                     />
                     <div className="flex justify-between text-sm text-gray-500 mt-1">
                       <span>0°</span>
@@ -1323,41 +1367,38 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                         </select>
                       </div>
                       
-                      {/* Typography Controls */}
-                      <div className="grid grid-cols-2 gap-2.5">
+                      {/* Size, Weight, Alignment, Padding in one row */}
+                      <div className="grid grid-cols-4 gap-2 mb-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Font Size</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Size</label>
                           <input
                             type="number"
                             value={(selectedElementData as TextElement).fontSize || 16}
                             onChange={(e) => updateSelectedElement({ fontSize: parseInt(e.target.value) })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                             min="8"
                             max="72"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Weight</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Weight</label>
                           <select
                             value={(selectedElementData as TextElement).fontWeight || 'normal'}
                             onChange={(e) => updateSelectedElement({ fontWeight: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                           >
                             <option value="300">Light</option>
                             <option value="normal">Normal</option>
-                            <option value="600">Semi-Bold</option>
+                            <option value="600">Semi</option>
                             <option value="bold">Bold</option>
                           </select>
                         </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Alignment</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Align</label>
                           <select
                             value={(selectedElementData as TextElement).textAlign || 'left'}
                             onChange={(e) => updateSelectedElement({ textAlign: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                           >
                             <option value="left">Left</option>
                             <option value="center">Center</option>
@@ -1365,7 +1406,22 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Text Color</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Pad</label>
+                          <input
+                            type="number"
+                            value={(selectedElementData as TextElement).padding || 8}
+                            onChange={(e) => updateSelectedElement({ padding: parseInt(e.target.value) })}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                            min="0"
+                            max="50"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Colors in one row */}
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Text</label>
                           <input
                             type="color"
                             value={(selectedElementData as TextElement).color || '#000000'}
@@ -1373,12 +1429,8 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                             className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
                           />
                         </div>
-                      </div>
-
-                      {/* Background Controls */}
-                      <div className="grid grid-cols-2 gap-2.5">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Background Color</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Background</label>
                           <input
                             type="color"
                             value={(selectedElementData as TextElement).backgroundColor || '#ffffff'}
@@ -1386,23 +1438,12 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                             className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
                           />
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Padding</label>
-                          <input
-                            type="number"
-                            value={(selectedElementData as TextElement).padding || 8}
-                            onChange={(e) => updateSelectedElement({ padding: parseInt(e.target.value) })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                            min="0"
-                            max="50"
-                          />
-                        </div>
                       </div>
                       
                       {/* Opacity Controls */}
                       <div className="grid grid-cols-2 gap-2.5">
+
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Text Opacity</label>
                           <input
                             type="range"
                             min="0"
@@ -1417,7 +1458,6 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                           </span>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Background Opacity</label>
                           <input
                             type="range"
                             min="0"
