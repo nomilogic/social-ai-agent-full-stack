@@ -3,6 +3,7 @@ import { Template, TemplateElement, TextElement, LogoElement, ShapeElement } fro
 import { Palette, Type, Upload, Square, Download, Undo, Redo, Loader, ArrowUp, ArrowDown, ChevronUp, ChevronDown, Trash, Lock, Unlock, Circle, Plus } from 'lucide-react';
 import { uploadMedia, getCurrentUser } from '../lib/database';
 import '../styles/drag-prevention.css';
+import '../styles/template-editor.css';
 
 interface ImageTemplateEditorProps {
   imageUrl: string;
@@ -30,10 +31,14 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
-  const [logoImages, setLogoImages] = useState<{[key: string]: HTMLImageElement}>({});
+  const [logoImages, setLogoImages] = useState<{[key: string]: HTMLImageElement}>({});  
   const [isResizing, setIsResizing] = useState(false);
   const [resizeHandle, setResizeHandle] = useState<string | null>(null); // 'nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'
   const [resizeStart, setResizeStart] = useState<{x: number, y: number, width: number, height: number} | null>(null);
+  const [imageDimensions, setImageDimensions] = useState<{width: number, height: number} | null>(null);
+  const [canvasDimensions, setCanvasDimensions] = useState<{width: number, height: number}>({width: 800, height: 800});
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [maxZoom, setMaxZoom] = useState<number>(1);
 
   // Utility function to convert hex color to rgba with opacity
   const hexToRgba = (hex: string, opacity: number = 1): string => {
@@ -41,6 +46,43 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+  };
+
+  // Calculate zoom level to fit canvas in container
+  const calculateZoomLevel = (imageWidth: number, imageHeight: number) => {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // Available space for canvas (accounting for tools panel and padding)
+    let maxWidth, maxHeight;
+    
+    if (viewportWidth < 768) {
+      // Mobile
+      maxWidth = viewportWidth * 0.9;
+      maxHeight = viewportHeight * 0.4;
+    } else if (viewportWidth < 1024) {
+      // Tablet
+      maxWidth = viewportWidth * 0.7;
+      maxHeight = viewportHeight * 0.6;
+    } else {
+      // Desktop (accounting for 320px tools panel)
+      maxWidth = (viewportWidth - 320) * 0.8;
+      maxHeight = viewportHeight * 0.7;
+    }
+    
+    // Calculate zoom to fit image in available space
+    const zoomX = maxWidth / imageWidth;
+    const zoomY = maxHeight / imageHeight;
+    const fitZoom = Math.min(zoomX, zoomY);
+    
+    // Set reasonable zoom limits
+    const minZoom = Math.min(fitZoom, 0.1);
+    const maxZoomLevel = Math.max(fitZoom * 2, 2);
+    
+    return {
+      zoom: Math.max(minZoom, Math.min(fitZoom, 1)), // Start at fit zoom or 100% if smaller
+      maxZoom: maxZoomLevel
+    };
   };
 
   useEffect(() => {
@@ -52,25 +94,11 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
         setCanvas(canvasElement);
         setCtx(context);
         
-        // Set canvas dimensions
-        const dimensions = selectedTemplate?.dimensions || { width: 1080, height: 1080 };
-        canvasElement.width = dimensions.width;
-        canvasElement.height = dimensions.height;
-        
         console.log('Canvas setup complete, image URL:', imageUrl);
         console.log('Selected template:', selectedTemplate);
         console.log('Elements:', elements);
         
-        // Initialize canvas with fallback background immediately
-        context.fillStyle = '#f3f4f6';
-        context.fillRect(0, 0, canvasElement.width, canvasElement.height);
-        
-        // Draw template elements immediately
-        elements.forEach(element => {
-          drawElement(context, element);
-        });
-        
-        // Try to load background image asynchronously (non-blocking)
+        // Try to load background image to get its dimensions
         if (imageUrl) {
           const img = new Image();
           // Only set crossOrigin for external URLs, not for blob URLs or data URLs
@@ -80,17 +108,73 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
           
           img.onload = () => {
             console.log('Background image loaded successfully:', imageUrl);
+            console.log('Image dimensions:', img.width, 'x', img.height);
+            
+            // Store original image dimensions
+            setImageDimensions({ width: img.width, height: img.height });
+            
+            // Set canvas to real image dimensions
+            setCanvasDimensions({ width: img.width, height: img.height });
+            canvasElement.width = img.width;
+            canvasElement.height = img.height;
+            
+            // Calculate zoom level to fit in container
+            const { zoom, maxZoom: maxZoomLevel } = calculateZoomLevel(img.width, img.height);
+            console.log('Calculated zoom level:', zoom, 'Max zoom:', maxZoomLevel);
+            setZoomLevel(zoom);
+            setMaxZoom(maxZoomLevel);
+            
             setBackgroundImage(img);
             redrawCanvas(context, img, elements);
           };
           
           img.onerror = (error) => {
             console.error('Background image failed to load:', imageUrl, error);
-            // Keep the fallback background
+            // Use template dimensions or fallback to square
+            const dimensions = selectedTemplate?.dimensions || { width: 1080, height: 1080 };
+            setImageDimensions(dimensions);
+            setCanvasDimensions(dimensions);
+            canvasElement.width = dimensions.width;
+            canvasElement.height = dimensions.height;
+            
+            // Calculate zoom for fallback dimensions
+            const { zoom, maxZoom: maxZoomLevel } = calculateZoomLevel(dimensions.width, dimensions.height);
+            setZoomLevel(zoom);
+            setMaxZoom(maxZoomLevel);
+            
+            // Initialize canvas with fallback background
+            context.fillStyle = '#f3f4f6';
+            context.fillRect(0, 0, canvasElement.width, canvasElement.height);
+            
+            // Draw template elements immediately
+            elements.forEach(element => {
+              drawElement(context, element);
+            });
           };
           
           console.log('Attempting to load background image:', imageUrl);
           img.src = imageUrl;
+        } else {
+          // No image URL, use template dimensions or fallback
+          const dimensions = selectedTemplate?.dimensions || { width: 1080, height: 1080 };
+          setImageDimensions(dimensions);
+          setCanvasDimensions(dimensions);
+          canvasElement.width = dimensions.width;
+          canvasElement.height = dimensions.height;
+          
+          // Calculate zoom for fallback dimensions
+          const { zoom, maxZoom: maxZoomLevel } = calculateZoomLevel(dimensions.width, dimensions.height);
+          setZoomLevel(zoom);
+          setMaxZoom(maxZoomLevel);
+          
+          // Initialize canvas with fallback background
+          context.fillStyle = '#f3f4f6';
+          context.fillRect(0, 0, canvasElement.width, canvasElement.height);
+          
+          // Draw template elements immediately
+          elements.forEach(element => {
+            drawElement(context, element);
+          });
         }
       }
     }
@@ -113,7 +197,8 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
     // Clear canvas
     context.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Draw background image
+    // Draw background image to fill the entire canvas while maintaining aspect ratio
+    // The canvas dimensions should already match the image aspect ratio from calculateCanvasDimensions
     context.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
     
     // Draw elements sorted by zIndex
@@ -485,13 +570,11 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
     context.fill();
   };
 
-  // Generic function to get coordinates from mouse or touch events
+  // Generic function to get coordinates from mouse or touch events (accounting for zoom)
   const getEventCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!canvas) return { x: 0, y: 0 };
     
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
     
     let clientX, clientY;
     if ('touches' in e) {
@@ -511,8 +594,9 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
       clientY = e.clientY;
     }
     
-    const x = (clientX - rect.left) * scaleX;
-    const y = (clientY - rect.top) * scaleY;
+    // Account for zoom level in coordinate calculation
+    const x = (clientX - rect.left) / zoomLevel;
+    const y = (clientY - rect.top) / zoomLevel;
     
     return { x, y };
   };
@@ -692,15 +776,19 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   const createNewTextElement = () => {
     if (!canvas) return;
     
+    // Use responsive sizing based on canvas dimensions
+    const fontSize = Math.max(16, Math.min(32, canvas.width / 30));
+    const width = Math.min(200, canvas.width * 0.4);
+    
     const newElement: TextElement = {
       id: `text-${Date.now()}`,
       type: 'text',
       x: canvas.width / 2,
       y: canvas.height / 2,
-      width: 200,
-      height: 40,
+      width: width,
+      height: fontSize * 1.5,
       content: 'New Text',
-      fontSize: 24,
+      fontSize: fontSize,
       fontWeight: 'normal',
       fontFamily: 'Arial',
       color: '#000000',
@@ -720,13 +808,16 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   const createNewShapeElement = (shape: 'rectangle' | 'circle') => {
     if (!canvas) return;
     
+    // Use responsive sizing based on canvas dimensions
+    const size = Math.min(100, canvas.width * 0.15);
+    
     const newElement: ShapeElement = {
       id: `shape-${Date.now()}`,
       type: 'shape',
       x: canvas.width / 2,
       y: canvas.height / 2,
-      width: 100,
-      height: shape === 'circle' ? 100 : 60,
+      width: size,
+      height: shape === 'circle' ? size : size * 0.6,
       shape,
       color: '#3b82f6',
       opacity: 1,
@@ -740,13 +831,16 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   const createNewLogoElement = () => {
     if (!canvas) return;
     
+    // Use responsive sizing based on canvas dimensions
+    const size = Math.min(80, canvas.width * 0.1);
+    
     const newElement: LogoElement = {
       id: `logo-${Date.now()}`,
       type: 'logo',
       x: canvas.width / 2,
       y: canvas.height / 2,
-      width: 80,
-      height: 80,
+      width: size,
+      height: size,
       src: '',
       opacity: 1,
       borderRadius: 0,
@@ -884,450 +978,561 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center p-2">
-      <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full overflow-hidden flex flex-col lg:flex-row">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex">
+      <div className="bg-white w-full h-full flex flex-col lg:flex-row overflow-hidden">
+        {/* Mobile: Canvas at top, Tools below */}
+        {/* Desktop: Tools left (30%), Canvas right (70%) */}
+        
         {/* Canvas Area */}
-        <div className="flex-0 p-3 flex items-center justify-center bg-gray-50">
-          <canvas
-            ref={canvasRef}
-            onClick={handleCanvasClick}
-            onMouseDown={handleCanvasMouseDown}
-            onMouseMove={handleCanvasMouseMove}
-            onMouseUp={handleCanvasMouseUp}
-            onMouseLeave={handleCanvasMouseUp}
-            onTouchStart={handleCanvasTouchStart}
-            onTouchMove={handleCanvasTouchMove}
-            onTouchEnd={handleCanvasTouchEnd}
-            className="border border-gray-200 rounded cursor-pointer max-w-full max-h-full"
-            style={{ 
-              maxWidth: '400px', 
-              maxHeight: '400px',
-              width: 'auto',
-              height: 'auto'
-            }}
-          />
+        <div className="order-1 lg:order-2 flex-1 lg:w-0 bg-gray-50 flex flex-col relative min-h-0">
+          {/* Canvas Controls */}
+          <div className="flex-shrink-0 p-4 bg-white border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              {/* Canvas Info */}
+              <div className="text-xs text-gray-600 font-mono">
+                {imageDimensions && (
+                  <span>{imageDimensions.width} × {imageDimensions.height} | {Math.round(zoomLevel * 100)}%</span>
+                )}
+              </div>
+              
+              {/* Zoom Controls */}
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setZoomLevel(Math.max(0.1, zoomLevel - 0.1))}
+                  className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
+                  disabled={zoomLevel <= 0.1}
+                >
+                  −
+                </button>
+                <span className="text-xs text-gray-600 min-w-12 text-center">
+                  {Math.round(zoomLevel * 100)}%
+                </span>
+                <button
+                  onClick={() => setZoomLevel(Math.min(maxZoom, zoomLevel + 0.1))}
+                  className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
+                  disabled={zoomLevel >= maxZoom}
+                >
+                  +
+                </button>
+                <button
+                  onClick={() => {
+                    if (imageDimensions) {
+                      const { zoom } = calculateZoomLevel(imageDimensions.width, imageDimensions.height);
+                      setZoomLevel(zoom);
+                    }
+                  }}
+                  className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors ml-2"
+                >
+                  Fit
+                </button>
+                <button
+                  onClick={() => setZoomLevel(1)}
+                  className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
+                >
+                  100%
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex-1 overflow-auto bg-gray-100 flex items-center justify-center min-h-0 p-4">
+            <div 
+              className="flex items-center justify-center"
+              style={{
+                transform: `scale(${zoomLevel})`,
+                transformOrigin: 'center center'
+              }}
+            >
+              <canvas
+                ref={canvasRef}
+                onClick={handleCanvasClick}
+                onMouseDown={handleCanvasMouseDown}
+                onMouseMove={handleCanvasMouseMove}
+                onMouseUp={handleCanvasMouseUp}
+                onMouseLeave={handleCanvasMouseUp}
+                onTouchStart={handleCanvasTouchStart}
+                onTouchMove={handleCanvasTouchMove}
+                onTouchEnd={handleCanvasTouchEnd}
+                className="border-2 border-gray-300 rounded-lg shadow-2xl cursor-pointer bg-white transition-all duration-200"
+                style={{ 
+                  width: `${canvasDimensions.width}px`,
+                  height: `${canvasDimensions.height}px`
+                }}
+              />
+            </div>
+          </div>
         </div>
 
-        {/* Properties Panel */}
-        <div className="w-full bg-white border-t lg:border-t-0 lg:border-l border-gray-200 p-3 overflow-y-auto">
-          <div className="space-y-3">
+        {/* Tools Panel - Scrollable */}
+        <div className="order-2 lg:order-1 w-full lg:w-80 lg:min-w-80 lg:max-w-80 bg-white border-t lg:border-t-0 lg:border-r border-gray-200 flex flex-col h-full">
+          <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-white">
             {/* Header */}
-            <div className="flex items-center justify-between mb-0">
-              <h3 className="text-xs font-medium text-gray-900">Template Editor</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Template Editor</h3>
               <button
                 onClick={onCancel}
-                className="text-gray-400 hover:text-gray-600 text-sm font-medium"
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold leading-none p-1 hover:bg-gray-100 rounded transition-colors"
               >
                 ×
               </button>
             </div>
-
-            {/* Element Creation Toolbar */}
-            <div className="border border-gray-200 rounded p-2">
-              <h4 className="text-xs font-medium text-gray-700 mb-2">Add Elements</h4>
-              <div className="grid grid-cols-4 gap-1">
-                <button
-                  onClick={createNewTextElement}
-                  className="p-2 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 flex items-center justify-center"
-                  title="Add Text"
-                >
-                  <Type className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={createNewLogoElement}
-                  className="p-2 bg-green-50 text-green-700 rounded hover:bg-green-100 flex items-center justify-center"
-                  title="Add Logo"
-                >
-                  <Upload className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => createNewShapeElement('rectangle')}
-                  className="p-2 bg-purple-50 text-purple-700 rounded hover:bg-purple-100 flex items-center justify-center"
-                  title="Add Rectangle"
-                >
-                  <Square className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => createNewShapeElement('circle')}
-                  className="p-2 bg-orange-50 text-orange-700 rounded hover:bg-orange-100 flex items-center justify-center"
-                  title="Add Circle"
-                >
-                  <Circle className="w-4 h-4" />
-                </button>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-4 min-h-0">
+            <div className="space-y-4">
+              {/* Element Creation Toolbar */}
+              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Add Elements</h4>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                  <button
+                    onClick={createNewTextElement}
+                    className="p-2 lg:p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 flex flex-col items-center justify-center space-y-1 transition-colors min-h-16"
+                    title="Add Text"
+                  >
+                    <Type className="w-4 h-4 lg:w-5 lg:h-5" />
+                    <span className="text-xs font-medium">Text</span>
+                  </button>
+                  <button
+                    onClick={createNewLogoElement}
+                    className="p-2 lg:p-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 flex flex-col items-center justify-center space-y-1 transition-colors min-h-16"
+                    title="Add Logo"
+                  >
+                    <Upload className="w-4 h-4 lg:w-5 lg:h-5" />
+                    <span className="text-xs font-medium">Logo</span>
+                  </button>
+                  <button
+                    onClick={() => createNewShapeElement('rectangle')}
+                    className="p-2 lg:p-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 flex flex-col items-center justify-center space-y-1 transition-colors min-h-16"
+                    title="Add Rectangle"
+                  >
+                    <Square className="w-4 h-4 lg:w-5 lg:h-5" />
+                    <span className="text-xs font-medium">Rectangle</span>
+                  </button>
+                  <button
+                    onClick={() => createNewShapeElement('circle')}
+                    className="p-2 lg:p-3 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 flex flex-col items-center justify-center space-y-1 transition-colors min-h-16"
+                    title="Add Circle"
+                  >
+                    <Circle className="w-4 h-4 lg:w-5 lg:h-5" />
+                    <span className="text-xs font-medium">Circle</span>
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {/* Selected Element Properties */}
-            {selectedElementData && (
-              <div className="border border-gray-200 rounded p-2">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-xs font-medium text-gray-900">
-                    {selectedElementData.type.charAt(0).toUpperCase() + selectedElementData.type.slice(1)}
-                  </h4>
-                  
-                  {/* All Control Buttons */}
-                  <div className="flex items-center space-x-1">
-                    <button
-                      onClick={() => setIsLocked(!isLocked)}
-                      className={`p-1 rounded text-xs ${isLocked ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'} hover:bg-opacity-80`}
-                      title={isLocked ? 'Unlock' : 'Lock'}
-                    >
-                      {isLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
-                    </button>
-                    <button
-                      onClick={deleteSelectedElement}
-                      className="p-1 rounded bg-red-100 text-red-600 hover:bg-red-200 text-xs"
-                      title="Delete"
-                    >
-                      <Trash className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={bringToFront}
-                      className="p-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs"
-                      title="Front"
-                    >
-                      <ChevronUp className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={moveUp}
-                      className="p-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs"
-                      title="Up"
-                    >
-                      <ArrowUp className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={moveDown}
-                      className="p-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs"
-                      title="Down"
-                    >
-                      <ArrowDown className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={sendToBack}
-                      className="p-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs"
-                      title="Back"
-                    >
-                      <ChevronDown className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-                {/* Size Controls - Universal for all elements */}
-                <div className="grid grid-cols-4 gap-2 mb-2">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Width</label>
-                    <input
-                      type="number"
-                      value={selectedElementData.width || 100}
-                      onChange={(e) => updateSelectedElement({ width: parseInt(e.target.value) })}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                      min="10"
-                      max="800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Height</label>
-                    <input
-                      type="number"
-                      value={selectedElementData.height || 100}
-                      onChange={(e) => updateSelectedElement({ height: parseInt(e.target.value) })}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                      min="10"
-                      max="600"
-                    />
-                  </div>
-                </div>
-
-                {/* Rotation Control - Universal */}
-                <div className="mb-2">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Rotation</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="360"
-                    value={selectedElementData.rotation || 0}
-                    onChange={(e) => updateSelectedElement({ rotation: parseInt(e.target.value) })}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <span>0°</span>
-                    <span className="font-medium">{selectedElementData.rotation || 0}°</span>
-                    <span>360°</span>
-                  </div>
-                </div>
-
-                {selectedElementData.type === 'logo' && (
-                  <div className="space-y-2">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Logo</label>
-                      <input
-                        ref={logoInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoFileChange}
-                        className="hidden"
-                      />
+              {/* Selected Element Properties */}
+              {selectedElementData && (
+                <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-sm font-semibold text-gray-900">
+                      {selectedElementData.type.charAt(0).toUpperCase() + selectedElementData.type.slice(1)} Element
+                    </h4>
+                    
+                    {/* Element Control Buttons */}
+                    <div className="flex items-center space-x-1">
                       <button
-                        onClick={() => logoInputRef.current?.click()}
-                        disabled={logoUploading}
-                        className="w-full bg-blue-600 text-white px-2 py-1 rounded text-xs flex items-center justify-center space-x-1 hover:bg-blue-700 disabled:opacity-50"
+                        onClick={() => setIsLocked(!isLocked)}
+                        className={`p-2 rounded-lg ${isLocked ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'} hover:bg-opacity-80 transition-colors`}
+                        title={isLocked ? 'Unlock' : 'Lock'}
                       >
-                        {logoUploading ? (
-                          <>
-                            <Loader className="w-3 h-3 animate-spin" />
-                            <span>Uploading...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="w-3 h-3" />
-                            <span>Upload</span>
-                          </>
-                        )}
+                        {isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                      </button>
+                      <button
+                        onClick={deleteSelectedElement}
+                        className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash className="w-4 h-4" />
                       </button>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
+                  </div>
+
+                  {/* Layer Controls */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Layer Order</label>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      <button
+                        onClick={bringToFront}
+                        className="p-2 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 flex items-center justify-center transition-colors text-xs"
+                        title="Bring to Front"
+                      >
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={moveUp}
+                        className="p-2 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 flex items-center justify-center transition-colors text-xs"
+                        title="Move Up"
+                      >
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={moveDown}
+                        className="p-2 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 flex items-center justify-center transition-colors text-xs"
+                        title="Move Down"
+                      >
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={sendToBack}
+                        className="p-2 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 flex items-center justify-center transition-colors text-xs"
+                        title="Send to Back"
+                      >
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  {/* Size Controls - Universal for all elements */}
+                  <div className="grid grid-cols-2 gap-2.5 mb-4">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">Width</label>
+                          <input
+                            type="number"
+                            value={selectedElementData.width || 100}
+                            onChange={(e) => updateSelectedElement({ width: parseInt(e.target.value) })}
+                            className="w-full px-2.5 py-1.5 border border-gray-300 rounded-md text-sm"
+                            min="10"
+                            max="800"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">Height</label>
+                          <input
+                            type="number"
+                            value={selectedElementData.height || 100}
+                            onChange={(e) => updateSelectedElement({ height: parseInt(e.target.value) })}
+                            className="w-full px-2.5 py-1.5 border border-gray-300 rounded-md text-sm"
+                            min="10"
+                            max="600"
+                          />
+                        </div>
+                  </div>
+
+                  {/* Rotation Control - Universal */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Rotation</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="360"
+                      value={selectedElementData.rotation || 0}
+                      onChange={(e) => updateSelectedElement({ rotation: parseInt(e.target.value) })}
+                      className="w-full template-range"
+                    />
+                    <div className="flex justify-between text-sm text-gray-500 mt-1">
+                      <span>0°</span>
+                      <span className="font-medium">{selectedElementData.rotation || 0}°</span>
+                      <span>360°</span>
+                    </div>
+                  </div>
+
+                  {selectedElementData.type === 'logo' && (
+                    <div className="space-y-4">
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Opacity</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Logo Upload</label>
+                        <input
+                          ref={logoInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoFileChange}
+                          className="hidden"
+                        />
+                        <button
+                          onClick={() => logoInputRef.current?.click()}
+                          disabled={logoUploading}
+                          className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg text-sm flex items-center justify-center space-x-2 hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                        >
+                          {logoUploading ? (
+                            <>
+                              <Loader className="w-4 h-4 animate-spin" />
+                              <span>Uploading...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-4 h-4" />
+                              <span>Upload Logo</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Opacity</label>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.1"
+                            value={(selectedElementData as LogoElement).opacity || 1}
+                            onChange={(e) => updateSelectedElement({ opacity: parseFloat(e.target.value) })}
+                            className="w-full template-range"
+                          />
+                          <span className="text-sm text-gray-600 text-center block mt-1">
+                            {Math.round(((selectedElementData as LogoElement).opacity || 1) * 100)}%
+                          </span>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Border Radius</label>
+                          <input
+                            type="number"
+                            value={(selectedElementData as LogoElement).borderRadius || 0}
+                            onChange={(e) => updateSelectedElement({ borderRadius: parseInt(e.target.value) })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            placeholder="0"
+                            min="0"
+                            max="50"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedElementData.type === 'text' && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Text Content</label>
+                        <textarea
+                          value={(selectedElementData as TextElement).content || ''}
+                          onChange={(e) => updateSelectedElement({ content: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          rows={3}
+                          placeholder="Enter your text..."
+                        />
+                      </div>
+
+                      {/* Font Family Control */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Font Family</label>
+                        <select
+                          value={(selectedElementData as TextElement).fontFamily || 'Arial'}
+                          onChange={(e) => updateSelectedElement({ fontFamily: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        >
+                          <option value="Arial">Arial</option>
+                          <option value="Helvetica">Helvetica</option>
+                          <option value="Times New Roman">Times New Roman</option>
+                          <option value="Georgia">Georgia</option>
+                          <option value="Roboto">Roboto</option>
+                          <option value="Open Sans">Open Sans</option>
+                          <option value="Lato">Lato</option>
+                          <option value="Montserrat">Montserrat</option>
+                          <option value="Source Sans Pro">Source Sans Pro</option>
+                          <option value="Poppins">Poppins</option>
+                          <option value="Inter">Inter</option>
+                          <option value="Playfair Display">Playfair Display</option>
+                          <option value="Oswald">Oswald</option>
+                          <option value="Merriweather">Merriweather</option>
+                        </select>
+                      </div>
+                      
+                      {/* Typography Controls */}
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Font Size</label>
+                          <input
+                            type="number"
+                            value={(selectedElementData as TextElement).fontSize || 16}
+                            onChange={(e) => updateSelectedElement({ fontSize: parseInt(e.target.value) })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            min="8"
+                            max="72"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Weight</label>
+                          <select
+                            value={(selectedElementData as TextElement).fontWeight || 'normal'}
+                            onChange={(e) => updateSelectedElement({ fontWeight: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          >
+                            <option value="300">Light</option>
+                            <option value="normal">Normal</option>
+                            <option value="600">Semi-Bold</option>
+                            <option value="bold">Bold</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Alignment</label>
+                          <select
+                            value={(selectedElementData as TextElement).textAlign || 'left'}
+                            onChange={(e) => updateSelectedElement({ textAlign: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          >
+                            <option value="left">Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Text Color</label>
+                          <input
+                            type="color"
+                            value={(selectedElementData as TextElement).color || '#000000'}
+                            onChange={(e) => updateSelectedElement({ color: e.target.value })}
+                            className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Background Controls */}
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Background Color</label>
+                          <input
+                            type="color"
+                            value={(selectedElementData as TextElement).backgroundColor || '#ffffff'}
+                            onChange={(e) => updateSelectedElement({ backgroundColor: e.target.value })}
+                            className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Padding</label>
+                          <input
+                            type="number"
+                            value={(selectedElementData as TextElement).padding || 8}
+                            onChange={(e) => updateSelectedElement({ padding: parseInt(e.target.value) })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            min="0"
+                            max="50"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Opacity Controls */}
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Text Opacity</label>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.1"
+                            value={(selectedElementData as TextElement).textOpacity || 1}
+                            onChange={(e) => updateSelectedElement({ textOpacity: parseFloat(e.target.value) })}
+                            className="w-full template-range"
+                          />
+                          <span className="text-sm text-gray-600 text-center block mt-1">
+                            {Math.round(((selectedElementData as TextElement).textOpacity || 1) * 100)}%
+                          </span>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Background Opacity</label>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.1"
+                            value={(selectedElementData as TextElement).backgroundOpacity || 1}
+                            onChange={(e) => updateSelectedElement({ backgroundOpacity: parseFloat(e.target.value) })}
+                            className="w-full template-range"
+                          />
+                          <span className="text-sm text-gray-600 text-center block mt-1">
+                            {Math.round(((selectedElementData as TextElement).backgroundOpacity || 1) * 100)}%
+                          </span>
+                        </div>
+                      </div>
+                  </div>
+                )}
+
+                  {selectedElementData.type === 'shape' && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Shape Type</label>
+                          <select
+                            value={(selectedElementData as ShapeElement).shape || 'rectangle'}
+                            onChange={(e) => updateSelectedElement({ shape: e.target.value as 'rectangle' | 'circle' })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          >
+                            <option value="rectangle">Rectangle</option>
+                            <option value="circle">Circle</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
+                          <input
+                            type="color"
+                            value={(selectedElementData as ShapeElement).color || '#3b82f6'}
+                            onChange={(e) => updateSelectedElement({ color: e.target.value })}
+                            className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Opacity</label>
                         <input
                           type="range"
                           min="0"
                           max="1"
                           step="0.1"
-                          value={(selectedElementData as LogoElement).opacity || 1}
+                          value={(selectedElementData as ShapeElement).opacity || 1}
                           onChange={(e) => updateSelectedElement({ opacity: parseFloat(e.target.value) })}
-                          className="w-full h-1"
+                          className="w-full template-range"
                         />
-                        <span className="text-xs text-gray-600">
-                          {Math.round(((selectedElementData as LogoElement).opacity || 1) * 100)}%
-                        </span>
+                        <div className="flex justify-between text-sm text-gray-500 mt-1">
+                          <span>0%</span>
+                          <span className="font-medium">{Math.round(((selectedElementData as ShapeElement).opacity || 1) * 100)}%</span>
+                          <span>100%</span>
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Radius</label>
-                        <input
-                          type="number"
-                          value={(selectedElementData as LogoElement).borderRadius || 0}
-                          onChange={(e) => updateSelectedElement({ borderRadius: parseInt(e.target.value) })}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                          placeholder="0"
-                        />
-                      </div>
+                      
+                      {(selectedElementData as ShapeElement).shape === 'rectangle' && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Corner Radius</label>
+                          <input
+                            type="number"
+                            value={(selectedElementData as ShapeElement).borderRadius || 0}
+                            onChange={(e) => updateSelectedElement({ borderRadius: parseInt(e.target.value) })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            min="0"
+                            max="50"
+                            placeholder="0"
+                          />
+                        </div>
+                      )}
                     </div>
+                  )}
+                </div>
+              )}
+
+              {!selectedElementData && (
+                <div className="text-center py-12 text-gray-500">
+                  <div className="bg-gray-50 rounded-lg p-6">
+                    <Palette className="w-8 h-8 mx-auto mb-3 text-gray-400" />
+                    <p className="text-sm font-medium mb-1">No Element Selected</p>
+                    <p className="text-xs text-gray-400">Click on a template element to edit its properties</p>
                   </div>
-                )}
-
-                {selectedElementData.type === 'text' && (
-                  <div className="space-y-2">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Text Content</label>
-                      <textarea
-                        value={(selectedElementData as TextElement).content || ''}
-                        onChange={(e) => updateSelectedElement({ content: e.target.value })}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                        rows={2}
-                        placeholder="Enter your text..."
-                      />
-                    </div>
-                    
-                    {/* Typography Controls */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Font Size</label>
-                        <input
-                          type="number"
-                          value={(selectedElementData as TextElement).fontSize || 16}
-                          onChange={(e) => updateSelectedElement({ fontSize: parseInt(e.target.value) })}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                          min="8"
-                          max="72"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Weight</label>
-                        <select
-                          value={(selectedElementData as TextElement).fontWeight || 'normal'}
-                          onChange={(e) => updateSelectedElement({ fontWeight: e.target.value })}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                        >
-                          <option value="300">Light</option>
-                          <option value="normal">Normal</option>
-                          <option value="600">Semi-Bold</option>
-                          <option value="bold">Bold</option>
-                        </select>
-                      </div>
-                    </div>
-
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Alignment</label>
-                        <select
-                          value={(selectedElementData as TextElement).textAlign || 'left'}
-                          onChange={(e) => updateSelectedElement({ textAlign: e.target.value })}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                        >
-                          <option value="left">Left</option>
-                          <option value="center">Center</option>
-                          <option value="right">Right</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Text Color</label>
-                        <input
-                          type="color"
-                          value={(selectedElementData as TextElement).color || '#000000'}
-                          onChange={(e) => updateSelectedElement({ color: e.target.value })}
-                          className="w-full h-8 border border-gray-300 rounded cursor-pointer"
-                        />
-                    </div>
-
-                    {/* Background Controls */}
-                    <div className="grid grid-cols-4 gap-2">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">BG Color</label>
-                        <input
-                          type="color"
-                          value={(selectedElementData as TextElement).backgroundColor || '#ffffff'}
-                          onChange={(e) => updateSelectedElement({ backgroundColor: e.target.value })}
-                          className="w-full h-8 border border-gray-300 rounded cursor-pointer"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Padding</label>
-                        <input
-                          type="number"
-                          value={(selectedElementData as TextElement).padding || 8}
-                          onChange={(e) => updateSelectedElement({ padding: parseInt(e.target.value) })}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                          min="0"
-                          max="50"
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Opacity Controls */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Text Opacity</label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="1"
-                          step="0.1"
-                          value={(selectedElementData as TextElement).textOpacity || 1}
-                          onChange={(e) => updateSelectedElement({ textOpacity: parseFloat(e.target.value) })}
-                          className="w-full"
-                        />
-                        <span className="text-xs text-gray-600 text-center block">
-                          {Math.round(((selectedElementData as TextElement).textOpacity || 1) * 100)}%
-                        </span>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">BG Opacity</label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="1"
-                          step="0.1"
-                          value={(selectedElementData as TextElement).backgroundOpacity || 1}
-                          onChange={(e) => updateSelectedElement({ backgroundOpacity: parseFloat(e.target.value) })}
-                          className="w-full"
-                        />
-                        <span className="text-xs text-gray-600 text-center block">
-                          {Math.round(((selectedElementData as TextElement).backgroundOpacity || 1) * 100)}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {selectedElementData.type === 'shape' && (
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Shape</label>
-                        <select
-                          value={(selectedElementData as ShapeElement).shape || 'rectangle'}
-                          onChange={(e) => updateSelectedElement({ shape: e.target.value as 'rectangle' | 'circle' })}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                        >
-                          <option value="rectangle">Rectangle</option>
-                          <option value="circle">Circle</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Color</label>
-                        <input
-                          type="color"
-                          value={(selectedElementData as ShapeElement).color || '#3b82f6'}
-                          onChange={(e) => updateSelectedElement({ color: e.target.value })}
-                          className="w-full h-8 border border-gray-300 rounded cursor-pointer"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Opacity</label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.1"
-                        value={(selectedElementData as ShapeElement).opacity || 1}
-                        onChange={(e) => updateSelectedElement({ opacity: parseFloat(e.target.value) })}
-                        className="w-full"
-                      />
-                      <div className="flex justify-between text-xs text-gray-500">
-                        <span>0%</span>
-                        <span className="font-medium">{Math.round(((selectedElementData as ShapeElement).opacity || 1) * 100)}%</span>
-                        <span>100%</span>
-                      </div>
-                    </div>
-                    
-                    {(selectedElementData as ShapeElement).shape === 'rectangle' && (
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Corner Radius</label>
-                        <input
-                          type="number"
-                          value={(selectedElementData as ShapeElement).borderRadius || 0}
-                          onChange={(e) => updateSelectedElement({ borderRadius: parseInt(e.target.value) })}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                          min="0"
-                          max="50"
-                          placeholder="0"
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {!selectedElementData && (
-              <div className="text-center py-8 text-gray-500">
-                <p className="text-sm">Click on a template element to edit it</p>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="space-y-3">
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Actions - Fixed at bottom */}
+          <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-white mt-auto">
+            <div className="space-y-2.5">
               <button
                 onClick={exportImage}
                 disabled={isSaving}
-                className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                className="w-full bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 font-medium text-sm"
               >
                 {isSaving ? (
                   <>
                     <Loader className="w-4 h-4 animate-spin" />
-                    <span>Saving...</span>
+                    <span>Saving Template...</span>
                   </>
                 ) : (
                   <>
                     <Download className="w-4 h-4" />
-                    <span>Save Template</span>
+                    <span>Save & Apply Template</span>
                   </>
                 )}
               </button>
               
               <button
                 onClick={onCancel}
-                className="w-full bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                className="w-full bg-gray-100 text-gray-700 px-4 py-2.5 rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm"
               >
                 Cancel
               </button>
