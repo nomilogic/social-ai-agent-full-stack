@@ -227,14 +227,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
         {/* Main Content */}
         <main className="py-0">
-          <div className="w-full mx-auto sm:px-0 lg:px-0">
+          <div className="w-full mx-auto sm:px-0 lg:px-0 h-[calc(100vh-64px-40px)] overflow-auto">
             <div className="  p-0 backdrop-blur-sm ">{children}</div>
           </div>
         </main>
 
         {/* Footer */}
-        <footer className="theme-bg-card border-t border-white/20 mt-0">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-4 py-2">
+        <footer className="fixed bottom-0 w-full theme-bg-card border-t border-white/20 mt-0">
+          <div className="w-full mx-auto px-4 sm:px-6 lg:px-4 py-2">
             <div className="text-center">
               <p className="theme-text-secondary text-xs">
                 © 2025 Social AI Agent. Powered by advanced AI for smarter
