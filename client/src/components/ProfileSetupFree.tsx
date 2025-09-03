@@ -10,14 +10,19 @@ export const ProfileSetupFree: React.FC<ProfileSetupFreeProps> = ({ onComplete }
   const { state, dispatch } = useAppContext();
   const [formData, setFormData] = useState({
     name: '',
+    profession: '',
     bio: '',
     location: '',
     website: '',
     contentNiche: '',
-    preferredPlatforms: [] as string[]
+    targetAudience: '',
+    // Campaign fields
+    campaignType: '',
+    campaignGoals: [] as string[]
   });
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData(prev => ({
@@ -37,6 +42,17 @@ export const ProfileSetupFree: React.FC<ProfileSetupFreeProps> = ({ onComplete }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Clear previous errors
+    setError('');
+    
+    // Validate required fields
+    if (!formData.name.trim()) {
+      setError('Name is required');
+      return;
+    }
+    
+
     setLoading(true);
 
     try {
@@ -51,22 +67,28 @@ export const ProfileSetupFree: React.FC<ProfileSetupFreeProps> = ({ onComplete }
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         },
         body: JSON.stringify(profileData),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save profile');
+        const errorData = await response.json().catch(() => ({ error: 'Failed to save profile' }));
+        throw new Error(errorData.error || 'Failed to save profile');
       }
 
+      const result = await response.json();
+      console.log('Profile saved successfully:', result);
+      
       dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: true });
       dispatch({ type: 'SET_SELECTED_PROFILE', payload: profileData as any });
 
       if (onComplete) {
         onComplete();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Profile setup error:', error);
+      setError(error.message || 'Failed to save profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -90,6 +112,44 @@ export const ProfileSetupFree: React.FC<ProfileSetupFreeProps> = ({ onComplete }
     'Education'
   ];
 
+  const professionOptions = [
+    'Content Creator',
+    'Freelancer',
+    'Artist',
+    'Writer',
+    'Photographer',
+    'Designer',
+    'Blogger',
+    'Influencer',
+    'Student',
+    'Small Business Owner',
+    'Consultant',
+    'Coach',
+    'Teacher',
+    'Entrepreneur',
+    'Other'
+  ];
+
+  const postsTypes = [
+    'Personal Brand Building',
+    'Content Portfolio',
+    'Small Business Promotion',
+    'Creative Showcase',
+    'Educational Content',
+    'Community Building',
+    'Product Launch',
+    'Other'
+  ];
+
+  const postsGoalOptions = [
+    'Increase followers',
+    'Build brand awareness',
+    'Showcase work/portfolio',
+    'Connect with audience',
+    'Share knowledge',
+    'Promote products/services'
+  ];
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Header */}
@@ -102,6 +162,14 @@ export const ProfileSetupFree: React.FC<ProfileSetupFreeProps> = ({ onComplete }
           Set up your basic profile to get started with AI content creation
         </p>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-sm text-red-700 font-medium">Error</p>
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
 
       {/* Basic Information */}
       <div className="space-y-4">
@@ -125,6 +193,25 @@ export const ProfileSetupFree: React.FC<ProfileSetupFreeProps> = ({ onComplete }
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
+              Profession
+            </label>
+            <select
+              name="profession"
+              value={formData.profession}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="">Select your profession</option>
+              {professionOptions.map((profession) => (
+                <option key={profession} value={profession}>{profession}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               <MapPin className="w-4 h-4 inline mr-1" />
               Location
             </label>
@@ -135,6 +222,21 @@ export const ProfileSetupFree: React.FC<ProfileSetupFreeProps> = ({ onComplete }
               onChange={handleInputChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="City, Country"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Globe className="w-4 h-4 inline mr-1" />
+              Website
+            </label>
+            <input
+              type="url"
+              name="website"
+              value={formData.website}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder="https://yourwebsite.com"
             />
           </div>
         </div>
@@ -154,21 +256,6 @@ export const ProfileSetupFree: React.FC<ProfileSetupFreeProps> = ({ onComplete }
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <Globe className="w-4 h-4 inline mr-1" />
-            Website
-          </label>
-          <input
-            type="url"
-            name="website"
-            value={formData.website}
-            onChange={handleInputChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            placeholder="https://yourwebsite.com"
-          />
-        </div>
-
-        <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Content Niche</label>
           <select
             name="contentNiche"
@@ -184,29 +271,58 @@ export const ProfileSetupFree: React.FC<ProfileSetupFreeProps> = ({ onComplete }
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            Preferred Platforms (select up to 1 for Free plan)
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Target Audience
           </label>
-          <div className="grid grid-cols-2 gap-3">
-            {platformOptions.map((platform) => (
-              <label key={platform} className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="preferredPlatform"
-                  checked={formData.preferredPlatforms.includes(platform)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setFormData(prev => ({
-                        ...prev,
-                        preferredPlatforms: [platform]
-                      }));
-                    }
-                  }}
-                  className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-                />
-                <span className="text-sm text-gray-700">{platform}</span>
-              </label>
-            ))}
+          <textarea
+            name="targetAudience"
+            value={formData.targetAudience}
+            onChange={handleInputChange}
+            rows={2}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            placeholder="Describe your ideal audience (e.g., young professionals, tech enthusiasts, small business owners)"
+          />
+        </div>
+
+        {/* Posts Information */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-900">Posts Information</h3>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Posts Type
+            </label>
+            <select
+              name="campaignType"
+              value={formData.campaignType}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="">Select posts type</option>
+              {postsTypes.map((type) => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Posts Goals (select up to 2 for Free plan)
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {postsGoalOptions.map((goal) => (
+                <label key={goal} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.campaignGoals.includes(goal)}
+                    onChange={(e) => handleArrayChange('campaignGoals', goal, e.target.checked)}
+                    disabled={!formData.campaignGoals.includes(goal) && formData.campaignGoals.length >= 2}
+                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-gray-700">{goal}</span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
       </div>

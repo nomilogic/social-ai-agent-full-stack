@@ -16,93 +16,33 @@ interface OnboardingSlide {
 const onboardingSlides: OnboardingSlide[] = [
   {
     id: 1,
-    title: "Welcome to Social AI Agent",
-    subtitle: "Your AI-Powered Social Media Revolution",
-    description: "Transform your social media presence with cutting-edge AI technology that creates, schedules, and optimizes content across all major platforms.",
+    title: "Social AI Agent",
+    subtitle: "AI-Powered Social Media Management",
+    description: "Create, schedule, and optimize content across all major platforms with advanced AI technology.",
     icon: Sparkles,
     features: [
-      "15+ AI models including GPT-4, Gemini Pro, Claude",
+      "AI content generation with 15+ models",
       "Multi-platform posting & scheduling",
-      "Advanced analytics & insights",
-      "Automated content optimization"
+      "Advanced analytics & optimization",
+      "Professional media management"
     ],
     bgGradient: "from-blue-600 via-purple-600 to-indigo-700",
     iconColor: "text-yellow-300"
   },
   {
     id: 2,
-    title: "AI-Powered Content Creation",
-    subtitle: "Professional Content in Seconds",
-    description: "Generate engaging posts, captions, and hashtags tailored to your brand voice using advanced AI models from OpenAI, Google, Anthropic, and more.",
-    icon: Brain,
+    title: "Start Creating Today",
+    subtitle: "Get Started in Under 2 Minutes",
+    description: "Join thousands of creators and businesses who trust Social AI Agent to transform their social media presence.",
+    icon: Zap,
     features: [
-      "Smart content generation with brand voice",
-      "AI image & video generation",
-      "Intelligent hashtag research",
-      "Platform-specific optimization"
+      "Quick setup & onboarding",
+      "Connect your social accounts",
+      "Start posting immediately",
+      "Free plan available"
     ],
     bgGradient: "from-emerald-500 via-teal-600 to-cyan-700",
-    iconColor: "text-purple-300"
-  },
-  {
-    id: 3,
-    title: "Multi-Platform Management",
-    subtitle: "One Dashboard, All Platforms",
-    description: "Seamlessly manage Facebook, Instagram, Twitter, LinkedIn, TikTok, and YouTube from a single, intuitive dashboard.",
-    icon: Globe,
-    features: [
-      "6 major social platforms",
-      "Unified posting & scheduling",
-      "Platform-specific features",
-      "Real-time connection status"
-    ],
-    bgGradient: "from-orange-500 via-red-500 to-pink-600",
-    iconColor: "text-blue-300"
-  },
-  {
-    id: 4,
-    title: "Smart Scheduling & Automation",
-    subtitle: "Perfect Timing, Maximum Engagement",
-    description: "AI analyzes your audience behavior to schedule posts at optimal times for maximum reach and engagement across all platforms.",
-    icon: Calendar,
-    features: [
-      "AI-powered optimal timing",
-      "Automated posting queues",
-      "Campaign management",
-      "Drag-and-drop calendar interface"
-    ],
-    bgGradient: "from-violet-600 via-purple-600 to-fuchsia-700",
-    iconColor: "text-green-300"
-  },
-  {
-    id: 5,
-    title: "Advanced Media & Analytics",
-    subtitle: "Professional Content Library & Insights",
-    description: "Comprehensive media management with AI video generation, advanced analytics, and performance tracking to optimize your social strategy.",
-    icon: BarChart3,
-    features: [
-      "AI video & image generation",
-      "Advanced media gallery",
-      "Performance analytics",
-      "Content optimization insights"
-    ],
-    bgGradient: "from-amber-500 via-orange-600 to-red-600",
-    iconColor: "text-indigo-300"
-  },
-  {
-    id: 6,
-    title: "Enterprise Features",
-    subtitle: "Scale Your Social Presence",
-    description: "Advanced campaign management, team collaboration, AI training, and enterprise-grade features for businesses of all sizes.",
-    icon: Target,
-    features: [
-      "Campaign management system",
-      "AI training & learning",
-      "Team collaboration tools",
-      "White-label customization"
-    ],
-    bgGradient: "from-indigo-600 via-blue-600 to-purple-700",
-    iconColor: "text-yellow-300"
+    iconColor: "text-orange-300"
   }
 ];
 

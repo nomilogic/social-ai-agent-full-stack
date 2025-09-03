@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { db } from '../db';
-import { users } from '../../shared/schema';
+import { users, profiles } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -11,30 +11,18 @@ const router = express.Router();
 // In production, use proper authentication libraries
 
 router.post('/register', async (req: Request, res: Response) => {
-
   try {
-    const result = await db.select({ id: users.id }).from(users).execute();
-    console.log(result); // Should print [ { '1': 1 } ]
-  } catch (error) {
-    console.error(error);
-  }
-  try {
-
     const { email, password, name } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    console.log('Registration attempt for email:', email);
-
-
     // Check if user exists
     const existingUser = await db
       .select()
       .from(users)
-      .where(eq(users.email, email))
-     
+      .where(eq(users.email, email));
 
     if (existingUser.length > 0) {
       return res.status(400).json({ error: 'User already exists' });
@@ -62,8 +50,6 @@ router.post('/register', async (req: Request, res: Response) => {
       { expiresIn: '7d' }
     );
 
-    console.log('Registration successful for user:', newUser.id);
-
     // Check if this is a business account
     const isBusinessAccount = newUser.email === 'nomilogic@gmail.com';
 
@@ -78,9 +64,8 @@ router.post('/register', async (req: Request, res: Response) => {
       token,
     });
   } catch (error: any) {
-    console.error('Registration error:', error);
-    console.error('Error details:', error.message, error.stack);
-    res.status(500).json({ error: 'Internal server error', details: error.message });
+    console.error('Registration error:', error.message);
+    res.status(500).json({ error: 'Registration failed' });
   }
 });
 
@@ -92,8 +77,6 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    console.log('Login attempt for email:', email);
-
     // Find user
     const userResults = await db
       .select()
@@ -101,23 +84,16 @@ router.post('/login', async (req: Request, res: Response) => {
       .where(eq(users.email, email))
       .limit(1);
 
-    console.log('User query results:', userResults.length);
-
     if (userResults.length === 0) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const user = userResults[0];
-    console.log('Found user:', { id: user.id, email: user.email, name: user.name });
-    console.log('Password provided length:', password.length);
-    console.log('Hashed password in DB exists:', !!user.password);
 
     // Check password
     const validPassword = await bcrypt.compare(password, user.password);
-    console.log('Password validation result:', validPassword);
     
     if (!validPassword) {
-      console.log('Password validation failed for user:', user.email);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -127,8 +103,6 @@ router.post('/login', async (req: Request, res: Response) => {
       process.env.JWT_SECRET || 'dev-secret',
       { expiresIn: '7d' }
     );
-
-    console.log('Login successful for user:', user.id);
 
     // Check if this is a business account
     const isBusinessAccount = user.email === 'nomilogic@gmail.com';
@@ -144,9 +118,8 @@ router.post('/login', async (req: Request, res: Response) => {
       token,
     });
   } catch (error: any) {
-    console.error('Login error:', error);
-    console.error('Error details:', error.message, error.stack);
-    res.status(500).json({ error: 'Internal server error', details: error.message });
+    console.error('Login error:', error.message);
+    res.status(500).json({ error: 'Login failed' });
   }
 });
 
@@ -213,17 +186,110 @@ router.put('/profile', async (req: Request, res: Response) => {
     const profileData = req.body;
     console.log('Updating profile:', profileData);
 
-    // In production, you would save this to your database
-    // For now, just return the updated profile with timestamps
-    const updatedProfile = {
-      ...profileData,
-      updatedAt: new Date().toISOString(),
-    };
+    // Get user from token
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret') as any;
+    const userId = decoded.id;
+
+    // Check if profile already exists
+    const existingProfile = await db
+      .select()
+      .from(profiles)
+      .where(eq(profiles.user_id, userId))
+      .limit(1);
+
+    let profile;
+    if (existingProfile.length > 0) {
+      // Update existing profile
+      const updatedProfiles = await db
+        .update(profiles)
+        .set({
+          name: profileData.name || existingProfile[0].name,
+          type: profileData.type || existingProfile[0].type,
+          industry: profileData.industry || profileData.contentNiche || existingProfile[0].industry,
+          description: profileData.bio || existingProfile[0].description,
+          tone: profileData.brandVoice || existingProfile[0].tone,
+          target_audience: profileData.targetAudience || existingProfile[0].target_audience,
+          plan: profileData.plan || existingProfile[0].plan,
+          // Campaign fields
+          campaign_name: profileData.campaignName || existingProfile[0].campaign_name,
+          campaign_type: profileData.campaignType || existingProfile[0].campaign_type,
+          campaign_goals: profileData.campaignGoals || existingProfile[0].campaign_goals,
+          // Additional profile fields
+          profession: profileData.profession || existingProfile[0].profession,
+          location: profileData.location || existingProfile[0].location,
+          website: profileData.website || existingProfile[0].website,
+          bio: profileData.bio || existingProfile[0].bio,
+          content_niche: profileData.contentNiche || existingProfile[0].content_niche,
+          preferred_platforms: profileData.preferredPlatforms || existingProfile[0].preferred_platforms,
+          brand_voice: profileData.brandVoice || existingProfile[0].brand_voice,
+          social_goals: profileData.socialGoals || existingProfile[0].social_goals,
+          business_goals: profileData.businessGoals || existingProfile[0].business_goals,
+          posting_frequency: profileData.postingFrequency || existingProfile[0].posting_frequency,
+          // Business specific fields
+          business_name: profileData.businessName || existingProfile[0].business_name,
+          job_title: profileData.jobTitle || existingProfile[0].job_title,
+          campaign_size: profileData.campaignSize || existingProfile[0].campaign_size,
+          team_collaboration: profileData.teamCollaboration !== undefined ? profileData.teamCollaboration : existingProfile[0].team_collaboration,
+          custom_integrations: profileData.customIntegrations || existingProfile[0].custom_integrations,
+          monthly_budget: profileData.monthlyBudget || existingProfile[0].monthly_budget,
+          content_volume: profileData.contentVolume || existingProfile[0].content_volume,
+          updated_at: new Date()
+        })
+        .where(eq(profiles.id, existingProfile[0].id))
+        .returning();
+      
+      profile = updatedProfiles[0];
+    } else {
+      // Create new profile
+      const newProfiles = await db
+        .insert(profiles)
+        .values({
+          user_id: userId,
+          name: profileData.name || 'Unnamed Profile',
+          type: profileData.type || 'individual',
+          industry: profileData.industry || profileData.contentNiche,
+          description: profileData.bio,
+          tone: profileData.brandVoice,
+          target_audience: profileData.targetAudience,
+          plan: profileData.plan || 'free',
+          // Campaign fields
+          campaign_name: profileData.campaignName,
+          campaign_type: profileData.campaignType,
+          campaign_goals: profileData.campaignGoals,
+          // Additional profile fields
+          profession: profileData.profession,
+          location: profileData.location,
+          website: profileData.website,
+          bio: profileData.bio,
+          content_niche: profileData.contentNiche,
+          preferred_platforms: profileData.preferredPlatforms,
+          brand_voice: profileData.brandVoice,
+          social_goals: profileData.socialGoals,
+          business_goals: profileData.businessGoals,
+          posting_frequency: profileData.postingFrequency,
+          // Business specific fields
+          business_name: profileData.businessName,
+          job_title: profileData.jobTitle,
+          campaign_size: profileData.campaignSize,
+          team_collaboration: profileData.teamCollaboration || false,
+          custom_integrations: profileData.customIntegrations,
+          monthly_budget: profileData.monthlyBudget,
+          content_volume: profileData.contentVolume
+        })
+        .returning();
+      
+      profile = newProfiles[0];
+    }
 
     res.json({
       success: true,
-      message: 'Profile updated successfully',
-      ...updatedProfile
+      message: 'Profile saved successfully',
+      profile
     });
   } catch (error) {
     console.error('Error updating profile:', error);
@@ -241,35 +307,57 @@ router.get('/profile', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    // Get user from database
-    const userResults = await db
+    // Check if profile exists in profiles table
+    const profileResults = await db
       .select()
-      .from(users)
-      .where(eq(users.id, userId))
+      .from(profiles)
+      .where(eq(profiles.user_id, userId))
       .limit(1);
 
-    if (userResults.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+    if (profileResults.length === 0) {
+      // No profile exists - return null to indicate profile setup needed
+      return res.status(404).json({ error: 'Profile not found' });
     }
 
-    const user = userResults[0];
-    const isBusinessEmail = user.email === 'nomilogic@gmail.com';
-
-    const profile = {
-      id: user.id,
-      name: user.name || (isBusinessEmail ? 'Business Profile' : 'User Profile'),
-      email: user.email,
-      bio: '',
-      website: '',
-      location: '',
-      type: isBusinessEmail ? 'business' : 'individual',
-      plan: isBusinessEmail ? 'business' : 'free',
-      profile_type: isBusinessEmail ? 'business' : 'individual',
-      createdAt: user.created_at,
-      updatedAt: user.updated_at,
-    };
-
-    res.json(profile);
+    const profile = profileResults[0];
+    
+    // Return the actual profile data
+    res.json({
+      id: profile.id,
+      userId: profile.user_id,
+      name: profile.name,
+      type: profile.type,
+      industry: profile.industry,
+      description: profile.description,
+      tone: profile.tone,
+      target_audience: profile.target_audience,
+      plan: profile.plan,
+      // Campaign fields
+      campaignName: profile.campaign_name,
+      campaignType: profile.campaign_type,
+      campaignGoals: profile.campaign_goals,
+      // Additional profile fields
+      profession: profile.profession,
+      location: profile.location,
+      website: profile.website,
+      bio: profile.bio,
+      contentNiche: profile.content_niche,
+      preferredPlatforms: profile.preferred_platforms,
+      brandVoice: profile.brand_voice,
+      socialGoals: profile.social_goals,
+      businessGoals: profile.business_goals,
+      postingFrequency: profile.posting_frequency,
+      // Business specific fields
+      businessName: profile.business_name,
+      jobTitle: profile.job_title,
+      campaignSize: profile.campaign_size,
+      teamCollaboration: profile.team_collaboration,
+      customIntegrations: profile.custom_integrations,
+      monthlyBudget: profile.monthly_budget,
+      contentVolume: profile.content_volume,
+      createdAt: profile.created_at,
+      updatedAt: profile.updated_at
+    });
   } catch (error) {
     console.error('Error fetching profile:', error);
     res.status(500).json({ error: 'Failed to fetch profile' });

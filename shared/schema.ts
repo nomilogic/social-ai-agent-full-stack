@@ -94,6 +94,29 @@ export const profiles = pgTable('profiles', {
   tone: text('tone'),
   target_audience: text('target_audience'),
   plan: text('plan').notNull().default('free'), // 'free' | 'ipro' | 'business'
+  // Campaign fields
+  campaign_name: text('campaign_name'),
+  campaign_type: text('campaign_type'),
+  campaign_goals: text('campaign_goals').array(),
+  // Additional profile fields
+  profession: text('profession'),
+  location: text('location'),
+  website: text('website'),
+  bio: text('bio'),
+  content_niche: text('content_niche'),
+  preferred_platforms: text('preferred_platforms').array(),
+  brand_voice: text('brand_voice'),
+  social_goals: text('social_goals').array(),
+  business_goals: text('business_goals').array(),
+  posting_frequency: text('posting_frequency'),
+  // Business specific fields
+  business_name: text('business_name'),
+  job_title: text('job_title'),
+  campaign_size: text('campaign_size'),
+  team_collaboration: boolean('team_collaboration').default(false),
+  custom_integrations: text('custom_integrations').array(),
+  monthly_budget: text('monthly_budget'),
+  content_volume: text('content_volume'),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });

@@ -14,60 +14,48 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
+import { TierSelectionModal } from "../components/TierSelectionModal";
+import { ProfileSetupFree } from "../components/ProfileSetupFree";
+import { ProfileSetupPro } from "../components/ProfileSetupPro";
+import { ProfileSetupBusiness } from "../components/ProfileSetupBusiness";
 
 export const DashboardPage: React.FC = () => {
-  const { state } = useAppContext();
+  const { state, dispatch } = useAppContext();
   const navigate = useNavigate();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
+  const [showTierModal, setShowTierModal] = useState(false);
+  const [showProfileForm, setShowProfileForm] = useState(false);
+  const [tierLoading, setTierLoading] = useState(false);
 
-  // Mock stats for demonstration
+  // Real stats - will be loaded from API
   const stats = {
-    totalPosts: 24,
-    scheduledPosts: 8,
-    publishedPosts: 16,
-    totalEngagement: 1500,
+    totalPosts: 0,
+    scheduledPosts: 0,
+    publishedPosts: 0,
+    totalEngagement: 0,
   };
 
-  // Mock recent posts for demonstration
-  const recentPosts = [
-    {
-      id: 1,
-      content: "Excited to share our new product!",
-      platform: "Twitter",
-      date: "2 hours ago",
-      status: "published",
-    },
-    {
-      id: 2,
-      content: "Upcoming webinar on AI trends",
-      platform: "LinkedIn",
-      date: "1 day ago",
-      status: "scheduled",
-    },
-    {
-      id: 3,
-      content: "Behind the scenes: Our team at work",
-      platform: "Instagram",
-      date: "3 days ago",
-      status: "published",
-    },
-    {
-      id: 4,
-      content: "New blog post: The Future of Social Media",
-      platform: "Facebook",
-      date: "5 days ago",
-      status: "scheduled",
-    },
-  ];
+  // Real recent posts - will be loaded from API
+  const recentPosts: any[] = [];
 
-  // Check if user needs onboarding (no profile yet)
+  // Check if user needs tier selection or profile setup
   useEffect(() => {
-    // If user has no selected profile, they need onboarding
-    if (state.user && !state.selectedProfile && !state.loading) {
-      setShowOnboarding(true);
+    if (state.user && !state.loading) {
+      // Show tier modal if user hasn't selected a tier yet
+      if (!state.hasTierSelected && !state.userPlan) {
+        setShowTierModal(true);
+      }
+      // Show profile form if user has tier selected but no profile setup
+      else if (state.hasTierSelected && state.userPlan && !state.hasProfileSetup) {
+        setShowProfileForm(true);
+      }
+      // Show onboarding if user has no profile at all (fallback)
+      else if (!state.selectedProfile && state.hasCompletedOnboarding === false) {
+        setShowOnboarding(true);
+      }
     }
-  }, [state.user, state.selectedProfile, state.loading]);
+  }, [state.user, state.loading, state.hasTierSelected, state.userPlan, state.hasProfileSetup, state.selectedProfile, state.hasCompletedOnboarding]);
 
   const onboardingSteps = [
     {
@@ -114,6 +102,39 @@ export const DashboardPage: React.FC = () => {
 
   const skipOnboarding = () => {
     setShowOnboarding(false);
+  };
+
+  // Handler for tier selection
+  const handleTierSelection = async (planId: 'free' | 'ipro' | 'business') => {
+    setTierLoading(true);
+    try {
+      // Update context with selected plan
+      dispatch({ type: 'SET_USER_PLAN', payload: planId });
+      dispatch({ type: 'SET_TIER_SELECTED', payload: true });
+      
+      // Close tier modal and show profile form
+      setShowTierModal(false);
+      setShowProfileForm(true);
+      
+      console.log('Tier selected:', planId);
+    } catch (error) {
+      console.error('Error selecting tier:', error);
+    } finally {
+      setTierLoading(false);
+    }
+  };
+
+  // Handler for profile completion
+  const handleProfileComplete = () => {
+    dispatch({ type: 'SET_PROFILE_SETUP', payload: true });
+    dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: true });
+    setShowProfileForm(false);
+  };
+
+  // Handler to skip tier selection temporarily  
+  const handleSkipTierSelection = () => {
+    setShowTierModal(false);
+    // User can still access tier selection from settings later
   };
 
   if (showOnboarding) {
@@ -235,7 +256,7 @@ export const DashboardPage: React.FC = () => {
                 <p className="text-2xl font-bold theme-text-primary mt-1 drop-shadow">
                   {stats.totalPosts}
                 </p>
-                <p className="text-green-300 text-xs">+12% from last month</p>
+                <p className="text-gray-400 text-xs">Get started by creating content</p>
               </div>
               <div className="theme-bg-light p-2 rounded-lg">
                 <TrendingUp className="w-5 h-5 theme-text-primary" />
@@ -255,7 +276,7 @@ export const DashboardPage: React.FC = () => {
                 <p className="text-2xl font-bold theme-text-primary mt-1 drop-shadow">
                   {stats.scheduledPosts}
                 </p>
-                <p className="text-orange-200 text-xs">Next post in 2 hours</p>
+                <p className="text-gray-400 text-xs">Schedule your first post</p>
               </div>
               <div className="theme-bg-light p-2 rounded-lg">
                 <Calendar className="w-5 h-5 theme-text-primary" />
@@ -297,40 +318,56 @@ export const DashboardPage: React.FC = () => {
               Recent Posts
             </h2>
             <div className="space-y-4">
-              {recentPosts.map((post) => (
-                <div
-                  key={post.id}
-                  className="flex items-start space-x-3 p-3 theme-bg-primary rounded-lg"
-                >
-                  <div className="flex-shrink-0">
-                    <div className="w-10 h-10 theme-bg-secondary rounded-lg flex items-center justify-center">
-                      <FileText
-                        className="w-5 h-5"
-                        style={{ color: "var(--theme-primary)" }}
-                      />
+              {recentPosts.length > 0 ? (
+                recentPosts.map((post) => (
+                  <div
+                    key={post.id}
+                    className="flex items-start space-x-3 p-3 theme-bg-primary rounded-lg"
+                  >
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 theme-bg-secondary rounded-lg flex items-center justify-center">
+                        <FileText
+                          className="w-5 h-5"
+                          style={{ color: "var(--theme-primary)" }}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium theme-text-primary truncate">
+                        {post.content}
+                      </p>
+                      <p className="text-sm theme-text-light">
+                        {post.platform} • {post.date}
+                      </p>
+                    </div>
+                    <div
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        post.status === "published"
+                          ? "theme-bg-primary theme-text-primary"
+                          : post.status === "scheduled"
+                            ? "theme-bg-secondary theme-text-secondary"
+                            : "theme-bg-primary theme-text-light"
+                      }`}
+                    >
+                      {post.status}
                     </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium theme-text-primary truncate">
-                      {post.content}
-                    </p>
-                    <p className="text-sm theme-text-light">
-                      {post.platform} • {post.date}
-                    </p>
-                  </div>
-                  <div
-                    className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      post.status === "published"
-                        ? "theme-bg-primary theme-text-primary"
-                        : post.status === "scheduled"
-                          ? "theme-bg-secondary theme-text-secondary"
-                          : "theme-bg-primary theme-text-light"
-                    }`}
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <FileText className="w-12 h-12 theme-text-light mx-auto mb-3" />
+                  <p className="theme-text-secondary text-sm mb-2">No posts yet</p>
+                  <p className="theme-text-light text-xs mb-4">
+                    Create your first post to see it here
+                  </p>
+                  <button
+                    onClick={() => navigate("/content")}
+                    className="text-xs theme-button-primary text-white px-4 py-2 rounded-lg hover:theme-button-hover transition-colors"
                   >
-                    {post.status}
-                  </div>
+                    Create Content
+                  </button>
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
@@ -344,7 +381,7 @@ export const DashboardPage: React.FC = () => {
                   Impressions
                 </span>
                 <span className="text-sm font-bold theme-text-primary">
-                  24.5K
+                  0
                 </span>
               </div>
               <div className="flex justify-between items-center p-3 theme-bg-primary rounded-lg">
@@ -352,7 +389,7 @@ export const DashboardPage: React.FC = () => {
                   Clicks
                 </span>
                 <span className="text-sm font-bold theme-text-primary">
-                  1.2K
+                  0
                 </span>
               </div>
               <div className="flex justify-between items-center p-3 theme-bg-primary rounded-lg">
@@ -360,19 +397,21 @@ export const DashboardPage: React.FC = () => {
                   Engagement Rate
                 </span>
                 <span className="text-sm font-bold theme-text-primary">
-                  4.8%
+                  0%
                 </span>
               </div>
               <div className="flex justify-between items-center p-3 theme-bg-primary rounded-lg">
                 <span className="text-sm font-medium theme-text-secondary">
                   Followers Growth
                 </span>
-                <span
-                  className="text-sm font-bold"
-                  style={{ color: "var(--theme-accent)" }}
-                >
-                  +127
+                <span className="text-sm font-bold theme-text-primary">
+                  0
                 </span>
+              </div>
+              <div className="text-center py-4">
+                <p className="theme-text-light text-xs">
+                  Analytics will appear here once you start publishing content
+                </p>
               </div>
             </div>
           </div>
@@ -389,14 +428,39 @@ export const DashboardPage: React.FC = () => {
               generation tailored to your brand.
             </p>
             <button
-              onClick={() => setShowOnboarding(true)}
+              onClick={() => setShowTierModal(true)}
               className="theme-button-secondary text-white px-6 py-2 text-sm rounded-lg hover:theme-button-hover transition-colors duration-200 border border-white/20"
             >
-              Show Getting Started Guide
+              Choose Your Plan
             </button>
           </div>
         )}
       </div>
+
+      {/* Tier Selection Modal */}
+      <TierSelectionModal
+        isOpen={showTierModal}
+        onClose={handleSkipTierSelection}
+        onSelectPlan={handleTierSelection}
+        loading={tierLoading}
+      />
+
+      {/* Profile Setup Forms */}
+      {showProfileForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {state.userPlan === 'free' && (
+              <ProfileSetupFree onComplete={handleProfileComplete} />
+            )}
+            {state.userPlan === 'ipro' && (
+              <ProfileSetupPro onComplete={handleProfileComplete} />
+            )}
+            {state.userPlan === 'business' && (
+              <ProfileSetupBusiness onComplete={handleProfileComplete} />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

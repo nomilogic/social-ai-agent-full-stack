@@ -10,8 +10,8 @@
   --theme-text-primary: #FFFFFF;
   --theme-text-secondary: rgba(255, 255, 255, 0.9);
   --theme-text-light: rgba(255, 255, 255, 0.7);
-  --theme-bg-primary: rgba(255, 255, 255, 0.1);
-  --theme-bg-secondary: rgba(255, 255, 255, 0.05);
+  --theme-bg-primary: rgb(11, 85, 247);
+  --theme-bg-secondary: rgba(175, 5, 253, 0.199);
   --theme-bg-card: rgb(26, 25, 25, 15);
   --theme-border: rgba(255, 255, 255, 0.2);
   --theme-button-primary: #FFFFFF;

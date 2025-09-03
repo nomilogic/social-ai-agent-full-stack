@@ -26,6 +26,29 @@ export interface Profile {
   target_audience?: string;
   userId: string;
   plan: 'free' | 'ipro' | 'business';
+  // Campaign fields
+  campaignName?: string;
+  campaignType?: string;
+  campaignGoals?: string[];
+  // Additional profile fields
+  profession?: string;
+  location?: string;
+  website?: string;
+  bio?: string;
+  contentNiche?: string;
+  preferredPlatforms?: string[];
+  brandVoice?: string;
+  socialGoals?: string[];
+  businessGoals?: string[];
+  postingFrequency?: string;
+  // Business specific fields
+  businessName?: string;
+  jobTitle?: string;
+  campaignSize?: string;
+  teamCollaboration?: boolean;
+  customIntegrations?: string[];
+  monthlyBudget?: string;
+  contentVolume?: string;
 }
 
 // export interface Campaign {
@@ -47,6 +70,8 @@ export interface AppState {
   contentData: any;
   hasCompletedOnboarding: boolean;
   isBusinessAccount: boolean;
+  hasTierSelected: boolean;
+  hasProfileSetup: boolean;
 }
 
 // Actions
@@ -60,8 +85,30 @@ type AppAction =
   | { type: 'SET_GENERATED_POSTS'; payload: any[] }
   | { type: 'SET_CONTENT_DATA'; payload: any }
   | { type: 'SET_ONBOARDING_COMPLETE'; payload: boolean }
+  | { type: 'SET_TIER_SELECTED'; payload: boolean }
+  | { type: 'SET_PROFILE_SETUP'; payload: boolean }
   | { type: 'RESET_STATE' }
   | { type: 'SET_BUSINESS_ACCOUNT'; payload: boolean };
+
+// Helper function to check if profile is complete based on plan requirements
+const checkProfileCompletion = (profile: any): boolean => {
+  if (!profile) return false;
+  
+  // Check basic required fields for all plans
+  const hasBasicInfo = profile.name && profile.plan && profile.profession;
+  
+  // Check campaign fields (required for all plans)
+  const hasCampaignInfo = profile.campaignName && profile.campaignType;
+  
+  // For business plan, check additional business-specific fields
+  if (profile.plan === 'business') {
+    const hasBusinessInfo = profile.businessName && profile.jobTitle;
+    return hasBasicInfo && hasCampaignInfo && hasBusinessInfo;
+  }
+  
+  // For pro and free plans, basic info and campaign info is sufficient
+  return hasBasicInfo && hasCampaignInfo;
+};
 
 // Helper functions for localStorage persistence
 const getStoredContentData = () => {
@@ -97,6 +144,8 @@ const initialState: AppState = {
   contentData:null, // Load from localStorage
   hasCompletedOnboarding: false,
   isBusinessAccount: false,
+  hasTierSelected: false,
+  hasProfileSetup: false,
 };
 
 // Reducer
@@ -127,6 +176,10 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, contentData: action.payload };
     case 'SET_ONBOARDING_COMPLETE':
       return { ...state, hasCompletedOnboarding: action.payload };
+    case 'SET_TIER_SELECTED':
+      return { ...state, hasTierSelected: action.payload };
+    case 'SET_PROFILE_SETUP':
+      return { ...state, hasProfileSetup: action.payload };
     case 'RESET_STATE':
       // Clear localStorage when resetting state
       setStoredContentData(null);
@@ -167,24 +220,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           };
           dispatch({ type: 'SET_USER', payload: currentUser });
 
-          // Check if this is a business account
-          const isBusinessUser = currentUser.email === 'nomilogic@gmail.com' || 
-                                currentUser.profile_type === 'business' ||
-                                currentUser.plan === 'business';
-
-          if (isBusinessUser) {
-            dispatch({ type: 'SET_USER_PLAN', payload: 'business' });
-            dispatch({ type: 'SET_BUSINESS_ACCOUNT', payload: true });
+          // Check if user has tier selection and profile setup
+          try {
+            const profileResponse = await fetch(`/api/auth/profile?userId=${currentUser.id}&email=${currentUser.email}`);
+            if (profileResponse.ok) {
+              const existingProfile = await profileResponse.json();
+              if (existingProfile && existingProfile.name && existingProfile.plan) {
+                // Check if profile is complete based on plan requirements
+                const isProfileComplete = checkProfileCompletion(existingProfile);
+                
+                // User has both tier and profile setup
+                dispatch({ type: 'SET_SELECTED_PROFILE', payload: existingProfile });
+                dispatch({ type: 'SET_USER_PLAN', payload: existingProfile.plan });
+                dispatch({ type: 'SET_TIER_SELECTED', payload: true });
+                dispatch({ type: 'SET_PROFILE_SETUP', payload: isProfileComplete });
+                dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: isProfileComplete });
+                
+                if (existingProfile.type === 'business') {
+                  dispatch({ type: 'SET_BUSINESS_ACCOUNT', payload: true });
+                }
+                
+                console.log('User has complete setup, going to dashboard');
+                return;
+              } else if (existingProfile && existingProfile.plan) {
+                // User has tier selected but no profile setup
+                dispatch({ type: 'SET_USER_PLAN', payload: existingProfile.plan });
+                dispatch({ type: 'SET_TIER_SELECTED', payload: true });
+                dispatch({ type: 'SET_PROFILE_SETUP', payload: false });
+                console.log('User has tier selected but needs profile setup');
+                return;
+              }
+            } else if (profileResponse.status === 404) {
+              // Profile not found - user is completely new
+              console.log('Profile not found - new user needs tier selection and profile setup');
+            }
+          } catch (error) {
+            console.log('Profile check failed, assuming new user:', error);
           }
 
-          // Skip profile onboarding - users will create campaigns directly
-          // Set default plan based on user type
-          const userPlan = isBusinessUser ? 'business' : 'free';
-          dispatch({ type: 'SET_USER_PLAN', payload: userPlan });
-          dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: true });
-          
-          console.log('User authenticated successfully, redirecting to campaigns');
-          console.log('User plan set to:', userPlan);
+          // New user - no tier or profile setup
+          dispatch({ type: 'SET_TIER_SELECTED', payload: false });
+          dispatch({ type: 'SET_PROFILE_SETUP', payload: false });
+          dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: false });
+          console.log('New user - needs tier selection and profile setup');
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
