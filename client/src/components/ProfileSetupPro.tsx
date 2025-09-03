@@ -10,15 +10,18 @@ export const ProfileSetupPro: React.FC<ProfileSetupProProps> = ({ onComplete }) 
   const { state, dispatch } = useAppContext();
   const [formData, setFormData] = useState({
     name: '',
+    profession: '',
     bio: '',
     location: '',
     website: '',
     contentNiche: '',
     socialGoals: [] as string[],
     postingFrequency: '',
-    preferredPlatforms: [] as string[],
     targetAudience: '',
-    brandVoice: ''
+    brandVoice: '',
+    // Campaign fields
+    campaignType: '',
+    campaignGoals: [] as string[]
   });
 
   const [loading, setLoading] = useState(false);
@@ -120,6 +123,53 @@ export const ProfileSetupPro: React.FC<ProfileSetupProProps> = ({ onComplete }) 
     'Creative'
   ];
 
+  const professionOptions = [
+    'Content Creator',
+    'Influencer',
+    'Freelancer',
+    'Marketing Professional',
+    'Social Media Manager',
+    'Brand Manager',
+    'Consultant',
+    'Coach/Trainer',
+    'Photographer',
+    'Videographer',
+    'Writer/Journalist',
+    'Artist/Designer',
+    'Entrepreneur',
+    'Public Speaker',
+    'Thought Leader',
+    'Other Professional'
+  ];
+
+  const postsTypes = [
+    'Professional Branding',
+    'Thought Leadership',
+    'Business Growth',
+    'Product Marketing',
+    'Service Promotion',
+    'Community Building',
+    'Content Monetization',
+    'Brand Partnerships',
+    'Lead Generation',
+    'Educational Content',
+    'Industry Authority',
+    'Other'
+  ];
+
+  const postsGoalOptions = [
+    'Increase brand awareness',
+    'Generate quality leads',
+    'Drive website traffic',
+    'Grow professional network',
+    'Establish thought leadership',
+    'Promote products/services',
+    'Build community engagement',
+    'Increase conversion rates',
+    'Enhance customer loyalty',
+    'Expand market reach'
+  ];
+
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* Header */}
@@ -158,6 +208,25 @@ export const ProfileSetupPro: React.FC<ProfileSetupProProps> = ({ onComplete }) 
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
+              Profession
+            </label>
+            <select
+              name="profession"
+              value={formData.profession}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Select your profession</option>
+              {professionOptions.map((profession) => (
+                <option key={profession} value={profession}>{profession}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               <MapPin className="w-4 h-4 inline mr-1" />
               Location
             </label>
@@ -168,6 +237,21 @@ export const ProfileSetupPro: React.FC<ProfileSetupProProps> = ({ onComplete }) 
               onChange={handleInputChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="City, Country"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Globe className="w-4 h-4 inline mr-1" />
+              Website
+            </label>
+            <input
+              type="url"
+              name="website"
+              value={formData.website}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="https://yourwebsite.com"
             />
           </div>
         </div>
@@ -183,21 +267,6 @@ export const ProfileSetupPro: React.FC<ProfileSetupProProps> = ({ onComplete }) 
             rows={3}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Tell us about yourself and your content"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <Globe className="w-4 h-4 inline mr-1" />
-            Website
-          </label>
-          <input
-            type="url"
-            name="website"
-            value={formData.website}
-            onChange={handleInputChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="https://yourwebsite.com"
           />
         </div>
       </div>
@@ -299,29 +368,52 @@ export const ProfileSetupPro: React.FC<ProfileSetupProProps> = ({ onComplete }) 
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            Preferred Platforms (select up to 3)
-          </label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {platformOptions.map((platform) => (
-              <label key={platform} className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.preferredPlatforms.includes(platform)}
-                  onChange={(e) => {
-                    if (e.target.checked && formData.preferredPlatforms.length < 3) {
-                      handleArrayChange('preferredPlatforms', platform, true);
-                    } else if (!e.target.checked) {
-                      handleArrayChange('preferredPlatforms', platform, false);
-                    }
-                  }}
-                  disabled={!formData.preferredPlatforms.includes(platform) && formData.preferredPlatforms.length >= 3}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">{platform}</span>
-              </label>
-            ))}
+
+        {/* Posts Information */}
+        <div className="space-y-6">
+          <h3 className="text-lg font-semibold text-gray-900">Posts Information</h3>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Posts Type
+            </label>
+            <select
+              name="campaignType"
+              value={formData.campaignType}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Select posts type</option>
+              {postsTypes.map((type) => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Posts Goals (select up to 5 for Pro plan)
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {postsGoalOptions.map((goal) => (
+                <label key={goal} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.campaignGoals.includes(goal)}
+                    onChange={(e) => {
+                      if (e.target.checked && formData.campaignGoals.length < 5) {
+                        handleArrayChange('campaignGoals', goal, true);
+                      } else if (!e.target.checked) {
+                        handleArrayChange('campaignGoals', goal, false);
+                      }
+                    }}
+                    disabled={!formData.campaignGoals.includes(goal) && formData.campaignGoals.length >= 5}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">{goal}</span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
       </div>

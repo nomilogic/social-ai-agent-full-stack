@@ -75,21 +75,15 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className=" w-4xl theme-bg-card flex rounded-2xl items-center justify-center overflow-hidden">
-      <div
-        className=" w-full theme-bg-card lg:w-[50vw] w-[90vw]  rounded-2xl shadow-xl p-8 border"
-        style={{ borderColor: "var(--theme-border)" }}
-      >
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 theme-gradient rounded-xl flex items-center justify-center mx-auto mb-4">
-            <Sparkles className="w-8 h-8 theme-text-primary" />
+    <div className="w-full max-w-md mx-auto">
+      <div className="theme-bg-card rounded-xl shadow-lg p-6 border" style={{ borderColor: "var(--theme-border)" }}>
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 theme-gradient rounded-lg flex items-center justify-center mx-auto mb-3">
+            <Sparkles className="w-6 h-6 theme-text-primary" />
           </div>
-          <h1 className="text-2xl font-bold theme-text-primary mb-2">
-            Social AI Agent
+          <h1 className="text-xl font-bold theme-text-primary">
+            {isLogin ? "Welcome back" : "Get started"}
           </h1>
-          <p className="theme-text-secondary">
-            {isLogin ? "Welcome back!" : "Create your account"}
-          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

@@ -10,6 +10,9 @@ export const ProfileSetupBusiness: React.FC<ProfileSetupBusinessProps> = ({ onCo
   const { state, dispatch } = useAppContext();
   const [formData, setFormData] = useState({
     name: '',
+    profession: '',
+    businessName: '',
+    jobTitle: '',
     bio: '',
     location: '',
     website: '',
@@ -18,11 +21,13 @@ export const ProfileSetupBusiness: React.FC<ProfileSetupBusinessProps> = ({ onCo
     targetAudience: '',
     brandVoice: '',
     businessGoals: [] as string[],
-    preferredPlatforms: [] as string[],
     teamCollaboration: false,
     customIntegrations: [] as string[],
     monthlyBudget: '',
-    contentVolume: ''
+    contentVolume: '',
+    // Campaign fields
+    campaignType: '',
+    campaignGoals: [] as string[]
   });
 
   const [loading, setLoading] = useState(false);
@@ -141,6 +146,77 @@ export const ProfileSetupBusiness: React.FC<ProfileSetupBusinessProps> = ({ onCo
     'Expert'
   ];
 
+  const professionOptions = [
+    'CEO/Founder',
+    'Marketing Director',
+    'Social Media Manager',
+    'Brand Manager',
+    'Marketing Manager',
+    'Communications Director',
+    'Business Owner',
+    'Operations Manager',
+    'Product Manager',
+    'Sales Director',
+    'Customer Success Manager',
+    'Content Manager',
+    'Digital Marketing Specialist',
+    'Other Executive Role'
+  ];
+
+  const jobTitleOptions = [
+    'Chief Executive Officer (CEO)',
+    'Chief Marketing Officer (CMO)',
+    'Marketing Director',
+    'Social Media Manager',
+    'Brand Manager',
+    'Content Marketing Manager',
+    'Digital Marketing Manager',
+    'Communications Manager',
+    'Business Development Manager',
+    'Operations Manager',
+    'Product Manager',
+    'Other'
+  ];
+
+  const postsTypes = [
+    'Enterprise Brand Management',
+    'Multi-Channel Marketing',
+    'Product Line Promotion',
+    'Corporate Communications',
+    'B2B Lead Generation',
+    'Customer Acquisition',
+    'Brand Reputation Management',
+    'Market Expansion',
+    'Thought Leadership Posts',
+    'Crisis Communication',
+    'Employee Advocacy',
+    'Investor Relations',
+    'Partnership Marketing',
+    'Event Marketing',
+    'Content Marketing Strategy',
+    'Global Brand Posts',
+    'Industry Authority Building',
+    'Other'
+  ];
+
+  const postsGoalOptions = [
+    'Maximize brand visibility',
+    'Drive qualified leads',
+    'Increase market share',
+    'Enhance customer loyalty',
+    'Boost conversion rates',
+    'Expand global reach',
+    'Establish industry leadership',
+    'Improve brand reputation',
+    'Generate enterprise sales',
+    'Build strategic partnerships',
+    'Drive customer acquisition',
+    'Increase customer lifetime value',
+    'Support product launches',
+    'Enhance customer engagement',
+    'Build thought leadership'
+  ];
+
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* Header */}
@@ -154,11 +230,70 @@ export const ProfileSetupBusiness: React.FC<ProfileSetupBusinessProps> = ({ onCo
         </p>
       </div>
 
-      {/* Campaign Information */}
+      {/* Personal Information */}
+      <div className="space-y-6">
+        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+          <Users className="w-5 h-5 mr-2" />
+          Personal Information
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Your Name *
+            </label>
+            <input
+              type="text"
+              name="businessName"
+              value={formData.businessName}
+              onChange={handleInputChange}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="Enter your full name"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Your Role/Profession
+            </label>
+            <select
+              name="profession"
+              value={formData.profession}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            >
+              <option value="">Select your role</option>
+              {professionOptions.map((profession) => (
+                <option key={profession} value={profession}>{profession}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Job Title
+          </label>
+          <select
+            name="jobTitle"
+            value={formData.jobTitle}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          >
+            <option value="">Select your job title</option>
+            {jobTitleOptions.map((title) => (
+              <option key={title} value={title}>{title}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Business Information */}
       <div className="space-y-6">
         <h3 className="text-lg font-semibold text-gray-900 flex items-center">
           <Building2 className="w-5 h-5 mr-2" />
-          Campaign Information
+          Business Information
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -249,7 +384,7 @@ export const ProfileSetupBusiness: React.FC<ProfileSetupBusinessProps> = ({ onCo
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <Users className="w-4 h-4 inline mr-1" />
-              Campaign Size *
+              Company Size *
             </label>
             <select
               name="campaignSize"
@@ -360,22 +495,47 @@ export const ProfileSetupBusiness: React.FC<ProfileSetupBusinessProps> = ({ onCo
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            Preferred Platforms (unlimited for Business plan)
-          </label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {platformOptions.map((platform) => (
-              <label key={platform} className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.preferredPlatforms.includes(platform)}
-                  onChange={(e) => handleArrayChange('preferredPlatforms', platform, e.target.checked)}
-                  className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                />
-                <span className="text-sm text-gray-700">{platform}</span>
+
+        {/* Posts Information */}
+        <div className="space-y-6">
+          <h3 className="text-lg font-semibold text-gray-900">Posts Information</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Posts Type
               </label>
-            ))}
+              <select
+                name="campaignType"
+                value={formData.campaignType}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="">Select posts type</option>
+                {postsTypes.map((type) => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Posts Goals (unlimited for Business plan)
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {postsGoalOptions.map((goal) => (
+                <label key={goal} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.campaignGoals.includes(goal)}
+                    onChange={(e) => handleArrayChange('campaignGoals', goal, e.target.checked)}
+                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  />
+                  <span className="text-sm text-gray-700">{goal}</span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
       </div>
