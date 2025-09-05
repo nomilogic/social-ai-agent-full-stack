@@ -4,7 +4,7 @@ import { useAppContext } from '../context/AppContext';
 
 interface FeatureRestrictionProps {
   feature: string;
-  requiredPlan: 'ipro' | 'business';
+  requiredPlan: 'free' | 'ipro' | 'business';
   children: React.ReactNode;
   onUpgrade?: () => void;
 }
@@ -56,11 +56,11 @@ export const FeatureRestriction: React.FC<FeatureRestrictionProps> = ({
 
   return (
     <>
-      <div className="relative">
+      <div className="relative h-full-dec-hf ">
         <div className="opacity-50 pointer-events-none">
           {children}
         </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg flex items-center justify-center backdrop-blur-sm">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg flex items-center justify-center backdrop-blur-sm ">
           <button
             onClick={() => setShowUpgradeModal(true)}
             className="bg-white shadow-lg rounded-lg px-6 py-3 flex items-center space-x-3 hover:shadow-xl transition-all duration-200"

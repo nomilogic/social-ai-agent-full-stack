@@ -537,7 +537,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   };
 
   return (
-    <div className="w-full mx-auto theme-bg-card backdrop-blur-sm rounded-xl border border-white/10 p-6 m0">
+    <div className="w-full mx-auto theme-bg-card backdrop-blur-sm rounded-xl border border-white/10 p-6 m0 h-full-dec-hf">
       {/* Header */}
       <div className="text-center mb-6">
         <div className="w-12 h-12 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl flex items-center justify-center mx-auto ">
@@ -990,7 +990,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           <button
             type="button"
             onClick={onBack}
-            className="flex-1 theme-bg-primary/20 theme-text-secondary py-3 px-6 rounded-lg font-medium hover:theme-bg-primary/30 transition-colors duration-200 text-sm"
+            className="flex-1 theme-bg-primary theme-text-secondary py-3 px-6 rounded-lg font-medium hover:theme-bg-primary/30 transition-colors duration-200 text-sm"
           >
             Back
           </button>

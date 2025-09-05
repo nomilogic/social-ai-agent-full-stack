@@ -75,7 +75,21 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
   };
 
   return (
+    
     <div className="w-full max-w-md mx-auto">
+        {/* Animated Background */}
+      <div className={`absolute inset-0 theme-bg-primary transition-all duration-1000`}>
+        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
+      </div>
+
+      {/* Floating Elements */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-20 left-10 w-20 h-20 bg-white/10 rounded-full animate-pulse"></div>
+        <div className="absolute top-40 right-20 w-16 h-16 bg-white/20 rounded-full animate-bounce"></div>
+        <div className="absolute bottom-40 left-20 w-12 h-12 bg-white/15 rounded-full animate-ping"></div>
+        <div className="absolute bottom-20 right-10 w-24 h-24 bg-white/10 rounded-full animate-pulse"></div>
+      </div>
       <div className="theme-bg-card rounded-xl shadow-lg p-6 border" style={{ borderColor: "var(--theme-border)" }}>
         <div className="text-center mb-6">
           <div className="w-12 h-12 theme-gradient rounded-lg flex items-center justify-center mx-auto mb-3">

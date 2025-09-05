@@ -226,8 +226,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         </div>
 
         {/* Main Content */}
-        <main className="py-0">
-          <div className="w-full mx-auto sm:px-0 lg:px-0 h-[calc(100vh-64px-40px)] overflow-auto">
+        <main className="py-0 h-full-dec-hf overflow-auto">
+          <div className="w-full mx-auto sm:px-0 lg:px-0 overflow-auto">
             <div className="  p-0 backdrop-blur-sm ">{children}</div>
           </div>
         </main>

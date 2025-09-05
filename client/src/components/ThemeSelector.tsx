@@ -8,7 +8,7 @@ export const ThemeSelector: React.FC = () => {
 
   return (
     <div className="relative group">
-      <button className="flex items-center space-x-2  px-0 py-0 rounded-lg transition-colors">
+      <button className="flex items-center space-x-2  px-0 py-0 rounded-lg transition-colors theme-bg-card ">
         <div
           className={`w-4 h-4 border border-white rounded-full bg-gradient-to-r ${currentTheme.bgGradient}`}
         ></div>
@@ -18,12 +18,12 @@ export const ThemeSelector: React.FC = () => {
         </span>
       </button>
 
-      <div className="absolute top-full right-0 mt-2 w-72 theme-bg-card rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+      <div className="absolute top-full right-0 mt-2 w-72 theme-bg-card rounded-xl shadow-2xl opacity-50 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
         <div className="p-4">
-          <h3 className="theme-text-primary font-semibold mb-3 theme-bg-card ">
+          <h3 className="theme-text-primary font-semibold mb-3 theme-bg-card p-2 rounded-lg">
             Choose App Theme
           </h3>
-          <div className="grid grid-cols-1 gap-2">
+          <div className="grid grid-cols-1 gap-2 theme-bg-card ">
             {availableThemes.map((theme) => (
               <button
                 key={theme.key}

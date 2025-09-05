@@ -95,19 +95,28 @@ const checkProfileCompletion = (profile: any): boolean => {
   if (!profile) return false;
   
   // Check basic required fields for all plans
-  const hasBasicInfo = profile.name && profile.plan && profile.profession;
+  const hasBasicInfo = profile.name && profile.plan;
   
-  // Check campaign fields (required for all plans)
-  const hasCampaignInfo = profile.campaignName && profile.campaignType;
-  
-  // For business plan, check additional business-specific fields
-  if (profile.plan === 'business') {
-    const hasBusinessInfo = profile.businessName && profile.jobTitle;
-    return hasBasicInfo && hasCampaignInfo && hasBusinessInfo;
+  // For free plan, only basic info is required (campaign fields are behind upgrade prompt)
+  if (profile.plan === 'free') {
+    return hasBasicInfo;
   }
   
-  // For pro and free plans, basic info and campaign info is sufficient
-  return hasBasicInfo && hasCampaignInfo;
+  // For pro plan, also check campaign fields
+  if (profile.plan === 'ipro') {
+    const hasPostsInfo = profile.campaignType;
+    return hasBasicInfo && hasPostsInfo;
+  }
+  
+  // For business plan, check additional business-specific fields and campaign info
+  if (profile.plan === 'business') {
+    const hasBusinessInfo = profile.businessName && profile.industry;
+    const hasPostsInfo = profile.campaignType;
+    return hasBasicInfo && hasBusinessInfo && hasPostsInfo;
+  }
+  
+  // Default fallback
+  return hasBasicInfo;
 };
 
 // Helper functions for localStorage persistence

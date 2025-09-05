@@ -231,25 +231,25 @@ export const PostCalendar: React.FC<PostCalendarProps> = ({
       {/* Calendar Header */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
-          <Calendar className="w-6 h-6 text-blue-600" />
+          <Calendar className="w-6 h-6 theme-text-secondary" />
           <h2 className="text-2xl font-bold text-white">Post Calendar</h2>
         </div>
 
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigateMonth("prev")}
-            className="p-2 text-white hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 theme-text-primary hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
 
-          <h3 className="text-xl font-semibold text-white min-w-[200px] text-center">
+          <h3 className="text-xl font-semibold theme-text-primary min-w-[200px] text-center">
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h3>
 
           <button
             onClick={() => navigateMonth("next")}
-            className="p-2 text-gray-600 hover:text-white hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 theme-text-primary hover:text-white hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -273,12 +273,12 @@ export const PostCalendar: React.FC<PostCalendarProps> = ({
           <div
             key={index}
             className={`min-h-[120px] p-2 border border-gray-200 ${
-              !day.isCurrentMonth ? "theme-bg-card text-white" : "theme-bg-card"
-            } ${day.isToday ? "theme-bg-primary border-blue-300 theme-text-white" : ""}`}
+              !day.isCurrentMonth ? "theme-bg-card theme-text-primary opacity-30" : "theme-bg-card"
+            } ${day.isToday ? "theme-bg-secondary border-blue-300 theme-text-secondry" : "theme-text-primary"}`}
           >
             <div className="flex justify-between items-start mb-2">
               <span
-                className={`text-sm font-medium ${day.isToday ? "theme-text-secondry" : "text-white"}`}
+                className={`text-sm font-medium ${day.isToday ? "theme-text-secondary" : "theme-text-primary"}`}
               >
                 {day.date.getDate()}
               </span>

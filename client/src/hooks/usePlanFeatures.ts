@@ -4,6 +4,7 @@ type PlanType = 'free' | 'ipro' | 'business';
 
 interface PlanFeatures {
   canSchedule: boolean;
+  canCreateCampaigns: boolean;
   maxPostsPerMonth: number;
   maxImageGenerations: number;
   hasAdvancedAI: boolean;
@@ -17,6 +18,7 @@ interface PlanFeatures {
 const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
   free: {
     canSchedule: false,
+    canCreateCampaigns: false,
     maxPostsPerMonth: 5,
     maxImageGenerations: 0,
     hasAdvancedAI: false,
@@ -28,6 +30,7 @@ const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
   },
   ipro: {
     canSchedule: true,
+    canCreateCampaigns: true,
     maxPostsPerMonth: 1000,
     maxImageGenerations: 20,
     hasAdvancedAI: true,
@@ -39,6 +42,7 @@ const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
   },
   business: {
     canSchedule: true,
+    canCreateCampaigns: true,
     maxPostsPerMonth: -1, // unlimited
     maxImageGenerations: 100,
     hasAdvancedAI: true,
