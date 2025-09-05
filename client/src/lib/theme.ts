@@ -8,18 +8,23 @@ export interface ThemeColors {
     primary: string;
     secondary: string;
     light: string;
+    dark: string;
   };
   background: {
     primary: string;
     secondary: string;
     trinary?: string;
     card: string;
+    light: string;
+    dark: string;
   };
   border: string;
   button: {
     primary: string;
     secondary: string;
     hover: string;
+    dark: string;
+    light: string;
   };
 }
 
@@ -31,21 +36,26 @@ export const themes: Record<string, ThemeColors> = {
     secondary: "#8B5CF6",
     accent: "#6366F1",
     text: {
-      secondary: "#FFFFFF",
-      primary: "rgba(248, 210, 104, 0.95)",
+      primary: "#FFFFFF",
+      secondary: "rgba(248, 210, 104, 0.95)",
       light: "rgba(255, 255, 255, 0.7)",
+      dark: "rgba(0, 0, 0, 0.7)",
     },
     background: {
       primary: "rgba(255, 255, 255, 0.1)",
-      secondary: "rgba(9, 10, 35, 0.05)",
+      secondary: "rgba(255, 255, 255, 0.05)",
       trinary: "rgba(25, 25, 25, 0.05)",
       card: "rgba(25, 25, 25, 0.50)",
+      light: "rgba(255, 255, 255, 0.95)",
+      dark: "rgba(0, 0, 0, 0.95)",
     },
     border: "rgba(255, 255, 255, 0.2)",
     button: {
       primary: "#FFFFFF",
       secondary: "rgba(255, 255, 255, 0.2)",
       hover: "rgba(255, 255, 255, 0.9)",
+      dark: "rgba(0, 0, 0, 0.9)",
+      light: "rgba(255, 255, 255, 0.9)",
     },
   },
   "content-creation": {
@@ -58,17 +68,22 @@ export const themes: Record<string, ThemeColors> = {
      secondary: "#FFFFFF",
       primary: "rgba(248, 210, 104, 0.95)",
       light: "rgba(255, 255, 255, 0.7)",
+      dark: "rgba(0, 0, 0, 0.7)",
     },
     background: {
       primary: "rgba(255, 255, 255, 0.1)",
       secondary: "rgba(255, 255, 255, 0.05)",
       card: "rgba(25, 25, 25, 0.50)",
+      light: "rgba(255, 255, 255, 0.95)",
+      dark: "rgba(0, 0, 0, 0.95)",
     },
     border: "rgba(255, 255, 255, 0.2)",
     button: {
       primary: "#FFFFFF",
       secondary: "rgba(255, 255, 255, 0.2)",
       hover: "rgba(255, 255, 255, 0.9)",
+      dark: "rgba(0, 0, 0, 0.9)",
+      light: "rgba(255, 255, 255, 0.9)",
     },
   },
   "multi-platform": {
@@ -81,17 +96,22 @@ export const themes: Record<string, ThemeColors> = {
       secondary: "#FFFFFF",
       primary: "rgba(248, 210, 104, 0.95)",
       light: "rgba(255, 255, 255, 0.7)",
+      dark: "rgba(0, 0, 0, 0.7)",
     },
     background: {
       primary: "rgba(255, 255, 255, 0.1)",
       secondary: "rgba(255, 255, 255, 0.05)",
       card: "rgba(25, 25, 25, 0.50)",
+      light: "rgba(255, 255, 255, 0.95)",
+      dark: "rgba(0, 0, 0, 0.95)",
     },
     border: "rgba(255, 255, 255, 0.2)",
     button: {
       primary: "#FFFFFF",
       secondary: "rgba(255, 255, 255, 0.2)",
       hover: "rgba(255, 255, 255, 0.9)",
+      dark: "rgba(0, 0, 0, 0.9)",
+      light: "rgba(255, 255, 255, 0.9)",
     },
   },
   "smart-scheduling": {
@@ -104,17 +124,22 @@ export const themes: Record<string, ThemeColors> = {
       primary: "#FFFFFF",
       secondary: "rgba(255, 255, 255, 0.9)",
       light: "rgba(255, 255, 255, 0.7)",
+      dark: "rgba(0, 0, 0, 0.7)",
     },
     background: {
       primary: "rgba(255, 255, 255, 0.1)",
       secondary: "rgba(255, 255, 255, 0.05)",
       card: "rgba(25, 25, 25, 0.50)",
+      light: "rgba(255, 255, 255, 0.95)",
+      dark: "rgba(0, 0, 0, 0.95)",
     },
     border: "rgba(255, 255, 255, 0.2)",
     button: {
       primary: "#FFFFFF",
       secondary: "rgba(255, 255, 255, 0.2)",
       hover: "rgba(255, 255, 255, 0.9)",
+      dark: "rgba(0, 0, 0, 0.9)",
+      light: "rgba(255, 255, 255, 0.9)",
     },
   },
   analytics: {
@@ -127,17 +152,22 @@ export const themes: Record<string, ThemeColors> = {
       secondary: "#FFFFFF",
       primary: "rgba(248, 210, 104, 0.95)",
       light: "rgba(255, 255, 255, 0.7)",
+      dark: "rgba(0, 0, 0, 0.7)",
     },
     background: {
       primary: "rgba(255, 255, 255, 0.1)",
       secondary: "rgba(255, 255, 255, 0.05)",
       card: "rgba(25, 25, 25, 0.50)",
+      light: "rgba(255, 255, 255, 0.95)",
+      dark: "rgba(0, 0, 0, 0.95)",
     },
     border: "rgba(255, 255, 255, 0.2)",
     button: {
       primary: "#FFFFFF",
       secondary: "rgba(255, 255, 255, 0.2)",
       hover: "rgba(255, 255, 255, 0.9)",
+      dark: "rgba(0, 0, 0, 0.9)",
+      light: "rgba(255, 255, 255, 0.9)",
     },
   },
   enterprise: {
@@ -150,18 +180,23 @@ export const themes: Record<string, ThemeColors> = {
       primary: "#FFFFFF",
       secondary: "rgba(255, 255, 255, 0.9)",
       light: "rgba(255, 255, 255, 0.7)",
+      dark: "rgba(0, 0, 0, 0.7)",
     },
     background: {
       primary: "rgba(255, 255, 255, 0.1)",
       secondary: "rgba(255, 255, 255, 0.05)",
       card: "rgba(25, 25, 25, 0.50)",
+      light: "rgba(255, 255, 255, 0.95)",
+      dark: "rgba(0, 0, 0, 0.95)",
     },
     border: "rgba(255, 255, 255, 0.2)",
     button: {
       primary: "#FFFFFF",
       secondary: "rgba(255, 255, 255, 0.2)",
       hover: "rgba(255, 255, 255, 0.9)",
-    },
+      dark: "rgba(0, 0, 0, 0.9)",
+      light: "rgba(255, 255, 255, 0.9)",
+    }
   },
 };
 

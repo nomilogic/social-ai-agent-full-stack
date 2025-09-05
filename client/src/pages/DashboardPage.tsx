@@ -232,7 +232,7 @@ export const DashboardPage: React.FC = () => {
   ];
 
   return (
-    <div className="theme-card-bg min-h-screen">
+    <div className="theme-card-bg">
       <div className="mx-auto px-4 py-4 space-y-4">
         {/* Create Content Button - Centered */}
         <div className="flex justify-center">
@@ -417,8 +417,8 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Show onboarding again button if no profile */}
-        {!state.selectedProfile && (
+        {/* Show onboarding again button if user needs tier selection or profile setup */}
+        {!state.selectedProfile && !state.hasTierSelected && !state.hasProfileSetup && (
           <div className="theme-bg-card rounded-xl shadow-sm border border-white/20 p-4 text-center floating-element">
             <h2 className="text-lg font-bold theme-text-primary mb-2">
               Get Started with Your First Content

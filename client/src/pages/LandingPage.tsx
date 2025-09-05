@@ -25,7 +25,7 @@ export const LandingPage: React.FC = () => {
   if (showAuth) {
     return (
       <div className="w-full flex min-h-screen theme-gradient from-blue-50 to-indigo-100 items-center justify-center">
-        <div className="  ">
+        <div className="w-full max-w-md p-6">
           <div className="text-center text-white"></div>
           <AuthForm onAuthSuccess={handleAuthSuccess} />
         </div>

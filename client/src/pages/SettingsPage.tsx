@@ -54,7 +54,7 @@ export const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="theme-card-bg min-h-screen">
+    <div className="theme-card-bg">
       <div className="mx-auto px-4 py-4 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Settings Navigation */}

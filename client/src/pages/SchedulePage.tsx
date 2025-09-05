@@ -95,7 +95,7 @@ export const SchedulePage: React.FC = () => {
     return (
       <FeatureRestriction feature="Schedule Posts" requiredPlan="ipro">
         <div className="p-8 text-center">
-          <p className="text-gray-600">
+          <p className="theme-text-secondary">
             Schedule your content across multiple platforms with AI-powered
             optimal timing
           </p>
@@ -105,8 +105,8 @@ export const SchedulePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen theme-card-bg">
-      <div className="">
+    <div className="theme-card-bg p-4">
+      <div className=" h-full-dec-hf ">
         {/* Content */}
         <div className="space-y-6">
           <PostScheduleDashboard campaignId={state.selectedProfile?.id || ""} />

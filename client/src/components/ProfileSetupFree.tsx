@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User, MapPin, Globe } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { FeatureRestriction } from './FeatureRestriction';
 
 interface ProfileSetupFreeProps {
   onComplete: () => void;
@@ -16,7 +17,9 @@ export const ProfileSetupFree: React.FC<ProfileSetupFreeProps> = ({ onComplete }
     website: '',
     contentNiche: '',
     targetAudience: '',
-    // Campaign fields
+   socialGoals: [] as string[],
+    postingFrequency: '',
+    brandVoice: '',
     campaignType: '',
     campaignGoals: [] as string[]
   });
@@ -149,6 +152,7 @@ export const ProfileSetupFree: React.FC<ProfileSetupFreeProps> = ({ onComplete }
     'Share knowledge',
     'Promote products/services'
   ];
+  
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -284,8 +288,8 @@ export const ProfileSetupFree: React.FC<ProfileSetupFreeProps> = ({ onComplete }
           />
         </div>
 
-        {/* Posts Information */}
-        <div className="space-y-4">
+        {/* Advanced Posts Configuration - Upgrade Required */}
+    <div className="space-y-6">
           <h3 className="text-lg font-semibold text-gray-900">Posts Information</h3>
           
           <div>
@@ -296,7 +300,7 @@ export const ProfileSetupFree: React.FC<ProfileSetupFreeProps> = ({ onComplete }
               name="campaignType"
               value={formData.campaignType}
               onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Select posts type</option>
               {postsTypes.map((type) => (
@@ -307,7 +311,7 @@ export const ProfileSetupFree: React.FC<ProfileSetupFreeProps> = ({ onComplete }
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Posts Goals (select up to 2 for Free plan)
+              Posts Goals (select up to 5 for Pro plan)
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {postsGoalOptions.map((goal) => (
@@ -315,9 +319,15 @@ export const ProfileSetupFree: React.FC<ProfileSetupFreeProps> = ({ onComplete }
                   <input
                     type="checkbox"
                     checked={formData.campaignGoals.includes(goal)}
-                    onChange={(e) => handleArrayChange('campaignGoals', goal, e.target.checked)}
-                    disabled={!formData.campaignGoals.includes(goal) && formData.campaignGoals.length >= 2}
-                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                    onChange={(e) => {
+                      if (e.target.checked && formData.campaignGoals.length < 5) {
+                        handleArrayChange('campaignGoals', goal, true);
+                      } else if (!e.target.checked) {
+                        handleArrayChange('campaignGoals', goal, false);
+                      }
+                    }}
+                    disabled={!formData.campaignGoals.includes(goal) && formData.campaignGoals.length >= 5}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="text-sm text-gray-700">{goal}</span>
                 </label>

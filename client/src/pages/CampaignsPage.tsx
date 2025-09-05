@@ -4,12 +4,15 @@ import { Plus } from 'lucide-react';
 import { CampaignSelector } from '../components/CampaignSelector';
 import { CampaignSetup } from '../components/CampaignSetup';
 import { CampaignDashboard } from '../components/CampaignDashboard';
+import { FeatureRestriction } from '../components/FeatureRestriction';
 import { useAppContext } from '../context/AppContext';
+import { usePlanFeatures } from '../hooks/usePlanFeatures';
 import { saveCampaign, updateCampaign } from '../lib/database';
 import { CampaignInfo } from '../types';
 
 export const CampaignsPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
+  const { canCreateCampaigns } = usePlanFeatures();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -125,22 +128,32 @@ export const CampaignsPage: React.FC = () => {
               </button> */}
             </div>
             
-            <CampaignSelector
-              userId={state.user?.id || ''}
-              onSelectCampaign={handleSelectCampaign}
-              onCreateNew={handleCreateCampaign}
-              refreshTrigger={refreshTrigger}
-              onScheduleCampaign={(campaign) => {
-                const campaignData = { ...campaign, userId: state.user?.id || campaign.userId || '' };
-                dispatch({ type: 'SET_SELECTED_CAMPAIGN', payload: campaignData });
-                navigate('/schedule');
-              }}
-              onDashboardCampaign={(campaign) => {
-                const campaignData = { ...campaign, userId: state.user?.id || campaign.userId || '' };
-                dispatch({ type: 'SET_SELECTED_CAMPAIGN', payload: campaignData });
-                navigate(`/campaigns/${campaign.id}`);
-              }}
-            />
+            {!canCreateCampaigns ? (
+              <FeatureRestriction feature="Campaign Management" requiredPlan="ipro">
+                <div className="p-8 text-center">
+                  <p className="theme-text-secondary">
+                    Create and manage multiple campaigns with advanced targeting and analytics
+                  </p>
+                </div>
+              </FeatureRestriction>
+            ) : (
+              <CampaignSelector
+                userId={state.user?.id || ''}
+                onSelectCampaign={handleSelectCampaign}
+                onCreateNew={handleCreateCampaign}
+                refreshTrigger={refreshTrigger}
+                onScheduleCampaign={(campaign) => {
+                  const campaignData = { ...campaign, userId: state.user?.id || campaign.userId || '' };
+                  dispatch({ type: 'SET_SELECTED_CAMPAIGN', payload: campaignData });
+                  navigate('/schedule');
+                }}
+                onDashboardCampaign={(campaign) => {
+                  const campaignData = { ...campaign, userId: state.user?.id || campaign.userId || '' };
+                  dispatch({ type: 'SET_SELECTED_CAMPAIGN', payload: campaignData });
+                  navigate(`/campaigns/${campaign.id}`);
+                }}
+              />
+            )}
           </div>
         } 
       />
