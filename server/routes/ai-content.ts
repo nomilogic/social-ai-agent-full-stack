@@ -64,7 +64,7 @@ router.post('/generate-image', async (req: Request, res: Response) => {
     const finalSeed = seed || Math.floor(Math.random() * 1000000)
 
     // Generate image using Pollinations AI
-    const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=${width}&height=${height}&seed=${finalSeed}&nologo=true&enhance=true`
+    const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=${width}&height=${height}&nologo=true&enhance=true`
     
     console.log('Pollinations AI URL:', pollinationsUrl)
 
