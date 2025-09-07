@@ -78,7 +78,7 @@ export class AIContentGenerator {
         userId: options.userId,
         width: options.width || 1024,
         height: options.height || 1024,
-        seed: options.seed,
+        // seed: options.seed,
         saveToStorage: options.saveToStorage !== false // Default to true
       })
 

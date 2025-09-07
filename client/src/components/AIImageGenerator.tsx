@@ -147,7 +147,7 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-h-[90vh] overflow-auto ">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -157,8 +157,10 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">AI Image Generator</h2>
                 <p className="text-gray-600">Create stunning visuals for your social media posts</p>
+
               </div>
             </div>
+            
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 text-xl"
@@ -170,6 +172,89 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
 
         <div className="p-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+               {/* Generated Image Panel */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900">Generated Image</h3>
+              
+              {!currentImage && !hasError && !isGenerating && (
+                <div className="text-center py-12 text-gray-500">
+                  <Wand2 className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                  <p>No image generated yet</p>
+                  <p className="text-sm">Start by describing your desired image</p>
+                </div>
+              )}
+              
+              {hasError && !isGenerating && (
+                <div className="text-center py-12 text-red-500">
+                  <div className="w-12 h-12 mx-auto mb-4 bg-red-100 rounded-xl flex items-center justify-center">
+                    <RefreshCw className="w-6 h-6 text-red-600" />
+                  </div>
+                  <p>Failed to generate image</p>
+                  <p className="text-sm text-gray-600 mb-4">Please try again with a different prompt or model</p>
+                  <button
+                    onClick={handleRetryGeneration}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors flex items-center justify-center space-x-1 mx-auto"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    <span>Retry</span>
+                  </button>
+                </div>
+              )}
+              
+              {isGenerating && (
+                <div className="text-center py-12 text-purple-500">
+                  <div className="w-12 h-12 mx-auto mb-4 bg-purple-100 rounded-xl flex items-center justify-center">
+                    <Loader className="w-6 h-6 text-purple-600 animate-spin" />
+                  </div>
+                  <p>Generating image...</p>
+                  <p className="text-sm text-gray-600">This may take a few moments</p>
+                </div>
+              )}
+              
+              {currentImage && !isGenerating && (
+                <div className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+                  <img
+                    src={currentImage.url}
+                    alt={currentImage.prompt}
+                    className="w-full h-48 object-cover rounded-lg mb-3"
+                    onError={() => {
+                      setHasError(true);
+                      setCurrentImage(null);
+                    }}
+                  />
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{currentImage.prompt}</p>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => handleUseImage(currentImage.url)}
+                      className="flex-1 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-purple-700 transition-colors flex items-center justify-center space-x-1"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>Use This Image</span>
+                    </button>
+                    
+                    <button
+                      onClick={handleRetryGeneration}
+                      disabled={isGenerating}
+                      className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors flex items-center justify-center space-x-1"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    <span>Generate New</span>
+                    </button>
+                    
+                    {currentImage.url && (
+                      <a
+                        href={currentImage.url}
+                        download="ai-generated-image.png"
+                        className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors flex items-center justify-center"
+                      >
+                        <Download className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             {/* Generation Panel */}
             <div className="lg:col-span-2 space-y-6">
               <div>
@@ -340,89 +425,7 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
               </button>
             </div>
 
-            {/* Generated Image Panel */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900">Generated Image</h3>
-              
-              {!currentImage && !hasError && !isGenerating && (
-                <div className="text-center py-12 text-gray-500">
-                  <Wand2 className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p>No image generated yet</p>
-                  <p className="text-sm">Start by describing your desired image</p>
-                </div>
-              )}
-              
-              {hasError && !isGenerating && (
-                <div className="text-center py-12 text-red-500">
-                  <div className="w-12 h-12 mx-auto mb-4 bg-red-100 rounded-xl flex items-center justify-center">
-                    <RefreshCw className="w-6 h-6 text-red-600" />
-                  </div>
-                  <p>Failed to generate image</p>
-                  <p className="text-sm text-gray-600 mb-4">Please try again with a different prompt or model</p>
-                  <button
-                    onClick={handleRetryGeneration}
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors flex items-center justify-center space-x-1 mx-auto"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                    <span>Retry</span>
-                  </button>
-                </div>
-              )}
-              
-              {isGenerating && (
-                <div className="text-center py-12 text-purple-500">
-                  <div className="w-12 h-12 mx-auto mb-4 bg-purple-100 rounded-xl flex items-center justify-center">
-                    <Loader className="w-6 h-6 text-purple-600 animate-spin" />
-                  </div>
-                  <p>Generating image...</p>
-                  <p className="text-sm text-gray-600">This may take a few moments</p>
-                </div>
-              )}
-              
-              {currentImage && !isGenerating && (
-                <div className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-                  <img
-                    src={currentImage.url}
-                    alt={currentImage.prompt}
-                    className="w-full h-48 object-cover rounded-lg mb-3"
-                    onError={() => {
-                      setHasError(true);
-                      setCurrentImage(null);
-                    }}
-                  />
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{currentImage.prompt}</p>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => handleUseImage(currentImage.url)}
-                      className="flex-1 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-purple-700 transition-colors flex items-center justify-center space-x-1"
-                    >
-                      <Eye className="w-4 h-4" />
-                      <span>Use This Image</span>
-                    </button>
-                    
-                    <button
-                      onClick={handleRetryGeneration}
-                      disabled={isGenerating}
-                      className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors flex items-center justify-center space-x-1"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                      <span>Generate New</span>
-                    </button>
-                    
-                    {currentImage.url && (
-                      <a
-                        href={currentImage.url}
-                        download="ai-generated-image.png"
-                        className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors flex items-center justify-center"
-                      >
-                        <Download className="w-4 h-4" />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+         
           </div>
         </div>
       </div>

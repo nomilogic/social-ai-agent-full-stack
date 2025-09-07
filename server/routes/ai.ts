@@ -1034,7 +1034,7 @@ async function generateImageWithPollinations(
     console.log('🌸 Generating image with Pollinations AI');
     
     const encodedPrompt = encodeURIComponent(prompt);
-    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${seed}&nologo=true`;
+    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&nologo=true`;
     
     // For Pollinations, the URL itself is the image
     return url;
