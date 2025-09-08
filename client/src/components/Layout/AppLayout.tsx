@@ -240,19 +240,21 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 © 2025 Social AI Agent. Powered by advanced AI for smarter
                 social media content.
               </p>
-              <div className="hidden mt-4 flex justify-center space-x-6 text-sm theme-text-secondary">
-                <a
-                  href="#"
+              <div className="mt-2 flex justify-center space-x-6 text-sm theme-text-secondary">
+                <Link
+                  to="/privacy"
                   className="hover:theme-text-primary transition-colors duration-200"
                 >
                   Privacy Policy
-                </a>
+                </Link>
+                <span className="text-white/20">•</span>
                 <a
                   href="#"
                   className="hover:theme-text-primary transition-colors duration-200"
                 >
                   Terms of Service
                 </a>
+                <span className="text-white/20">•</span>
                 <a
                   href="#"
                   className="hover:theme-text-primary transition-colors duration-200"
