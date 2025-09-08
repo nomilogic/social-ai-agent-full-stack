@@ -247,7 +247,7 @@ export async function generateAllPosts(
   });
   
   try {
-    const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : 'http://localhost:5000');
+    const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}/api` : 'http://localhost:5000/api');
     
     // Generate posts for each platform with progress updates
     for (let i = 0; i < platforms.length; i++) {
@@ -264,7 +264,7 @@ export async function generateAllPosts(
       try {
         // Make individual API call for each platform to get proper generation
         console.log(`Making API call ${i + 1}/${platforms.length} for platform: ${platform}`);
-        const response = await fetch(`${apiUrl}/api/ai/generate`, {
+        const response = await fetch(`${apiUrl}/ai/generate`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

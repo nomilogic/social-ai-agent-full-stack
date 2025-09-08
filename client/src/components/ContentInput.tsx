@@ -239,8 +239,8 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         import.meta.env.VITE_API_URL ||
         (typeof window !== "undefined"
           ? `${window.location.protocol}//${window.location.host}`
-          : "http://localhost:5000");
-      const response = await fetch(`${apiUrl}/api/ai/analyze-image`, {
+          : "http://localhost:5000/api");
+      const response = await fetch(`${apiUrl}/ai/analyze-image`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -314,8 +314,8 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         import.meta.env.VITE_API_URL ||
         (typeof window !== "undefined"
           ? `${window.location.protocol}//${window.location.host}`
-          : "http://localhost:5000");
-      const response = await fetch(`${apiUrl}/api/ai/analyze-image`, {
+          : "http://localhost:5000/api");
+      const response = await fetch(`${apiUrl}/ai/analyze-image`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -257,8 +257,8 @@ export const apiService = {
 
 // API utility functions
 export const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
-  const baseUrl = import.meta.env.VITE_API_URL || '';
-  const url = `${baseUrl}/api${endpoint}`;
+//  const baseUrl = ;
+  const url = import.meta.env.VITE_API_URL || 'http://localhost:5000/api' + endpoint;
 
   const defaultOptions: RequestInit = {
     headers: {
