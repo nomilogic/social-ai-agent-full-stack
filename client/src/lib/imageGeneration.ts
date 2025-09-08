@@ -57,7 +57,7 @@ export async function generateImage(request: ImageGenerationRequest): Promise<Ge
 
     // Use Pollinations with model selection
     const model = request.model || 'stabilityai/stable-diffusion-xl-base-1.0';
-    const endpoint = '/api/ai/generate-image';
+    const endpoint = '/ai/generate-image';
     
     // Convert aspect ratio to dimensions
     const dimensions = {
@@ -77,8 +77,9 @@ export async function generateImage(request: ImageGenerationRequest): Promise<Ge
       saveToStorage: true,
       userId: 'anonymous' // Can be updated to use actual user ID
     };
+   // alert(import.meta.env.VITE_API_URL+ 'VITE_API_URL'  );
 
-    const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${endpoint}`, requestData);
+    const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}${endpoint}`, requestData);
 
     return {
       url: response.data.imageUrl,
@@ -170,7 +171,7 @@ export function getPlatformImageSuggestions(platforms: string[]): ImageGeneratio
 // Analyze image content and suggest improvements
 export async function analyzeGeneratedImage(imageUrl: string): Promise<string> {
   try {
-    const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/analyze-image`, {
+    const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/ai/analyze-image`, {
       imageUrl
     });
     return response.data.analysis;
