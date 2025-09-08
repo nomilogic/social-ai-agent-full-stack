@@ -1,7 +1,7 @@
 import { createServer, type Server } from "http";
 import type { Express } from "express";
 import express from 'express';
-import path from 'path';
+import path, { basename } from 'path';
 import authRouter from './routes/auth'
 import enhancedOAuthRoutes from './routes/oauth-enhanced-integrated';
 import linkedinRouter from './routes/linkedin'
@@ -17,6 +17,7 @@ import campaignsRouter from './routes/campaigns'
 import scheduleRouter from './routes/schedule'
 import notificationsRouter from './routes/notifications'
 import mediaRouter from './routes/media'
+import api from "@/lib/api";
 
 export async function registerRoutes(app: Express): Promise<Server> {
     // Static file serving for uploaded media
@@ -46,10 +47,17 @@ app.use('/api/v2', linkedinRouter)
 
 // Health check endpoint
 app.get('/health', (req, res) => {
+
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() })
+
+  res.json({ status: 'ok', timestamp: new Date().toISOString(),
+  env: process.env.NODE_ENV || 'development',
+  apiUrl: process.env.VITE_API_URL || 'http://localhost:5000/api',
+  AppUrl: process.env.VITE_APP_URL || 'http://localhost:5000',
+  baseUrl: process.env.BASE_URL || 'http://localhost:5000'
+   })
 })
 
   const httpServer = createServer(app);
