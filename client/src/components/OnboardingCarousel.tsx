@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Sparkles, Target, Users, BarChart3, Calendar, Zap, Brain, Camera, Video, MessageSquare, TrendingUp, Globe } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface OnboardingSlide {
   id: number;
@@ -180,6 +181,20 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onGetSta
               Join thousands of creators and businesses already using Social AI Agent
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="absolute bottom-8 left-0 right-0 z-20">
+        <div className="flex justify-center items-center space-x-6 text-white/60 text-sm">
+          <Link 
+            to="/privacy" 
+            className="hover:text-white/90 transition-colors duration-300"
+          >
+            Privacy Policy
+          </Link>
+          <span className="text-white/40">•</span>
+          <span>© 2024 Social AI Agent</span>
         </div>
       </div>
 

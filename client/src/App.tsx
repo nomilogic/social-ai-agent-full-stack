@@ -15,6 +15,7 @@ import { OAuthCallback } from './components/OAuthCallback';
 import { LandingPage } from './pages/LandingPage';
 import { ProfilePage } from './pages/ProfilePage'; // Import ProfilePage
 import { CampaignsPage } from './pages/CampaignsPage';
+import PrivacyPolicy from './components/PrivacyPolicy';
 import { themeManager } from './lib/theme';
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
 
         {/* Public routes */}
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
 
         {/* OAuth callback routes */}
         <Route path="/oauth/:platform/callback" element={<OAuthCallback />} />
