@@ -18,10 +18,14 @@
     "dev:server-only": "NODE_ENV=development ts-node-dev --respawn --transpile-only --project tsconfig.server.json server/src/index.ts",
     "dev:client-only": "cd client && vite --host",
     "type-check": "tsc --noEmit",
-    "type-check:server": "tsc --project tsconfig.server.json --noEmit"
+    "type-check:server": "tsc --project tsconfig.server.json --noEmit",
+    "generate-image": "node scripts/gemini-image-generation.js",
+    "social-media-demo": "node scripts/social-media-image-demo.js",
+    "gemini-enhanced": "node scripts/gemini-enhanced.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.59.0",
+    "@google/genai": "^1.17.0",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.55.0",
     "@types/bcrypt": "^6.0.0",

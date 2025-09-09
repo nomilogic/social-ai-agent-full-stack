@@ -1,5 +1,7 @@
 import express, { Request, Response } from 'express'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+// Import from @google/genai for image generation capabilities
+import { GoogleGenAI } from '@google/genai'
 import axios from 'axios'
 import multer from 'multer'
 import { c } from 'node_modules/vite/dist/node/types.d-aGj9QkWt';
@@ -23,6 +25,15 @@ const router = express.Router()
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || null
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || null
 let genAI =  new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY || '');
+// Initialize @google/genai client for image generation
+let geminiImageClient: GoogleGenAI | null = null;
+if (process.env.VITE_GEMINI_API_KEY) {
+  try {
+    geminiImageClient = new GoogleGenAI(process.env.VITE_GEMINI_API_KEY);
+  } catch (error) {
+    console.warn('Failed to initialize @google/genai client:', error);
+  }
+}
 // AI Model Configuration
 interface AIModel {
   id: string;
@@ -721,7 +732,7 @@ async function generateWithClaude(
   };
 }
 
-// Get available models
+// Get available text models
 router.get('/models', (req: Request, res: Response) => {
   const availableModels = Object.keys(AI_MODELS).map(key => {
     const model = AI_MODELS[key];
@@ -738,6 +749,37 @@ router.get('/models', (req: Request, res: Response) => {
     models: availableModels,
     defaultModel: 'gpt-4o'
   });
+});
+
+// Get available image models
+router.get('/image-models', (req: Request, res: Response) => {
+  try {
+    // Check API key availability for different providers
+    const checkApiKeys = {
+      gemini: !!process.env.VITE_GEMINI_API_KEY && !!geminiImageClient,
+      huggingface: !!process.env.HUGGING_FACE_API_KEY && process.env.HUGGING_FACE_API_KEY.startsWith('hf_'),
+      pollinations: true // Always available (free)
+    };
+
+    // Add availability status to models
+    const modelsWithAvailability = availableModels.map(model => ({
+      ...model,
+      isAvailable: checkApiKeys[model.provider as keyof typeof checkApiKeys] || false
+    }));
+
+    res.json({
+      success: true,
+      models: modelsWithAvailability,
+      defaultModel: 'stabilityai/stable-diffusion-xl-base-1.0'
+    });
+  } catch (error: any) {
+    console.error('Error fetching image models:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch image models',
+      details: error.message
+    });
+  }
 });
 
 // Enhanced image generation with model selection
@@ -847,6 +889,13 @@ interface ImageModel {
 }
 
 const availableModels: ImageModel[] = [
+  // Gemini Models (Google GenAI)
+  {
+    id: 'gemini-2.5-flash-image-preview',
+    name: '🔮 Gemini 2.5 Flash',
+    description: 'Google Gemini AI image generation',
+    provider: 'gemini'
+  },
   // Pollinations Models (Free & Fast) - No model selection, works by URL only
   {
     id: 'default',
@@ -936,8 +985,21 @@ router.post('/generate-image', async (req: Request, res: Response) => {
     // Determine provider based on model selection - exactly like working reference
     const selectedModel = availableModels.find(m => m.id === model);
     const isHuggingFaceModel = selectedModel?.provider === 'huggingface';
+    const isGeminiModel = selectedModel?.provider === 'gemini';
     
-    if (isHuggingFaceModel && model !== 'default') {
+    if (isGeminiModel) {
+      console.log('🔮 Generating image with Gemini:', model)
+      try {
+        const geminiResult = await generateImageWithGemini(enhancedPrompt)
+        imageUrl = geminiResult.imageData // This is a base64 data URL
+        provider = 'gemini'
+      } catch (geminiError: any) {
+        console.warn('Gemini failed, falling back to Pollinations:', geminiError.message)
+        // Fallback to Pollinations if Gemini fails
+        imageUrl = await generateImageWithPollinations(enhancedPrompt, width, height, finalSeed)
+        provider = 'pollinations'
+      }
+    } else if (isHuggingFaceModel && model !== 'default') {
       console.log('🤗 Generating image with Hugging Face:', model)
       try {
         imageUrl = await generateImageWithHuggingFace(model, enhancedPrompt, width, height)
@@ -1042,6 +1104,68 @@ async function generateImageWithPollinations(
   } catch (error: any) {
     console.error('Pollinations error:', error);
     throw new Error(`Pollinations failed: ${error.message}`);
+  }
+}
+
+// Gemini image generation helper function
+async function generateImageWithGemini(prompt: string): Promise<{ imageData: string; mimeType: string; base64: string }> {
+  if (!process.env.VITE_GEMINI_API_KEY || !geminiImageClient) {
+    throw new Error('Gemini API key not configured or @google/genai client not available');
+  }
+
+  console.log('🔮 Generating image with Gemini 2.5 Flash Image Preview using @google/genai');
+
+  try {
+    // Use the @google/genai client for image generation
+    const model = geminiImageClient.getGenerativeModel({ model: "gemini-2.5-flash-image-preview" });
+
+    const result = await model.generateContent({
+      contents: [{
+        role: 'user',
+        parts: [{ text: prompt }]
+      }]
+    });
+
+    const response = await result.response;
+    
+    // Check for generated images in the response
+    const candidates = response.candidates;
+    if (!candidates || candidates.length === 0) {
+      throw new Error('No image generated by Gemini');
+    }
+
+    // Extract image data from the first candidate
+    for (const candidate of candidates) {
+      if (candidate.content && candidate.content.parts) {
+        for (const part of candidate.content.parts) {
+          if (part.inlineData && part.inlineData.mimeType && part.inlineData.data) {
+            // Create base64 data URL
+            const imageData = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+            return {
+              imageData: imageData,
+              mimeType: part.inlineData.mimeType,
+              base64: part.inlineData.data
+            };
+          }
+        }
+      }
+    }
+
+    throw new Error('No image data found in Gemini response');
+
+  } catch (error: any) {
+    console.error('Gemini image generation error:', error);
+    
+    let errorMessage = 'Failed to generate image with Gemini';
+    if (error.message?.includes('API_KEY') || error.message?.includes('PERMISSION_DENIED')) {
+      errorMessage = 'Gemini API key not properly configured';
+    } else if (error.message?.includes('quota') || error.message?.includes('limit')) {
+      errorMessage = 'Gemini API quota exceeded';
+    } else if (error.message?.includes('INVALID_ARGUMENT')) {
+      errorMessage = 'Invalid prompt for Gemini image generation';
+    }
+    
+    throw new Error(errorMessage);
   }
 }
 
@@ -1184,5 +1308,106 @@ router.post('/suggest-image-prompts', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to generate prompt suggestions' })
   }
 })
+
+// POST /api/ai/generate-image-gemini - Generate image using Gemini 2.5 Flash Image Preview
+router.post('/generate-image-gemini', async (req: Request, res: Response) => {
+  try {
+    const { prompt } = req.body;
+
+    if (!prompt) {
+      return res.status(400).json({
+        success: false,
+        error: 'Prompt is required'
+      });
+    }
+
+    if (!process.env.VITE_GEMINI_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        error: 'Gemini API key not configured'
+      });
+    }
+
+    console.log('Generating image with Gemini 2.5 Flash Image Preview:', prompt);
+
+    // Initialize Gemini model for image generation
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-image-preview" });
+
+    const result = await model.generateContent({
+      contents: [{
+        role: 'user',
+        parts: [{ text: prompt }]
+      }]
+    });
+
+    const response = await result.response;
+    
+    // Check for generated images in the response
+    const candidates = response.candidates;
+    if (!candidates || candidates.length === 0) {
+      return res.status(500).json({
+        success: false,
+        error: 'No image generated'
+      });
+    }
+
+    const generatedImages = [];
+    
+    for (const candidate of candidates) {
+      if (candidate.content && candidate.content.parts) {
+        for (const part of candidate.content.parts) {
+          if (part.inlineData && part.inlineData.mimeType && part.inlineData.data) {
+            // Create base64 data URL
+            const imageData = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+            generatedImages.push({
+              imageData: imageData,
+              mimeType: part.inlineData.mimeType,
+              base64: part.inlineData.data
+            });
+          }
+        }
+      }
+    }
+
+    if (generatedImages.length === 0) {
+      return res.status(500).json({
+        success: false,
+        error: 'No image data found in response'
+      });
+    }
+
+    // Return the first generated image
+    const image = generatedImages[0];
+    
+    res.json({
+      success: true,
+      imageData: image.imageData,
+      base64: image.base64,
+      mimeType: image.mimeType,
+      prompt: prompt,
+      generatedAt: new Date().toISOString(),
+      provider: 'gemini',
+      model: 'gemini-2.5-flash-image-preview'
+    });
+
+  } catch (error: any) {
+    console.error('Error generating image with Gemini:', error);
+    
+    let errorMessage = 'Failed to generate image with Gemini';
+    if (error.message?.includes('API_KEY') || error.message?.includes('PERMISSION_DENIED')) {
+      errorMessage = 'Gemini API key not properly configured';
+    } else if (error.message?.includes('quota') || error.message?.includes('limit')) {
+      errorMessage = 'Gemini API quota exceeded';
+    } else if (error.message?.includes('INVALID_ARGUMENT')) {
+      errorMessage = 'Invalid prompt for Gemini image generation';
+    }
+
+    res.status(500).json({
+      success: false,
+      error: errorMessage,
+      details: error.message
+    });
+  }
+});
 
 export default router
