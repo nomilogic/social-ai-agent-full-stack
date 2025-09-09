@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Wand2, Loader, Download, Sparkles, Eye, RefreshCw } from 'lucide-react';
 import { generateImage, generateImageVariations, getPlatformImageSuggestions, type ImageGenerationRequest, type GeneratedImage } from '../lib/imageGeneration';
 import { Platform } from '../types';
@@ -16,6 +16,7 @@ interface AIModel {
   name: string;
   description: string;
   provider: string;
+  isAvailable?: boolean;
 }
 
 export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
@@ -35,51 +36,65 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
     quality: 'standard'
   });
   const [selectedModel, setSelectedModel] = useState('stabilityai/stable-diffusion-xl-base-1.0');
-  
-  // Available models - Based on working reference implementation
-  const availableModels: AIModel[] = [
-    // Pollinations AI (Free & Fast) - No model selection, works by URL only
-    {
-      id: 'default',
-      name: '🌸 Pollinations AI',
-      description: 'Free, fast, creative generation',
-      provider: 'pollinations'
-    },
-    
-    // Hugging Face Models (Higher Quality, API Key Required)
-    {
-      id: 'stabilityai/stable-diffusion-xl-base-1.0',
-      name: 'Stable Diffusion XL',
-      description: 'High quality, detailed images',
-      provider: 'huggingface'
-    },
-    {
-      id: 'runwayml/stable-diffusion-v1-5',
-      name: 'Stable Diffusion 1.5',
-      description: 'Reliable, artistic styles',
-      provider: 'huggingface'
-    },
-    {
-      id: 'CompVis/stable-diffusion-v1-4',
-      name: 'Stable Diffusion 1.4',
-      description: 'Good for photorealistic images',
-      provider: 'huggingface'
-    },
-    {
-      id: 'dreamlike-art/dreamlike-diffusion-1.0',
-      name: 'Dreamlike Diffusion',
-      description: 'Dreamy, artistic style',
-      provider: 'huggingface'
-    },
-    {
-      id: 'prompthero/openjourney',
-      name: 'OpenJourney',
-      description: 'Midjourney-style images',
-      provider: 'huggingface'
-    }
-  ];
+  const [availableModels, setAvailableModels] = useState<AIModel[]>([]);
+  const [loadingModels, setLoadingModels] = useState(true);
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+
+  // Fetch available models from API
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        setLoadingModels(true);
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/image-models`);
+        const data = await response.json();
+        
+        if (data.success && data.models) {
+          setAvailableModels(data.models);
+          // Set default model if current selection is not available
+          if (data.defaultModel && !data.models.find((m: AIModel) => m.id === selectedModel)) {
+            setSelectedModel(data.defaultModel);
+          }
+        } else {
+          console.error('Failed to fetch image models:', data.error);
+          // Fallback to hardcoded models if API fails
+          setAvailableModels([
+            {
+              id: 'default',
+              name: '🌸 Pollinations AI',
+              description: 'Free, fast, creative generation',
+              provider: 'pollinations',
+              isAvailable: true
+            },
+            {
+              id: 'stabilityai/stable-diffusion-xl-base-1.0',
+              name: 'Stable Diffusion XL',
+              description: 'High quality, detailed images',
+              provider: 'huggingface',
+              isAvailable: false
+            }
+          ]);
+        }
+      } catch (error) {
+        console.error('Error fetching image models:', error);
+        // Fallback to basic models
+        setAvailableModels([
+          {
+            id: 'default',
+            name: '🌸 Pollinations AI',
+            description: 'Free, fast, creative generation',
+            provider: 'pollinations',
+            isAvailable: true
+          }
+        ]);
+        setSelectedModel('default');
+      } finally {
+        setLoadingModels(false);
+      }
+    };
+
+    fetchModels();
+  }, [selectedModel]);
 
   const handleGenerateImage = async () => {
     if (!imageRequest.prompt.trim()) return;
@@ -312,45 +327,91 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
 
               {/* AI Model Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">AI Model</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  AI Model {loadingModels && <span className="text-xs text-gray-500">(Loading...)</span>}
+                </label>
                 <select
                   value={selectedModel}
                   onChange={(e) => setSelectedModel(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  disabled={loadingModels}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50"
                 >
-                  <optgroup label="🚀 Pollinations (Free & Fast)">
-                    {availableModels
-                      .filter(model => model.provider === 'pollinations')
-                      .map((model) => (
-                        <option key={model.id} value={model.id}>
-                          {model.name} - {model.description}
-                        </option>
-                      ))}
-                  </optgroup>
-                  <optgroup label="🔬 Hugging Face (High Quality)">
-                    {availableModels
-                      .filter(model => model.provider === 'huggingface')
-                      .map((model) => (
-                        <option key={model.id} value={model.id}>
-                          {model.name} - {model.description}
-                        </option>
-                      ))}
-                  </optgroup>
+                  {loadingModels ? (
+                    <option>Loading models...</option>
+                  ) : (
+                    <>
+                      {availableModels.filter(model => model.provider === 'gemini').length > 0 && (
+                        <optgroup label="🔮 Gemini AI (Google)">
+                          {availableModels
+                            .filter(model => model.provider === 'gemini')
+                            .map((model) => (
+                              <option key={model.id} value={model.id} disabled={!model.isAvailable}>
+                                {model.name} - {model.description} {!model.isAvailable && '(API Key Required)'}
+                              </option>
+                            ))}
+                        </optgroup>
+                      )}
+                      {availableModels.filter(model => model.provider === 'pollinations').length > 0 && (
+                        <optgroup label="🚀 Pollinations (Free & Fast)">
+                          {availableModels
+                            .filter(model => model.provider === 'pollinations')
+                            .map((model) => (
+                              <option key={model.id} value={model.id}>
+                                {model.name} - {model.description}
+                              </option>
+                            ))}
+                        </optgroup>
+                      )}
+                      {availableModels.filter(model => model.provider === 'huggingface').length > 0 && (
+                        <optgroup label="🔬 Hugging Face (High Quality)">
+                          {availableModels
+                            .filter(model => model.provider === 'huggingface')
+                            .map((model) => (
+                              <option key={model.id} value={model.id} disabled={!model.isAvailable}>
+                                {model.name} - {model.description} {!model.isAvailable && '(API Key Required)'}
+                              </option>
+                            ))}
+                        </optgroup>
+                      )}
+                    </>
+                  )}
                 </select>
                 
                 {/* Provider Info */}
                 <div className="mt-2 text-xs text-gray-500">
-                  {availableModels.find(m => m.id === selectedModel)?.provider === 'pollinations' ? (
-                    <span className="flex items-center space-x-1">
-                      <span>🚀</span>
-                      <span>Using Pollinations AI - Free & Fast generation</span>
-                    </span>
-                  ) : (
-                    <span className="flex items-center space-x-1">
-                      <span>🔬</span>
-                      <span>Using Hugging Face - Requires API key, higher quality</span>
-                    </span>
-                  )}
+                  {(() => {
+                    const selectedModelData = availableModels.find(m => m.id === selectedModel);
+                    switch (selectedModelData?.provider) {
+                      case 'gemini':
+                        return (
+                          <span className="flex items-center space-x-1">
+                            <span>🔮</span>
+                            <span>Using Gemini AI - {selectedModelData.isAvailable ? 'Google Gemini image generation' : 'API Key Required'}</span>
+                          </span>
+                        );
+                      case 'pollinations':
+                        return (
+                          <span className="flex items-center space-x-1">
+                            <span>🚀</span>
+                            <span>Using Pollinations AI - Free & Fast generation</span>
+                          </span>
+                        );
+                      case 'huggingface':
+                        return (
+                          <span className="flex items-center space-x-1">
+                            <span>🔬</span>
+                            <span>Using Hugging Face - {selectedModelData.isAvailable ? 'High quality generation' : 'API Key Required'}</span>
+                          </span>
+                        );
+                      default:
+                        return (
+                          <span className="flex items-center space-x-1">
+                            <span>🤖</span>
+                            <span>AI Image Generation</span>
+                          </span>
+                        );
+                    }
+                  })()} 
                 </div>
               </div>
 
