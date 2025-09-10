@@ -216,7 +216,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         return;
       }
 
-      console.log('🌍 Uploading to server with userId:', userResult.user.id);
+    console.log('🌍 Uploading to server with userId:', userResult.user.id);
       const mediaUrl = await uploadMedia(file, userResult.user.id);
       console.log('✅ Upload successful, URL:', mediaUrl);
       
@@ -229,8 +229,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           console.log('🗑️ Cleaned up previous blob URL');
         }
         
-        const newData = { ...prev, media: file, mediaUrl };
-        console.log('Final formData with server URL:', { media: !!newData.media, mediaUrl: !!newData.mediaUrl });
+        // Always use server URL for media (for publishing compatibility)
+        const newData = { ...prev, media: file, mediaUrl, serverUrl: mediaUrl };
+        console.log('Final formData with server URL:', { media: !!newData.media, mediaUrl: !!newData.mediaUrl, serverUrl: !!newData.serverUrl });
         return newData;
       });
     } catch (error) {

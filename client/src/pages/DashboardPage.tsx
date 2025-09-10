@@ -42,17 +42,39 @@ export const DashboardPage: React.FC = () => {
   // Check if user needs tier selection or profile setup
   useEffect(() => {
     if (state.user && !state.loading) {
+      console.log('Dashboard setup check:', {
+        hasTierSelected: state.hasTierSelected,
+        userPlan: state.userPlan,
+        hasProfileSetup: state.hasProfileSetup,
+        selectedProfile: !!state.selectedProfile,
+        hasCompletedOnboarding: state.hasCompletedOnboarding
+      });
+      
       // Show tier modal if user hasn't selected a tier yet
       if (!state.hasTierSelected && !state.userPlan) {
+        console.log('Showing tier modal - no tier selected');
         setShowTierModal(true);
+        setShowProfileForm(false);
       }
       // Show profile form if user has tier selected but no profile setup
       else if (state.hasTierSelected && state.userPlan && !state.hasProfileSetup) {
+        console.log('Showing profile form - tier selected but no profile setup');
+        setShowTierModal(false);
         setShowProfileForm(true);
       }
+      // Close all modals if user is fully set up
+      else if (state.hasTierSelected && state.userPlan && state.hasProfileSetup && state.selectedProfile) {
+        console.log('User is fully set up - closing all modals');
+        setShowTierModal(false);
+        setShowProfileForm(false);
+        setShowOnboarding(false);
+      }
       // Show onboarding if user has no profile at all (fallback)
-      else if (!state.selectedProfile && state.hasCompletedOnboarding === false) {
+      else if (!state.selectedProfile && !state.hasCompletedOnboarding) {
+        console.log('Showing onboarding - no profile and not completed onboarding');
         setShowOnboarding(true);
+        setShowTierModal(false);
+        setShowProfileForm(false);
       }
     }
   }, [state.user, state.loading, state.hasTierSelected, state.userPlan, state.hasProfileSetup, state.selectedProfile, state.hasCompletedOnboarding]);

@@ -197,54 +197,75 @@ export async function deletePost(postId: string, userId: string) {
   }
 }
 
-// Media upload
-export async function uploadMedia(file: File, userId: string) {
+// Media upload (JWT authenticated - userId extracted from token)
+export async function uploadMedia(file: File, userId?: string) {
+  console.log('📤 Starting media upload:', { fileName: file.name, size: file.size, type: file.type });
+  
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('userId', userId);
+  // Note: userId is no longer sent in form data - it's extracted from JWT token
 
   const token = localStorage.getItem('auth_token');
+  if (!token) {
+    throw new Error('Authentication token not found. Please log in again.');
+  }
+
+  console.log('📡 Sending upload request with JWT authentication');
   const response = await fetch('/api/media/upload', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`
+      // Note: Don't set Content-Type for FormData - let browser set it with boundary
     },
     body: formData
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    console.error('Error uploading media:', error);
-    throw new Error(error.error || 'Failed to upload media');
+    const error = await response.json().catch(() => ({ error: 'Upload failed' }));
+    console.error('❌ Error uploading media:', { status: response.status, error });
+    throw new Error(error.error || `Upload failed with status ${response.status}`);
   }
 
   const result = await response.json();
+  console.log('✅ Media upload successful:', { url: result.data.url, fileName: result.data.fileName });
   return result.data.url;
 }
 
 // Authentication helpers
 export async function getCurrentUser() {
   const token = localStorage.getItem('auth_token');
-  if (!token) return null;
+  if (!token) {
+    console.log('🔑 No auth token found');
+    return null;
+  }
 
   try {
+    console.log('🔑 Fetching current user with JWT token');
     const response = await fetch('/api/auth/me', {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
     if (!response.ok) {
+      console.error('❌ Auth token invalid or expired:', response.status);
       localStorage.removeItem('auth_token');
       return null;
     }
 
-    const userData = await response.json();
+    const responseData = await response.json();
+    console.log('✅ Got user data:', { success: responseData.success, hasUser: !!responseData.user });
+    
+    if (!responseData.success || !responseData.user) {
+      console.error('❌ Invalid response structure from /me endpoint');
+      return null;
+    }
+
     return {
-      user: userData,
+      user: responseData.user,
       session: { access_token: token },
       error: null
     };
   } catch (error) {
-    console.error('Error initializing auth:', error);
+    console.error('❌ Error fetching current user:', error);
     localStorage.removeItem('auth_token');
     return null;
   }
