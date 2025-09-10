@@ -46,7 +46,7 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
     const fetchModels = async () => {
       try {
         setLoadingModels(true);
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/image-models`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/ai/image-models`);
         const data = await response.json();
         
         if (data.success && data.models) {
@@ -232,7 +232,7 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
                   <img
                     src={currentImage.url}
                     alt={currentImage.prompt}
-                    className="w-full h-48 object-cover rounded-lg mb-3"
+                    className="w-full h-64 object-contain rounded-lg mb-3"
                     onError={() => {
                       setHasError(true);
                       setCurrentImage(null);

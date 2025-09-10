@@ -7,6 +7,8 @@ import { PublishPosts } from "../components/PublishPosts";
 import { ProgressBar } from "../components/ProgressBar";
 import { useAppContext } from "../context/AppContext";
 import { savePost } from "../lib/database";
+import { generateSinglePlatformPost } from "../lib/gemini";
+import { Platform, GeneratedPost } from "../types";
 
 export const ContentPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
@@ -41,6 +43,48 @@ export const ContentPage: React.FC = () => {
 
   const handleGoToPublish = () => {
     setShowPublishModal(true);
+  };
+
+  // Handle individual platform regeneration
+  const handleRegeneratePlatform = async (platform: Platform) => {
+    console.log(`🔄 Regenerating content for ${platform}...`);
+    
+    if (!state.contentData || !state.selectedProfile) {
+      console.error('Missing content data or profile for regeneration');
+      return;
+    }
+
+    try {
+      // Create campaign info from the selected profile
+      const campaignInfo = {
+        name: state.selectedProfile.campaignName || state.selectedProfile.name || 'My Campaign',
+        industry: state.selectedProfile.industry || 'General',
+        description: state.selectedProfile.description || 'Campaign description',
+        targetAudience: state.selectedProfile.target_audience || 'General audience',
+        brandTone: state.selectedProfile.tone || state.selectedProfile.brandVoice || 'professional',
+        goals: state.selectedProfile.socialGoals || ['engagement'],
+        platforms: [platform] // Only regenerate for this platform
+      };
+
+      // Generate new post for the specific platform
+      const regeneratedPost = await generateSinglePlatformPost(
+        platform,
+        campaignInfo,
+        state.contentData
+      );
+
+      console.log(`✅ Successfully regenerated ${platform} post:`, regeneratedPost);
+
+      // Update only the specific platform's post in the context
+      dispatch({ 
+        type: 'UPDATE_SINGLE_PLATFORM_POST', 
+        payload: { platform, post: regeneratedPost } 
+      });
+
+    } catch (error) {
+      console.error(`❌ Error regenerating ${platform} post:`, error);
+      // You could show a toast notification here
+    }
   };
 
   const stepLabels = ["Content Input", "AI Generation", "Preview", "Publish"];
@@ -139,6 +183,7 @@ export const ContentPage: React.FC = () => {
                     onPostsUpdate={(updatedPosts) => {
                       dispatch({ type: "SET_GENERATED_POSTS", payload: updatedPosts });
                     }}
+                    onRegeneratePlatform={handleRegeneratePlatform}
                   />
                 ) : (
                   <div className="text-center py-8">

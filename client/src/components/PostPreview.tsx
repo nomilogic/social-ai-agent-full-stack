@@ -22,6 +22,7 @@ interface PostPreviewProps {
   onEdit: () => void;
   onPublish?: () => void;
   onPostsUpdate?: (updatedPosts: GeneratedPost[]) => void;
+  onRegeneratePlatform?: (platform: Platform) => void;
 }
 
 export const PostPreview: React.FC<PostPreviewProps> = ({
@@ -30,6 +31,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
   onEdit,
   onPublish,
   onPostsUpdate,
+  onRegeneratePlatform,
 }) => {
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>(
     generatedPosts[0]?.platform || "facebook",
@@ -164,7 +166,9 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
   }, [isVideoUrl]);
 
   const renderPlatformPreview = (post: GeneratedPost) => {
+    console.log('DEBUG: Pre-fallback - imageUrl:', post.imageUrl, 'mediaUrl:', post.mediaUrl);
     post.mediaUrl = post.imageUrl?? post.mediaUrl; // Fallback to imageUrl if mediaUrl not set
+    console.log('DEBUG: Post-fallback - mediaUrl:', post.mediaUrl);
     switch (post.platform) {
       case "facebook":
         return (
@@ -569,20 +573,20 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
         {/* Platform Selector */}
         <div className="lg:col-span-1 space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
             Select Platform
           </h3>
-          <div className="flex flex-wrap gap-3">
+             <div className="flex flex-wrap gap-3 justify-center">
             {generatedPosts.map((post, index) => {
               const IconComponent = getPlatformIcon(post.platform);
               return (
                 <button
                   key={post.platform}
                   onClick={() => setSelectedPlatform(post.platform)}
-                  className={`relative p-3 rounded-full transition-all duration-200 transform hover:scale-105 ${
+                  className={`relative p-1 rounded-full transition-all duration-200 transform hover:scale-105 h-fit  ${
                     selectedPlatform === post.platform
                       ? "ring-4 ring-blue-200 shadow-lg"
                       : "hover:shadow-md"
@@ -656,7 +660,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
 
         {/* Preview */}
         <div className="lg:col-span-2">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Preview</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Preview</h3>
 
           {/* Platform Preview */}
           <div className="flex justify-center mb-6">

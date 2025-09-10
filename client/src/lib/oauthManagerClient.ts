@@ -32,29 +32,35 @@ export class OAuthManagerClient {
     const rawBaseURL = baseURL || import.meta.env.VITE_APP_URL || 'http://localhost:5000';
     this.baseURL = rawBaseURL.endsWith('/') ? rawBaseURL.slice(0, -1) : rawBaseURL;
     this.userId = options.userId;
-    this.authToken = options.authToken;
+    this.authToken = options.authToken || localStorage.getItem('auth_token') || '';
     this.defaultHeaders = {
       'Content-Type': 'application/json',
       ...options.headers
     };
-
-    if (this.userId) {
-      this.defaultHeaders['X-User-ID'] = this.userId;
-    }
 
     if (this.authToken) {
       this.defaultHeaders['Authorization'] = `Bearer ${this.authToken}`;
     }
   }
 
-  // Set user ID for all requests
+  // Set user ID (for backwards compatibility, but JWT auth is preferred)
   setUserId(userId: string) {
     this.userId = userId;
-    this.defaultHeaders['X-User-ID'] = userId;
+    // Don't set X-User-ID header anymore as we use JWT authentication
   }
 
   // Set auth token for all requests
   setAuthToken(token: string) {
+    this.authToken = token;
+    this.defaultHeaders['Authorization'] = `Bearer ${token}`;
+  }
+
+  // Ensure we have a valid auth token
+  private ensureAuthenticated() {
+    const token = this.authToken || localStorage.getItem('auth_token');
+    if (!token) {
+      throw new Error('Authentication token required. Please log in.');
+    }
     this.authToken = token;
     this.defaultHeaders['Authorization'] = `Bearer ${token}`;
   }
@@ -83,60 +89,40 @@ export class OAuthManagerClient {
   }
 
   // Get connection status for all platforms
-  async getConnectionStatus(userId?: string): Promise<Record<string, OAuthConnection>> {
-    const userIdToUse = userId || this.userId;
-    if (!userIdToUse) {
-      throw new Error('User ID is required');
-    }
-
-    return this.request(`/api/oauth/connections/status/${userIdToUse}`);
+  async getConnectionStatus(): Promise<Record<string, OAuthConnection>> {
+    this.ensureAuthenticated();
+    return this.request(`/api/oauth/connections/status`);
   }
 
   // Get connection status for specific platform
-  async getPlatformConnection(platform: string, userId?: string): Promise<OAuthConnection> {
-    const userIdToUse = userId || this.userId;
-    if (!userIdToUse) {
-      throw new Error('User ID is required');
-    }
-
-    return this.request(`/api/oauth/connections/${platform}/${userIdToUse}`);
+  async getPlatformConnection(platform: string): Promise<OAuthConnection> {
+    this.ensureAuthenticated();
+    return this.request(`/api/oauth/connections/${platform}`);
   }
 
   // Start OAuth flow for platform
   async startOAuthFlow(platform: string, options: any = {}): Promise<{ authUrl: string; state: string }> {
-    const userIdToUse = this.userId;
-    if (!userIdToUse) {
-      throw new Error('User ID is required');
-    }
-
+    this.ensureAuthenticated();
     return this.request(`/api/oauth/${platform}/connect`, {
       method: 'POST',
-      body: JSON.stringify({ options, userId: userIdToUse })
+      body: JSON.stringify({ options })
     });
   }
 
   // Disconnect platform
   async disconnectPlatform(platform: string): Promise<{ success: boolean }> {
-    const userIdToUse = this.userId;
-    if (!userIdToUse) {
-      throw new Error('User ID is required');
-    }
-
+    this.ensureAuthenticated();
     return this.request(`/api/oauth/${platform}/disconnect`, {
       method: 'POST',
-      body: JSON.stringify({ userId: userIdToUse })
+      body: JSON.stringify({})
     });
   }
 
   // Check if token exists for platform
-  async hasToken(platform: string, userId?: string): Promise<{ success: boolean; data: { hasToken: boolean } }> {
-    const userIdToUse = userId || this.userId;
-    if (!userIdToUse) {
-      throw new Error('User ID is required');
-    }
-
+  async hasToken(platform: string): Promise<{ success: boolean; data: { hasToken: boolean } }> {
     try {
-      return await this.request(`/api/oauth/tokens/${platform}/${userIdToUse}`);
+      this.ensureAuthenticated();
+      return await this.request(`/api/oauth/tokens/${platform}`);
     } catch (error) {
       return { success: false, data: { hasToken: false } };
     }
@@ -161,13 +147,9 @@ export class OAuthManagerClient {
   }
 
   // Get access token for API calls
-  async getAccessToken(platform: string, userId?: string): Promise<{ access_token: string }> {
-    const userIdToUse = userId || this.userId;
-    if (!userIdToUse) {
-      throw new Error('User ID is required');
-    }
-
-    return this.request(`/api/oauth/tokens/${platform}/${userIdToUse}`);
+  async getAccessToken(platform: string): Promise<{ access_token: string }> {
+    this.ensureAuthenticated();
+    return this.request(`/api/oauth/tokens/${platform}`);
   }
 
   // Handle OAuth callback
