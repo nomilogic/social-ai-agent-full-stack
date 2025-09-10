@@ -97,28 +97,45 @@ type AppAction =
 const checkProfileCompletion = (profile: any): boolean => {
   if (!profile) return false;
   
+  console.log('Checking profile completion:', {
+    hasProfile: !!profile,
+    name: profile.name,
+    plan: profile.plan,
+    type: profile.type,
+    campaignType: profile.campaignType,
+    businessName: profile.businessName,
+    industry: profile.industry
+  });
+  
   // Check basic required fields for all plans
   const hasBasicInfo = profile.name && profile.plan;
   
-  // For free plan, only basic info is required (campaign fields are behind upgrade prompt)
+  // For free plan, basic info is sufficient
   if (profile.plan === 'free') {
-    return hasBasicInfo;
+    const isComplete = hasBasicInfo;
+    console.log('Free plan completion check:', { hasBasicInfo, isComplete });
+    return isComplete;
   }
   
   // For pro plan, also check campaign fields
   if (profile.plan === 'ipro') {
     const hasPostsInfo = profile.campaignType;
-    return hasBasicInfo && hasPostsInfo;
+    const isComplete = hasBasicInfo && hasPostsInfo;
+    console.log('Pro plan completion check:', { hasBasicInfo, hasPostsInfo, isComplete });
+    return isComplete;
   }
   
   // For business plan, check additional business-specific fields and campaign info
   if (profile.plan === 'business') {
-    const hasBusinessInfo = profile.businessName && profile.industry;
+    const hasBusinessInfo = profile.businessName || profile.industry;
     const hasPostsInfo = profile.campaignType;
-    return hasBasicInfo && hasBusinessInfo && hasPostsInfo;
+    const isComplete = hasBasicInfo && hasBusinessInfo && hasPostsInfo;
+    console.log('Business plan completion check:', { hasBasicInfo, hasBusinessInfo, hasPostsInfo, isComplete });
+    return isComplete;
   }
   
   // Default fallback
+  console.log('Default fallback completion check:', hasBasicInfo);
   return hasBasicInfo;
 };
 
@@ -227,31 +244,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         let authResult = await getCurrentUser();
         
-        // If no authenticated user found, create a demo user for testing
+        // If no authenticated user found, they need to log in
         if (!authResult || !authResult.user) {
-          console.log('🔧 No authenticated user found, creating demo user for testing...');
-          
-          // Manually create a temporary user for testing OAuth
-          const tempUser = {
-            id: 'demo-user-123',
-            email: 'demo@example.com',
-            name: 'Demo User',
-            profile_type: 'individual' as const,
-            plan: 'free' as const,
-            created_at: new Date().toISOString()
-          };
-          
-          // Store a temporary auth token
-          localStorage.setItem('auth_token', 'demo-token-for-testing');
-          
-          // Create a fake authResult for testing
-          authResult = {
-            user: tempUser,
-            session: { access_token: 'demo-token-for-testing' },
-            error: null
-          };
-          
-          console.log('✅ Temporary demo user created for OAuth testing');
+          console.log('🔧 No authenticated user found - user needs to log in');
+          // Don't create demo users - let the user go through proper auth flow
+          dispatch({ type: 'SET_LOADING', payload: false });
+          return;
         }
         
         if (authResult && authResult.user) {
@@ -270,7 +268,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
           // Check if user has tier selection and profile setup
           try {
-            const profileResponse = await fetch(`/api/auth/profile?userId=${currentUser.id}&email=${currentUser.email}`);
+            const token = localStorage.getItem('auth_token');
+            const profileResponse = await fetch('/api/auth/profile', {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
             if (profileResponse.ok) {
               const existingProfile = await profileResponse.json();
               if (existingProfile && existingProfile.name && existingProfile.plan) {

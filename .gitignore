@@ -63,3 +63,7 @@ jspm_packages/
 
 # TypeScript cache
 *.tsbuildinfo
+
+# Upload directories
+uploads/
+public/uploads/

@@ -22,13 +22,38 @@ export const ContentPage: React.FC = () => {
   };
 
   const handleGenerationComplete = async (posts: any[]) => {
+    console.log('Processing generated posts for publishing compatibility:', posts);
+    
+    // Ensure posts have proper URLs for publishing (no blob URLs)
+    const processedPosts = posts.map(post => {
+      const processedPost = { ...post };
+      
+      // If we have content data with a server URL, use that instead of blob URLs
+      if (state.contentData?.serverUrl && (!processedPost.imageUrl || processedPost.imageUrl.startsWith('blob:'))) {
+        console.log('Replacing blob URL with server URL for publishing:', {
+          original: processedPost.imageUrl,
+          serverUrl: state.contentData.serverUrl
+        });
+        processedPost.imageUrl = state.contentData.serverUrl;
+        processedPost.mediaUrl = state.contentData.serverUrl;
+      } else if (state.contentData?.mediaUrl && !state.contentData?.mediaUrl.startsWith('blob:') && (!processedPost.imageUrl || processedPost.imageUrl.startsWith('blob:'))) {
+        console.log('Using media URL from content data:', state.contentData.mediaUrl);
+        processedPost.imageUrl = state.contentData.mediaUrl;
+        processedPost.mediaUrl = state.contentData.mediaUrl;
+      }
+      
+      return processedPost;
+    });
+    
+    console.log('Processed posts with proper URLs:', processedPosts);
+
     // Save posts to database if we have campaign and user data
     if (state.user && state.selectedProfile && state.contentData) {
       try {
         await savePost(
           state.selectedProfile.id,
           state.contentData,
-          posts,
+          processedPosts,
           state.user.id,
         );
       } catch (error) {
@@ -37,7 +62,7 @@ export const ContentPage: React.FC = () => {
       }
     }
 
-    dispatch({ type: "SET_GENERATED_POSTS", payload: posts });
+    dispatch({ type: "SET_GENERATED_POSTS", payload: processedPosts });
     navigate("/content/preview");
   };
 

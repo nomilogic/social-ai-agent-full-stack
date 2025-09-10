@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express'
 import multer from 'multer'
-import { validateRequestBody } from '../middleware/auth'
+import { authenticateJWT, validateRequestBody } from '../middleware/auth'
 import path from 'path'
 import fs from 'fs'
 import { db } from '../db'
@@ -35,20 +35,13 @@ function isValidUUID(str: string): boolean {
   return uuidRegex.test(str);
 }
 
-// POST /api/media/upload - Upload media file
-router.post('/upload', upload.single('file'), async (req: Request, res: Response) => {
-  const userId = req.body.userId
+// POST /api/media/upload - Upload media file (JWT protected)
+router.post('/upload', authenticateJWT, upload.single('file'), async (req: Request, res: Response) => {
+  // Get user ID from JWT token instead of request body
+  const userId = req.user?.id
 
   if (!userId) {
-    return res.status(400).json({ error: 'User ID is required' })
-  }
-
-  if (userId === 'undefined' || userId === 'null' || !isValidUUID(userId)) {
-    return res.status(400).json({ 
-      error: 'Invalid User ID format. Must be a valid UUID.',
-      received: userId,
-      type: typeof userId
-    })
+    return res.status(401).json({ error: 'User authentication required' })
   }
 
   if (!req.file) {
