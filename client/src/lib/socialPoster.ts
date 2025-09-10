@@ -310,7 +310,6 @@ export async function postToYouTube(params: { accessToken: string; post: Generat
 
 // Enhanced posting function that supports both real and mock OAuth
 export async function postToAllPlatforms(
-  userId: string, 
   posts: GeneratedPost[], 
   onProgress?: (platform: string, status: 'pending' | 'success' | 'error') => void,
   context?: { facebookPageId?: string; youtubeChannelId?: string }
@@ -319,18 +318,31 @@ export async function postToAllPlatforms(
   const errors: string[] = [];
   const successes: string[] = [];
   
-  console.log(`Starting to post to ${posts.length} platforms for user ${userId}`);
+  console.log(`Starting to post to ${posts.length} platforms`);
+  
+  // Get the authentication token for API requests
+  const token = localStorage.getItem('auth_token');
+  if (!token) {
+    throw new Error('Authentication token not found. Please log in again.');
+  }
+  
+  const authHeaders = {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
   
   for (const post of posts) {
     try {
       onProgress?.(post.platform, 'pending');
-      console.log(`Attempting to post to ${post.platform} for user ${userId}`);
+      console.log(`Attempting to post to ${post.platform}`);
       
-      // Try to get real OAuth tokens using correct endpoint
+      // Try to get real OAuth tokens using authenticated endpoint
       let realPostResult = null;
       try {
-        // Use platform-specific OAuth token endpoint
-        const tokenResponse = await fetch(`/api/${post.platform}/oauth_tokens?user_id=${userId}`);
+        // Use platform-specific OAuth token endpoint with authentication
+        const tokenResponse = await fetch(`/api/${post.platform}/oauth_tokens`, {
+          headers: authHeaders
+        });
         console.log(`Token response status for ${post.platform}:`, tokenResponse.status);
         
         if (tokenResponse.ok) {

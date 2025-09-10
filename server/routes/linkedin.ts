@@ -3,7 +3,7 @@ import axios from "axios";
 import { db } from '../db';
 import { oauth_tokens } from '../../shared/schema';
 import { eq, and } from 'drizzle-orm';
-import { c } from "node_modules/vite/dist/node/types.d-aGj9QkWt";
+import { authenticateJWT } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -387,22 +387,18 @@ router.post("/access-token", async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/linkedin/oauth_tokens - Get LinkedIn OAuth tokens for a user
-router.get("/oauth_tokens", async (req: Request, res: Response) => {
-  const { user_id } = req.query;
-
-  if (!user_id || typeof user_id !== 'string') {
-    return res.status(400).json({ error: "user_id parameter is required" });
-  }
+// GET /api/linkedin/oauth_tokens - Get LinkedIn OAuth tokens for authenticated user
+router.get("/oauth_tokens", authenticateJWT, async (req: Request, res: Response) => {
+  const userId = req.user!.id; // Extract from authenticated JWT token
 
   try {
-    console.log(`Fetching LinkedIn tokens for user: ${user_id}`);
+    console.log(`Fetching LinkedIn tokens for user: ${userId}`);
     
     const tokens = await db
       .select()
       .from(oauth_tokens)
       .where(and(
-        eq(oauth_tokens.user_id, user_id),
+        eq(oauth_tokens.user_id, userId),
         eq(oauth_tokens.platform, 'linkedin')
       ))
       .limit(1);

@@ -1,18 +1,19 @@
 import express, { Request, Response } from 'express';
 import { oauthManager } from '../lib/OAuthManager';
+import { authenticateJWT } from '../middleware/auth';
 
 const router = express.Router();
 
-// GET /api/oauth/:platform/connect - Start OAuth flow for any platform
-router.post('/:platform/connect', async (req: Request, res: Response) => {
+// POST /api/oauth/:platform/connect - Start OAuth flow for any platform (protected)
+router.post('/:platform/connect', authenticateJWT, async (req: Request, res: Response) => {
   const { platform } = req.params;
-  const userId = req.headers['x-user-id'] as string || req.body.userId;
+  const userId = req.user!.id; // Extract from authenticated JWT token
   const options = req.body.options || {};
 
   console.log(`Starting OAuth flow for ${platform}, user: ${userId}`);
 
   if (!userId) {
-    return res.status(400).json({ error: 'User ID is required' });
+    return res.status(401).json({ error: 'Authentication required' });
   }
 
   try {
@@ -110,13 +111,13 @@ console.log("OUAAAAUT")
   }
 });
 
-// POST /api/oauth/:platform/disconnect - Disconnect from platform
-router.post('/:platform/disconnect', async (req: Request, res: Response) => {
+// POST /api/oauth/:platform/disconnect - Disconnect from platform (protected)
+router.post('/:platform/disconnect', authenticateJWT, async (req: Request, res: Response) => {
   const { platform } = req.params;
-  const userId = req.headers['x-user-id'] as string || req.body.userId;
+  const userId = req.user!.id; // Extract from authenticated JWT token
 
   if (!userId) {
-    return res.status(400).json({ error: 'User ID is required' });
+    return res.status(401).json({ error: 'Authentication required' });
   }
 
   try {
@@ -141,9 +142,9 @@ router.post('/:platform/disconnect', async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/oauth/connections/status/:userId - Get connection status for all platforms
-router.get('/connections/status/:userId', async (req: Request, res: Response) => {
-  const { userId } = req.params;
+// GET /api/oauth/connections/status - Get connection status for authenticated user
+router.get('/connections/status', authenticateJWT, async (req: Request, res: Response) => {
+  const userId = req.user!.id; // Extract from authenticated JWT token
 
   try {
     const connections = await oauthManager.getConnectionStatus(userId);
@@ -157,9 +158,10 @@ router.get('/connections/status/:userId', async (req: Request, res: Response) =>
   }
 });
 
-// GET /api/oauth/connections/:platform/:userId - Get specific platform connection
-router.get('/connections/:platform/:userId', async (req: Request, res: Response) => {
-  const { platform, userId } = req.params;
+// GET /api/oauth/connections/:platform - Get specific platform connection for authenticated user
+router.get('/connections/:platform', authenticateJWT, async (req: Request, res: Response) => {
+  const { platform } = req.params;
+  const userId = req.user!.id; // Extract from authenticated JWT token
 
   try {
     const connections = await oauthManager.getConnectionStatus(userId);
@@ -179,9 +181,10 @@ router.get('/connections/:platform/:userId', async (req: Request, res: Response)
   }
 });
 
-// GET /api/oauth/tokens/:platform/:userId - Get access token for platform
-router.get('/tokens/:platform/:userId', async (req: Request, res: Response) => {
-  const { platform, userId } = req.params;
+// GET /api/oauth/tokens/:platform - Get access token for platform for authenticated user
+router.get('/tokens/:platform', authenticateJWT, async (req: Request, res: Response) => {
+  const { platform } = req.params;
+  const userId = req.user!.id; // Extract from authenticated JWT token
 
   try {
     const accessToken = await oauthManager.getAccessToken(userId, platform);

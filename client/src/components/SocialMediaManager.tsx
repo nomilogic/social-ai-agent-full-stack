@@ -111,14 +111,13 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
   }, [userId]);
 
   const checkPlatformStatuses = async () => {
-    console.log("Checking platform statuses for user:", userId);
+    console.log("Checking platform statuses");
     setLoading(true);
     const statuses: PlatformStatus[] = [];
 
     try {
-      // Use the server API to get OAuth status
-      const response = await fetch(`/api/oauth/status/${userId}`);
-      const statusData = await response.json();
+      // Use the OAuth manager client to get connection status (uses JWT authentication)
+      const statusData = await oauthManagerClient.getConnectionStatus();
 
       for (const platform of platforms) {
         const platformStatus = statusData[platform];
@@ -128,7 +127,7 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
           connected: platformStatus?.connected || false,
           loading: false,
           profile: platformStatus?.profile || null,
-          error: platformStatus?.expired ? "Token expired" : undefined,
+          error: platformStatus?.needsRefresh ? "Token expired" : undefined,
         });
       }
     } catch (error) {
@@ -150,6 +149,7 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
 
   const handleConnect = async (platform: Platform) => {
     console.log("Connecting to platform:", platform);
+    
     try {
       setPlatformStatuses((prev) =>
         prev.map((status) =>
@@ -158,12 +158,10 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
             : status,
         ),
       );
-
-      // Set user ID in the oauth manager client
-      oauthManagerClient.setUserId(userId);
       
-      // Use the OAuth client to start OAuth flow
-      const { authUrl } = await oauthManagerClient.startOAuthFlow(platform);
+      // Use the OAuth client to start OAuth flow (uses JWT authentication)
+      const result = await oauthManagerClient.startOAuthFlow(platform);
+      const { authUrl } = result;
       console.log("Opening OAuth popup with URL:", authUrl);
 
       const authWindow = window.open(
@@ -239,8 +237,7 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
     }
 
     try {
-      // Use the OAuth manager client for disconnecting
-      oauthManagerClient.setUserId(userId);
+      // Use the OAuth manager client for disconnecting (uses JWT authentication)
       await oauthManagerClient.disconnectPlatform(platform);
 
       setPlatformStatuses((prev) =>
@@ -272,12 +269,9 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
         ),
       );
 
-      // Use the OAuth manager client for refreshing
-      oauthManagerClient.setUserId(userId);
-      
       // Simply check status again to refresh the connection state
       // Note: Token refresh is typically handled server-side automatically
-
+      // Uses JWT authentication automatically
       await checkPlatformStatuses();
       onCredentialsUpdate?.();
     } catch (error) {

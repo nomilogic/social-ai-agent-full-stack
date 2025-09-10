@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { getCurrentUser } from '../lib/database';
+import { getCurrentUser, signInAnonymously } from '../lib/database';
 import { Campaign } from '@shared/schema';
 
 // Types
@@ -74,6 +74,8 @@ export interface AppState {
   hasProfileSetup: boolean;
 }
 
+import { Platform } from '../types';
+
 // Actions
 type AppAction =
   | { type: 'SET_LOADING'; payload: boolean }
@@ -83,6 +85,7 @@ type AppAction =
   | { type: 'SET_SELECTED_CAMPAIGN'; payload: Campaign | null }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_GENERATED_POSTS'; payload: any[] }
+  | { type: 'UPDATE_SINGLE_PLATFORM_POST'; payload: { platform: Platform; post: any } }
   | { type: 'SET_CONTENT_DATA'; payload: any }
   | { type: 'SET_ONBOARDING_COMPLETE'; payload: boolean }
   | { type: 'SET_TIER_SELECTED'; payload: boolean }
@@ -179,6 +182,14 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, error: action.payload };
     case 'SET_GENERATED_POSTS':
       return { ...state, generatedPosts: action.payload };
+    case 'UPDATE_SINGLE_PLATFORM_POST':
+      // Update only the specific platform's post while keeping others unchanged
+      const { platform, post } = action.payload;
+      const updatedPosts = state.generatedPosts.map(existingPost => 
+        existingPost.platform === platform ? post : existingPost
+      );
+      console.log(`🔄 Updated ${platform} post in context. Total posts: ${updatedPosts.length}`);
+      return { ...state, generatedPosts: updatedPosts };
     case 'SET_CONTENT_DATA':
       // Persist contentData to localStorage
       setStoredContentData(action.payload);
@@ -214,7 +225,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const authResult = await getCurrentUser();
+        let authResult = await getCurrentUser();
+        
+        // If no authenticated user found, create a demo user for testing
+        if (!authResult || !authResult.user) {
+          console.log('🔧 No authenticated user found, creating demo user for testing...');
+          
+          // Manually create a temporary user for testing OAuth
+          const tempUser = {
+            id: 'demo-user-123',
+            email: 'demo@example.com',
+            name: 'Demo User',
+            profile_type: 'individual' as const,
+            plan: 'free' as const,
+            created_at: new Date().toISOString()
+          };
+          
+          // Store a temporary auth token
+          localStorage.setItem('auth_token', 'demo-token-for-testing');
+          
+          // Create a fake authResult for testing
+          authResult = {
+            user: tempUser,
+            session: { access_token: 'demo-token-for-testing' },
+            error: null
+          };
+          
+          console.log('✅ Temporary demo user created for OAuth testing');
+        }
+        
         if (authResult && authResult.user) {
           const currentUser: User = {
             id: authResult.user.id,

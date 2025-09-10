@@ -1,13 +1,10 @@
 import express, { Request, Response } from 'express'
-import { GoogleGenerativeAI } from '@google/generative-ai'
-// Import from @google/genai for image generation capabilities
 import { GoogleGenAI } from '@google/genai'
 import axios from 'axios'
 import multer from 'multer'
-import { c } from 'node_modules/vite/dist/node/types.d-aGj9QkWt';
 import dotenv from 'dotenv'
 
-dotenv.config() // Environment variables are handled by Replit
+dotenv.config()
 
 // Configure multer for file uploads
 const upload = multer({
@@ -15,23 +12,17 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
-
-
-
 const router = express.Router()
 
 // Initialize AI Services
-//const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY!)
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || null
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || null
-let genAI =  new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY || '');
-// Initialize @google/genai client for image generation
-let geminiImageClient: GoogleGenAI | null = null;
+let genAI: GoogleGenAI | null = null
 if (process.env.VITE_GEMINI_API_KEY) {
   try {
-    geminiImageClient = new GoogleGenAI(process.env.VITE_GEMINI_API_KEY);
+    genAI = new GoogleGenAI({ apiKey: process.env.VITE_GEMINI_API_KEY })
   } catch (error) {
-    console.warn('Failed to initialize @google/genai client:', error);
+    console.warn('Failed to initialize GoogleGenAI client:', error)
   }
 }
 // AI Model Configuration
@@ -101,10 +92,9 @@ router.post('/analyze-image', async (req: Request, res: Response) => {
     }
     console.log('Gemini API key is configured, proceeding with image analysis...', process.env.VITE_GEMINI_API_KEY , 'Yes' );
 
-    // Initialize Gemini model for vision
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-    const prompt = `Analyze this image and provide a detailed description that would be useful for social media content creation. Include:
+    // Use GoogleGenAI for image analysis (Gemini vision)
+    const promptText = `Analyze this image and provide a detailed description that would be useful for social media content creation. Include:
 1. What's in the image (objects, people, setting)
 2. The mood/atmosphere
 3. Colors and visual elements
@@ -119,17 +109,38 @@ Keep the description concise but informative for social media marketing purposes
       cleanBase64 = image.split(',')[1];
     }
 
-    const imagePart = {
-      inlineData: {
-        data: cleanBase64,
-        mimeType: mimeType || 'image/jpeg'
+    const prompt = [
+      { text: promptText },
+      {
+        inlineData: {
+          data: cleanBase64,
+          mimeType: mimeType || 'image/jpeg'
+        }
       }
-    };
+    ];
 
+    if (!genAI) {
+      return res.status(500).json({ success: false, error: 'GoogleGenAI client not initialized' });
+    }
     console.log('Analyzing image with Gemini API...');
-    const result = await model.generateContent([prompt, imagePart]);
-    const response = await result.response;
-    const analysis = response.text();
+    const response = await genAI.models.generateContent({
+      model: "gemini-2.5-flash-image-preview",
+      contents: prompt,
+    });
+    let analysis = '';
+    if (
+      response &&
+      response.candidates &&
+      response.candidates[0] &&
+      response.candidates[0].content &&
+      Array.isArray(response.candidates[0].content.parts)
+    ) {
+      for (const part of response.candidates[0].content.parts) {
+        if (part.text) {
+          analysis += part.text + '\n';
+        }
+      }
+    }
 
     console.log('Gemini image analysis completed successfully');
 
@@ -171,7 +182,9 @@ router.post('/generate-posts', async (req: Request, res: Response) => {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+    if (!genAI) {
+      return res.status(500).json({ error: 'GoogleGenAI client not initialized' })
+    }
 
     // Create platform-specific prompts
     const generatedPosts = []
@@ -180,9 +193,19 @@ router.post('/generate-posts', async (req: Request, res: Response) => {
       const prompt = createPlatformPrompt(campaignInfo, contentData, platform)
 
       try {
-        const result = await model.generateContent(prompt)
-        const response = await result.response
-        const text = response.text()
+        const response = await genAI.models.generateContent({
+          model: 'gemini-1.5-flash',
+          contents: [{ text: prompt }]
+        })
+        
+        let text = ''
+        if (response?.candidates?.[0]?.content?.parts) {
+          for (const part of response.candidates[0].content.parts) {
+            if (part.text) {
+              text += part.text
+            }
+          }
+        }
 
         // Parse the generated content to extract caption and hashtags
         const lines = text.split('\n').filter(line => line.trim())
@@ -251,7 +274,9 @@ router.post('/generate', async (req: Request, res: Response) => {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+    if (!genAI) {
+      return res.status(500).json({ error: 'GoogleGenAI client not initialized' })
+    }
 
     // Create platform-specific prompts
     const generatedPosts = []
@@ -262,9 +287,19 @@ router.post('/generate', async (req: Request, res: Response) => {
       try {
         console.log(`Generating content for ${platform} with prompt:`, prompt.substring(0, 200) + '...')
         
-        const result = await model.generateContent(prompt)
-        const response = await result.response
-        const text = response.text()
+        const response = await genAI.models.generateContent({
+          model: 'gemini-1.5-flash',
+          contents: [{ text: prompt }]
+        })
+        
+        let text = ''
+        if (response?.candidates?.[0]?.content?.parts) {
+          for (const part of response.candidates[0].content.parts) {
+            if (part.text) {
+              text += part.text
+            }
+          }
+        }
 
         console.log(`Generated content for ${platform}:`, text.substring(0, 200) + '...')
 
@@ -658,24 +693,33 @@ async function generateWithGemini(
   maxTokens: number = 1000,
   temperature: number = 0.7
 ) {
-  const model = genAI.getGenerativeModel({
+  if (!genAI) {
+    throw new Error('GoogleGenAI client not initialized');
+  }
+  
+  const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt;
+  
+  const response = await genAI.models.generateContent({
     model: modelConfig.id,
+    contents: [{ text: fullPrompt }],
     generationConfig: {
       maxOutputTokens: Math.min(maxTokens, modelConfig.maxTokens || 8192),
       temperature: temperature
     }
   });
-
-  const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt;
-
-  const result = await model.generateContent(fullPrompt);
-  const response = await result.response;
-  const content = response.text();
+  
+  let content = '';
+  if (response?.candidates?.[0]?.content?.parts) {
+    for (const part of response.candidates[0].content.parts) {
+      if (part.text) {
+        content += part.text;
+      }
+    }
+  }
 
   return {
-    content: content,
+    content: content.trim(),
     usage: {
-      // Gemini doesn't provide detailed usage stats in the free tier
       inputTokens: Math.ceil(fullPrompt.length / 4),
       outputTokens: Math.ceil(content.length / 4),
       totalTokens: Math.ceil((fullPrompt.length + content.length) / 4)
@@ -734,52 +778,21 @@ async function generateWithClaude(
 
 // Get available text models
 router.get('/models', (req: Request, res: Response) => {
-  const availableModels = Object.keys(AI_MODELS).map(key => {
+  const models = Object.keys(AI_MODELS).map(key => {
     const model = AI_MODELS[key];
     return {
       id: key,
       name: model.id,
       provider: model.provider,
       maxTokens: model.maxTokens,
-      isAvailable: true // You could add logic to check API key availability
+      isAvailable: true
     };
   });
 
   res.json({
-    models: availableModels,
+    models: models,
     defaultModel: 'gpt-4o'
   });
-});
-
-// Get available image models
-router.get('/image-models', (req: Request, res: Response) => {
-  try {
-    // Check API key availability for different providers
-    const checkApiKeys = {
-      gemini: !!process.env.VITE_GEMINI_API_KEY && !!geminiImageClient,
-      huggingface: !!process.env.HUGGING_FACE_API_KEY && process.env.HUGGING_FACE_API_KEY.startsWith('hf_'),
-      pollinations: true // Always available (free)
-    };
-
-    // Add availability status to models
-    const modelsWithAvailability = availableModels.map(model => ({
-      ...model,
-      isAvailable: checkApiKeys[model.provider as keyof typeof checkApiKeys] || false
-    }));
-
-    res.json({
-      success: true,
-      models: modelsWithAvailability,
-      defaultModel: 'stabilityai/stable-diffusion-xl-base-1.0'
-    });
-  } catch (error: any) {
-    console.error('Error fetching image models:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch image models',
-      details: error.message
-    });
-  }
 });
 
 // Enhanced image generation with model selection
@@ -1109,24 +1122,20 @@ async function generateImageWithPollinations(
 
 // Gemini image generation helper function
 async function generateImageWithGemini(prompt: string): Promise<{ imageData: string; mimeType: string; base64: string }> {
-  if (!process.env.VITE_GEMINI_API_KEY || !geminiImageClient) {
-    throw new Error('Gemini API key not configured or @google/genai client not available');
+  if (!process.env.VITE_GEMINI_API_KEY || !genAI) {
+    throw new Error('Gemini API key not configured or GoogleGenAI client not available');
   }
 
   console.log('🔮 Generating image with Gemini 2.5 Flash Image Preview using @google/genai');
 
   try {
-    // Use the @google/genai client for image generation
-    const model = geminiImageClient.getGenerativeModel({ model: "gemini-2.5-flash-image-preview" });
-
-    const result = await model.generateContent({
+    const response = await genAI.models.generateContent({
+      model: 'gemini-2.5-flash-image-preview',
       contents: [{
         role: 'user',
         parts: [{ text: prompt }]
       }]
     });
-
-    const response = await result.response;
     
     // Check for generated images in the response
     const candidates = response.candidates;
@@ -1330,17 +1339,20 @@ router.post('/generate-image-gemini', async (req: Request, res: Response) => {
 
     console.log('Generating image with Gemini 2.5 Flash Image Preview:', prompt);
 
-    // Initialize Gemini model for image generation
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-image-preview" });
+    if (!genAI) {
+      return res.status(500).json({
+        success: false,
+        error: 'GoogleGenAI client not initialized'
+      });
+    }
 
-    const result = await model.generateContent({
+    const response = await genAI.models.generateContent({
+      model: 'gemini-2.5-flash-image-preview',
       contents: [{
         role: 'user',
         parts: [{ text: prompt }]
       }]
     });
-
-    const response = await result.response;
     
     // Check for generated images in the response
     const candidates = response.candidates;
@@ -1405,6 +1417,37 @@ router.post('/generate-image-gemini', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: errorMessage,
+      details: error.message
+    });
+  }
+});
+
+// Get available image models
+router.get('/image-models', (req: Request, res: Response) => {
+  try {
+    // Check API key availability for different providers
+    const checkApiKeys = {
+      gemini: !!process.env.VITE_GEMINI_API_KEY && !!genAI,
+      huggingface: !!process.env.HUGGING_FACE_API_KEY && process.env.HUGGING_FACE_API_KEY.startsWith('hf_'),
+      pollinations: true // Always available (free)
+    };
+
+    // Add availability status to models
+    const modelsWithAvailability = availableModels.map(model => ({
+      ...model,
+      isAvailable: checkApiKeys[model.provider as keyof typeof checkApiKeys] || false
+    }));
+
+    res.json({
+      success: true,
+      models: modelsWithAvailability,
+      defaultModel: 'stabilityai/stable-diffusion-xl-base-1.0'
+    });
+  } catch (error: any) {
+    console.error('Error fetching image models:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch image models',
       details: error.message
     });
   }

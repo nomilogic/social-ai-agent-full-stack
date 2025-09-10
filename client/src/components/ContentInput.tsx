@@ -185,40 +185,68 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     
     setUploading(true);
     
+    // Clear template-related state when uploading a new file
+    setTemplatedImageUrl("");
+    setSelectedTemplate(undefined);
+    setImageAnalysis("");
+    
     console.log('🔄 Setting file immediately for preview...');
+    
+    // Create immediate preview URL from the file
+    const previewUrl = URL.createObjectURL(file);
+    console.log('📷 Created preview URL:', previewUrl.substring(0, 50) + '...');
+    
     setFormData((prev) => {
       console.log('Previous formData:', { media: !!prev.media, mediaUrl: !!prev.mediaUrl });
-      const newData = { ...prev, media: file };
+      const newData = { ...prev, media: file, mediaUrl: previewUrl };
       console.log('New formData after setting file:', { media: !!newData.media, mediaUrl: !!newData.mediaUrl });
       return newData;
     });
     
+    // Force a re-render to ensure file preview shows
+    console.log('🔄 File should be visible now with preview');
+    
     try {
       const userResult = await getCurrentUser();
+      console.log('👤 User check result:', { hasUser: !!userResult?.user, userId: userResult?.user?.id });
+      
       if (!userResult || !userResult.user) {
         console.warn('⚠️ User not authenticated, keeping local file only');
+        setUploading(false);
         return;
       }
 
-      console.log('🌍 Uploading to server...');
+      console.log('🌍 Uploading to server with userId:', userResult.user.id);
       const mediaUrl = await uploadMedia(file, userResult.user.id);
       console.log('✅ Upload successful, URL:', mediaUrl);
       
       setFormData((prev) => {
         console.log('Adding URL to existing file. Previous:', { media: !!prev.media, mediaUrl: !!prev.mediaUrl });
+        
+        // Clean up the previous blob URL if it exists
+        if (prev.mediaUrl && prev.mediaUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(prev.mediaUrl);
+          console.log('🗑️ Cleaned up previous blob URL');
+        }
+        
         const newData = { ...prev, media: file, mediaUrl };
-        console.log('Final formData with URL:', { media: !!newData.media, mediaUrl: !!newData.mediaUrl });
+        console.log('Final formData with server URL:', { media: !!newData.media, mediaUrl: !!newData.mediaUrl });
         return newData;
       });
     } catch (error) {
       console.error("❌ Error uploading file:", error);
-      console.log('📱 File should still be set for local preview');
+      console.log('📱 File should still be set for local preview, error was:', error.message);
     } finally {
       setUploading(false);
       
       // Final state check
       setTimeout(() => {
-        console.log('Final state after upload process:', { media: !!formData.media, mediaUrl: !!formData.mediaUrl });
+        console.log('Final state after upload process:', { 
+          media: !!formData.media, 
+          mediaUrl: !!formData.mediaUrl,
+          templatedImageUrl: !!templatedImageUrl,
+          showPreview: !!(formData.media || formData.mediaUrl)
+        });
       }, 100);
     }
   };
@@ -613,6 +641,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                 <div><strong>Debug State:</strong></div>
                 <div>• media: {formData.media ? `✅ ${formData.media.type} (${formData.media.name})` : '❌ null'}</div>
                 <div>• mediaUrl: {formData.mediaUrl ? `✅ ${formData.mediaUrl.substring(0, 50)}...` : '❌ null'}</div>
+                <div>• templatedImageUrl: {templatedImageUrl ? `✅ ${templatedImageUrl.substring(0, 30)}...` : '❌ null'}</div>
                 <div>• uploading: {uploading ? '🔄 true' : '✅ false'}</div>
                 <div>• Should show preview: {(formData.media || formData.mediaUrl) ? '✅ YES' : '❌ NO'}</div>
               </div> */}
@@ -626,14 +655,15 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                       <div className="relative">
                         <img
                           src={
-                            formData.media
-                              ? URL.createObjectURL(formData.media)
-                              : formData.mediaUrl!
+                            // Prioritize templated image if available, then uploaded file URL, then local file object
+                            templatedImageUrl ||
+                            formData.mediaUrl ||
+                            (formData.media ? URL.createObjectURL(formData.media) : '')
                           }
                           alt="Preview"
                           className="max-h-40 mx-auto rounded-lg shadow-sm"
                           onError={(e) => {
-                            console.error('Image failed to load:', formData.mediaUrl || formData.media?.name);
+                            console.error('Image failed to load:', templatedImageUrl || formData.mediaUrl || formData.media?.name);
                           }}
                         />
                         <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs flex items-center">
@@ -792,13 +822,17 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                   </div>
                   <button
                     type="button"
-                    onClick={() =>
+                    onClick={() => {
                       setFormData((prev) => ({
                         ...prev,
                         media: undefined,
                         mediaUrl: undefined,
-                      }))
-                    }
+                      }));
+                      // Also clear template-related state
+                      setTemplatedImageUrl("");
+                      setSelectedTemplate(undefined);
+                      setImageAnalysis("");
+                    }}
                     className="text-red-400 hover:text-red-300 text-xs font-medium"
                   >
                     Remove

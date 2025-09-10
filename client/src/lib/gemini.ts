@@ -231,6 +231,101 @@ function generateFallbackContent(
   };
 }
 
+export async function generateSinglePlatformPost(
+  platform: Platform,
+  campaignInfo: CampaignInfo,
+  contentData: PostContent
+): Promise<GeneratedPost> {
+  console.log(`🚀 generateSinglePlatformPost called for platform: ${platform}`);
+  console.log('📄 Content data:', {
+    prompt: contentData.prompt?.substring(0, 100) + '...',
+    platform: platform,
+    tags: contentData.tags
+  });
+  
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}/api` : 'http://localhost:5000/api');
+    
+    console.log(`Generating content for ${platform}...`);
+    
+    // Make API call for the specific platform
+    const response = await fetch(`${apiUrl}/ai/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        campaign: {
+          name: campaignInfo.name,
+          industry: campaignInfo.industry,
+          description: campaignInfo.description,
+          targetAudience: campaignInfo.targetAudience,
+          brandTone: campaignInfo.brandTone
+        },
+        content: {
+          topic: contentData.prompt,
+          contentType: contentData.contentType || 'general',
+          tone: contentData.tone || campaignInfo.brandTone,
+          targetAudience: contentData.targetAudience || campaignInfo.targetAudience,
+          tags: contentData.tags || []
+        },
+        platforms: [platform] // Send one platform per request
+      })
+    });
+
+    if (!response.ok) {
+      console.warn(`Failed to generate content for ${platform}, using fallback`);
+      throw new Error(`Generation failed for ${platform}`);
+    }
+
+    const data = await response.json();
+    console.log(`API response for ${platform}:`, data);
+    
+    if (data.success && data.posts && data.posts.length > 0) {
+      const post = data.posts[0];
+      
+      // Parse the generated content to extract caption and hashtags
+      let caption = post.content || post.caption || contentData.prompt || 'Check out our latest updates!';
+      let hashtags: string[] = [];
+      
+      // Extract hashtags from content
+      const hashtagMatches = caption.match(/#\w+/g);
+      if (hashtagMatches) {
+        hashtags = [...new Set(hashtagMatches)].slice(0, 5); // Remove duplicates
+        // Clean hashtags from caption
+        caption = caption.replace(/#\w+(\s+#\w+)*/g, '').trim();
+      }
+      
+      // Add default hashtags if none found
+      if (hashtags.length === 0) {
+        hashtags = [`#${campaignInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`, '#socialmedia'];
+      }
+
+      return {
+        platform,
+        caption: caption,
+        hashtags: hashtags,
+        imageUrl: contentData.mediaUrl || null,
+        success: true
+      };
+    } else {
+      throw new Error('No content generated');
+    }
+  } catch (error) {
+    console.error(`Error generating for ${platform}:`, error);
+    
+    // Return fallback post for this platform
+    return {
+      platform,
+      caption: contentData.prompt || 'Check out our latest updates!',
+      hashtags: [`#${campaignInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`, '#update'],
+      imageUrl: contentData.mediaUrl || null,
+      success: false,
+      error: error instanceof Error ? error.message : 'Generation failed'
+    };
+  }
+}
+
 export async function generateAllPosts(
   campaignInfo: CampaignInfo,
   contentData: PostContent,
@@ -346,7 +441,13 @@ export async function generateAllPosts(
       }
     }
 
-    console.log('Generated posts:', posts);
+  console.log('Generated posts with mediaUrl debugging:', posts.map(post => ({
+    platform: post.platform,
+    caption: post.caption?.substring(0, 50) + '...',
+    imageUrl: post.imageUrl,
+    mediaUrl: post.mediaUrl,
+    hasImage: !!(post.imageUrl || post.mediaUrl)
+  })));
     return posts;
 
   } catch (error: any) {

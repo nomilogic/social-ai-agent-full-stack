@@ -31,8 +31,26 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
 
   const checkConnectedPlatforms = async () => {
     try {
-      // Use the server API to check OAuth status
-      const response = await fetch(`/api/oauth/status/${userId}`);
+      // Get the authentication token
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        console.warn('No authentication token found');
+        setConnectedPlatforms([]);
+        return;
+      }
+      
+      // Use the authenticated OAuth status endpoint
+      const response = await fetch('/api/oauth/connections/status', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch connection status: ${response.status}`);
+      }
+      
       const statusData = await response.json();
       
       const connected: Platform[] = [];
@@ -60,7 +78,16 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
 
   const fetchFacebookPages = async () => {
     try {
-      const tokenResponse = await fetch(`/api/oauth/token/${userId}/facebook`);
+      const token = localStorage.getItem('auth_token');
+      if (!token) return;
+      
+      const tokenResponse = await fetch('/api/oauth/tokens/facebook', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
       if (tokenResponse.ok) {
         const tokenData = await tokenResponse.json();
         if (tokenData.access_token) {
@@ -81,7 +108,16 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
 
   const fetchYouTubeChannels = async () => {
     try {
-      const tokenResponse = await fetch(`/api/oauth/token/${userId}/youtube`);
+      const token = localStorage.getItem('auth_token');
+      if (!token) return;
+      
+      const tokenResponse = await fetch('/api/oauth/tokens/youtube', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
       if (tokenResponse.ok) {
         const tokenData = await tokenResponse.json();
         if (tokenData.access_token) {
@@ -132,7 +168,6 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
       }
       
       const publishResults = await postToAllPlatforms(
-        userId || '',
         selectedPosts,
         (platform, status) => {
           setPublishProgress(prev => ({ ...prev, [platform]: status }));
