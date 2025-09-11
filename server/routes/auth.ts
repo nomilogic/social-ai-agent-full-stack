@@ -5,6 +5,8 @@ import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { authService } from '../lib/authService';
 import { authenticateJWT, validateRequestBody } from '../middleware/auth';
+import fetch from 'node-fetch';
+import crypto from 'crypto';
 
 const router = express.Router();
 
@@ -91,6 +93,293 @@ router.post('/refresh', validateRequestBody(['refreshToken']), async (req: Reque
       success: false,
       error: error.message || 'Token refresh failed' 
     });
+  }
+});
+
+// In-memory store to track used OAuth codes (in production, use Redis or database)
+const usedOAuthCodes = new Set<string>();
+
+// Google OAuth authentication
+router.post('/oauth/google', async (req: Request, res: Response) => {
+  try {
+    const { code, redirectUri } = req.body;
+    
+    console.log('🔍 Google OAuth request received:', { 
+      hasCode: !!code, 
+      codeLength: code?.length, 
+      redirectUri,
+      timestamp: new Date().toISOString()
+    });
+    
+    if (!code || !redirectUri) {
+      console.error('❌ Missing required parameters:', { code: !!code, redirectUri: !!redirectUri });
+      return res.status(400).json({ error: 'Missing code or redirect URI' });
+    }
+    
+    // Check if this code has already been used
+    if (usedOAuthCodes.has(code)) {
+      console.warn('⚠️ OAuth code has already been used:', code.substring(0, 10) + '...');
+      return res.status(400).json({ error: 'Authorization code has already been used' });
+    }
+    
+    // Mark code as used immediately
+    usedOAuthCodes.add(code);
+    
+    // Clean up old codes after 10 minutes (OAuth codes expire quickly)
+    setTimeout(() => {
+      usedOAuthCodes.delete(code);
+    }, 10 * 60 * 1000);
+
+    // Exchange code for access token
+    console.log('🔄 Exchanging code for token with Google...');
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        code,
+        client_id: process.env.GOOGLE_CLIENT_ID!,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }),
+    });
+
+    const tokenData = await tokenResponse.json();
+    
+    console.log('📋 Google token response:', { 
+      ok: tokenResponse.ok, 
+      status: tokenResponse.status,
+      hasAccessToken: !!tokenData.access_token,
+      error: tokenData.error,
+      errorDescription: tokenData.error_description
+    });
+    
+    if (!tokenResponse.ok || !tokenData.access_token) {
+      const errorMsg = tokenData.error_description || tokenData.error || 'Failed to exchange code for token';
+      console.error('❌ Token exchange failed:', errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    // Get user profile from Google
+    const profileResponse = await fetch(
+      `https://www.googleapis.com/oauth2/v2/userinfo?access_token=${tokenData.access_token}`,
+      {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+        },
+      }
+    );
+
+    const googleUser = await profileResponse.json();
+    
+    if (!profileResponse.ok) {
+      throw new Error('Failed to fetch user profile from Google');
+    }
+
+    // Check if user exists or create new user
+    let existingUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, googleUser.email))
+      .limit(1);
+
+    let user;
+    if (existingUser.length > 0) {
+      // Update existing user with Google info if not already set
+      const updatedUsers = await db
+        .update(users)
+        .set({
+          name: existingUser[0].name || googleUser.name,
+          oauth_provider: 'google',
+          oauth_id: googleUser.id,
+          avatar_url: existingUser[0].avatar_url || googleUser.picture,
+          updated_at: new Date()
+        })
+        .where(eq(users.id, existingUser[0].id))
+        .returning();
+      
+      user = updatedUsers[0];
+    } else {
+      // Create new user from Google profile
+      const newUsers = await db
+        .insert(users)
+        .values({
+          email: googleUser.email,
+          name: googleUser.name,
+          oauth_provider: 'google',
+          oauth_id: googleUser.id,
+          avatar_url: googleUser.picture,
+          email_verified: googleUser.verified_email,
+          created_at: new Date(),
+          updated_at: new Date()
+        })
+        .returning();
+      
+      user = newUsers[0];
+    }
+
+    // Generate JWT token (same pattern as authService)
+    const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+    const token = jwt.sign(
+      { 
+        userId: user.id, 
+        email: user.email,
+        name: user.name 
+      },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // Generate refresh token
+    const refreshToken = crypto.randomBytes(32).toString('hex');
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatar_url: user.avatar_url,
+        oauth_provider: user.oauth_provider
+      },
+      token,
+      refreshToken
+    });
+  } catch (error: any) {
+    console.error('Google OAuth error:', error);
+    res.status(500).json({ error: error.message || 'Google authentication failed' });
+  }
+});
+
+// Facebook OAuth authentication
+router.post('/oauth/facebook', async (req: Request, res: Response) => {
+  try {
+    const { code, redirectUri } = req.body;
+    
+    if (!code || !redirectUri) {
+      return res.status(400).json({ error: 'Missing code or redirect URI' });
+    }
+    
+    // Check if this code has already been used
+    if (usedOAuthCodes.has(code)) {
+      console.warn('⚠️ Facebook OAuth code has already been used:', code.substring(0, 10) + '...');
+      return res.status(400).json({ error: 'Authorization code has already been used' });
+    }
+    
+    // Mark code as used immediately
+    usedOAuthCodes.add(code);
+    
+    // Clean up old codes after 10 minutes (OAuth codes expire quickly)
+    setTimeout(() => {
+      usedOAuthCodes.delete(code);
+    }, 10 * 60 * 1000);
+
+    // Exchange code for access token
+    const tokenResponse = await fetch(
+      `https://graph.facebook.com/v18.0/oauth/access_token?` +
+      `client_id=${process.env.FACEBOOK_APP_ID}&` +
+      `client_secret=${process.env.FACEBOOK_APP_SECRET}&` +
+      `code=${code}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}`,
+      {
+        method: 'GET',
+      }
+    );
+
+    const tokenData = await tokenResponse.json();
+    
+    if (!tokenResponse.ok || !tokenData.access_token) {
+      throw new Error(tokenData.error?.message || 'Failed to exchange code for token');
+    }
+
+    // Get user profile from Facebook
+    const profileResponse = await fetch(
+      `https://graph.facebook.com/me?fields=id,name,email,picture&access_token=${tokenData.access_token}`,
+      {
+        method: 'GET',
+      }
+    );
+
+    const facebookUser = await profileResponse.json();
+    
+    if (!profileResponse.ok || !facebookUser.email) {
+      throw new Error('Failed to fetch user profile from Facebook or email not available');
+    }
+
+    // Check if user exists or create new user
+    let existingUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, facebookUser.email))
+      .limit(1);
+
+    let user;
+    if (existingUser.length > 0) {
+      // Update existing user with Facebook info if not already set
+      const updatedUsers = await db
+        .update(users)
+        .set({
+          name: existingUser[0].name || facebookUser.name,
+          oauth_provider: 'facebook',
+          oauth_id: facebookUser.id,
+          avatar_url: existingUser[0].avatar_url || facebookUser.picture?.data?.url,
+          updated_at: new Date()
+        })
+        .where(eq(users.id, existingUser[0].id))
+        .returning();
+      
+      user = updatedUsers[0];
+    } else {
+      // Create new user from Facebook profile
+      const newUsers = await db
+        .insert(users)
+        .values({
+          email: facebookUser.email,
+          name: facebookUser.name,
+          oauth_provider: 'facebook',
+          oauth_id: facebookUser.id,
+          avatar_url: facebookUser.picture?.data?.url,
+          email_verified: true, // Facebook emails are typically verified
+          created_at: new Date(),
+          updated_at: new Date()
+        })
+        .returning();
+      
+      user = newUsers[0];
+    }
+
+    // Generate JWT token (same pattern as authService)
+    const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+    const token = jwt.sign(
+      { 
+        userId: user.id, 
+        email: user.email,
+        name: user.name 
+      },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // Generate refresh token
+    const refreshToken = crypto.randomBytes(32).toString('hex');
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatar_url: user.avatar_url,
+        oauth_provider: user.oauth_provider
+      },
+      token,
+      refreshToken
+    });
+  } catch (error: any) {
+    console.error('Facebook OAuth error:', error);
+    res.status(500).json({ error: error.message || 'Facebook authentication failed' });
   }
 });
 

@@ -5,8 +5,12 @@ import { sql } from 'drizzle-orm';
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').notNull().unique(),
-  password: text('password').notNull(),
+  password: text('password'), // Make password optional for OAuth users
   name: text('name').notNull(),
+  oauth_provider: text('oauth_provider'), // 'google', 'facebook', etc.
+  oauth_id: text('oauth_id'), // OAuth provider's user ID
+  avatar_url: text('avatar_url'),
+  email_verified: boolean('email_verified').default(false),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
