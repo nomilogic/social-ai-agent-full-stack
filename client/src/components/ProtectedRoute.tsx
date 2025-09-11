@@ -29,12 +29,18 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // After login, redirect users to campaigns page to create their first campaign
-  // This matches the original campaign -> campaign flow
-  
-  // If user is authenticated but on auth page, redirect to campaigns
+  // If user is authenticated but on auth page, redirect based on setup status
   if (location.pathname === '/auth') {
-    return <Navigate to="/campaigns" replace />;
+    if (state.hasCompletedOnboarding) {
+      return <Navigate to="/content" replace />;
+    } else {
+      return <Navigate to="/pricing" replace />;
+    }
+  }
+
+  // Check if user needs to complete onboarding
+  if (!state.hasCompletedOnboarding && !location.pathname.includes('/pricing')) {
+    return <Navigate to="/pricing" replace />;
   }
 
   return <>{children}</>;

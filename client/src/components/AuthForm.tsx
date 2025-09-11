@@ -14,6 +14,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
     password: "",
     name: "",
   });
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,7 +42,20 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
           throw new Error('Invalid response from server');
         }
 
-        localStorage.setItem("auth_token", result.token);
+        // Store token with expiration based on rememberMe setting
+        if (rememberMe) {
+          // Persistent storage for 30 days
+          const expirationDate = new Date();
+          expirationDate.setDate(expirationDate.getDate() + 30);
+          localStorage.setItem("auth_token", result.token);
+          localStorage.setItem("auth_token_expiry", expirationDate.toISOString());
+          localStorage.setItem("auth_remember", "true");
+        } else {
+          // Session storage (expires when browser closes)
+          localStorage.setItem("auth_token", result.token);
+          localStorage.removeItem("auth_token_expiry");
+          localStorage.removeItem("auth_remember");
+        }
         console.log('Login successful, user:', result.user);
         onAuthSuccess(result.user);
       } else {
@@ -195,6 +209,22 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
                 className="w-full px-3 py-2 theme-input rounded-lg focus:outline-none"
                 placeholder="Enter your full name"
               />
+            </div>
+          )}
+
+          {/* Remember Me Checkbox */}
+          {isLogin && (
+            <div className="flex items-center">
+              <input
+                id="rememberMe"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="rememberMe" className="ml-2 block text-sm theme-text-secondary">
+                Remember me for 30 days
+              </label>
             </div>
           )}
 
