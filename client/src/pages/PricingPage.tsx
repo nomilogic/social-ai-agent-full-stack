@@ -98,27 +98,56 @@ export const PricingPage: React.FC = () => {
       
       // Check if user already has a profile in the database
       if (state.user?.id) {
-        const response = await fetch(`/api/auth/profile?userId=${state.user.id}&email=${state.user.email}`);
-        if (response.ok) {
-          const existingProfile = await response.json();
-          if (existingProfile && existingProfile.name) {
-            // User already has a profile, update their plan and go to dashboard
-            const updatedProfile = { ...existingProfile, plan: planId };
-            
-            // Update profile in database with new plan
-            await fetch('/api/auth/profile', {
-              method: 'PUT',
+        // Get authentication token for API requests
+        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+        
+        if (!token) {
+          console.warn('No authentication token found, skipping profile check');
+        } else {
+          try {
+            const response = await fetch('/api/auth/profile', {
+              method: 'GET',
               headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(updatedProfile),
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
             });
             
-            // Update context and navigate to dashboard
-            dispatch({ type: 'SET_SELECTED_PROFILE', payload: updatedProfile });
-            dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: true });
-            navigate('/dashboard');
-            return;
+            if (response.ok) {
+              const existingProfile = await response.json();
+              if (existingProfile && existingProfile.name) {
+                // User already has a profile, update their plan and go to dashboard
+                const updatedProfile = { ...existingProfile, plan: planId };
+                
+                // Update profile in database with new plan
+                const updateResponse = await fetch('/api/auth/profile', {
+                  method: 'PUT',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(updatedProfile),
+                });
+                
+                if (updateResponse.ok) {
+                  // Update context and navigate to dashboard
+                  dispatch({ type: 'SET_SELECTED_PROFILE', payload: updatedProfile });
+                  dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: true });
+                  navigate('/dashboard');
+                  return;
+                } else {
+                  console.error('Failed to update profile:', updateResponse.status, await updateResponse.text());
+                  // Continue to profile setup if update fails
+                }
+              }
+            } else if (response.status === 401) {
+              console.warn('Authentication failed, user needs to log in again');
+              // Could redirect to auth page here if needed
+            } else if (response.status === 404) {
+              console.log('No existing profile found, will show profile setup');
+            }
+          } catch (error) {
+            console.error('Error checking existing profile:', error);
           }
         }
       }
