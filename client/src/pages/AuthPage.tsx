@@ -11,7 +11,7 @@ export const AuthPage: React.FC = () => {
   // Check if user is already authenticated
   useEffect(() => {
     if (state.user) {
-      const from = (location.state as any)?.from?.pathname || '/campaigns';
+      const from = (location.state as any)?.from?.pathname || '/content';
       navigate(from, { replace: true });
     }
   }, [state.user, navigate, location]);
@@ -27,7 +27,7 @@ export const AuthPage: React.FC = () => {
       dispatch({ type: 'SET_BUSINESS_ACCOUNT', payload: true });
     }
     
-    const from = (location.state as any)?.from?.pathname || '/campaigns';
+    const from = (location.state as any)?.from?.pathname || '/content';
     navigate(from, { replace: true });
   };
 

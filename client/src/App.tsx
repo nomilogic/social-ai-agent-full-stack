@@ -1,7 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import { AppProvider } from './context/AppContext';
+import { AppProvider, useAppContext } from './context/AppContext';
 import { AppLayout } from './components/Layout/AppLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthPage } from './pages/AuthPage';
@@ -12,11 +12,24 @@ import { ContentPage } from './pages/ContentPage';
 import { SchedulePage } from './pages/SchedulePage';
 import { SettingsPage } from './pages/SettingsPage';
 import { OAuthCallback } from './components/OAuthCallback';
+import { AuthOAuthCallback } from './components/AuthOAuthCallback';
 import { LandingPage } from './pages/LandingPage';
 import { ProfilePage } from './pages/ProfilePage'; // Import ProfilePage
 import { CampaignsPage } from './pages/CampaignsPage';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import { themeManager } from './lib/theme';
+
+// OAuth callback wrapper component
+const OAuthCallbackWrapper = () => {
+  const { dispatch } = useAppContext();
+  
+  const handleAuthSuccess = (user: any) => {
+    dispatch({ type: 'SET_USER', payload: user });
+    dispatch({ type: 'SET_LOADING', payload: false });
+  };
+  
+  return <AuthOAuthCallback onAuthSuccess={handleAuthSuccess} />;
+};
 
 function App() {
   useEffect(() => {
@@ -36,6 +49,9 @@ function App() {
 
         {/* OAuth callback routes */}
         <Route path="/oauth/:platform/callback" element={<OAuthCallback />} />
+        
+        {/* OAuth authentication callback routes */}
+        <Route path="/auth/:provider/callback" element={<OAuthCallbackWrapper />} />
 
         {/* Protected routes */}
         <Route path="/pricing" element={
