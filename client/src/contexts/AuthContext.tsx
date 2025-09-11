@@ -60,8 +60,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update profile');
+        const errorText = await response.text();
+        let errorMessage = 'Failed to update profile';
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch {
+          // If response isn't JSON, use the text as error message
+          errorMessage = errorText || errorMessage;
+        }
+        
+        console.error('Profile update error:', response.status, errorText);
+        throw new Error(`Profile update failed (${response.status}): ${errorMessage}`);
       }
 
       // Get the updated profile from the response

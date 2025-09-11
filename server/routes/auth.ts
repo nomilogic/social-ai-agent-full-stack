@@ -224,9 +224,9 @@ router.post('/oauth/google', async (req: Request, res: Response) => {
     const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
     const token = jwt.sign(
       { 
-        userId: user.id, 
+        id: user.id, 
         email: user.email,
-        name: user.name 
+        type: 'access'
       },
       JWT_SECRET,
       { expiresIn: '7d' }
@@ -354,9 +354,9 @@ router.post('/oauth/facebook', async (req: Request, res: Response) => {
     const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
     const token = jwt.sign(
       { 
-        userId: user.id, 
+        id: user.id, 
         email: user.email,
-        name: user.name 
+        type: 'access'
       },
       JWT_SECRET,
       { expiresIn: '7d' }
