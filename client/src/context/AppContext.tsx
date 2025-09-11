@@ -95,47 +95,50 @@ type AppAction =
 
 // Helper function to check if profile is complete based on plan requirements
 const checkProfileCompletion = (profile: any): boolean => {
-  if (!profile) return false;
+  if (!profile || !profile.plan) {
+    console.log('❌ Profile incomplete: No profile or plan');
+    return false;
+  }
   
-  console.log('Checking profile completion:', {
+  console.log('🔍 Checking profile completion:', {
     hasProfile: !!profile,
     name: profile.name,
     plan: profile.plan,
     type: profile.type,
-    campaignType: profile.campaignType,
-    businessName: profile.businessName,
+    campaign_type: profile.campaign_type,
+    business_name: profile.business_name,
     industry: profile.industry
   });
   
   // Check basic required fields for all plans
-  const hasBasicInfo = profile.name && profile.plan;
+  const hasBasicInfo = !!(profile.name && profile.plan);
   
-  // For free plan, basic info is sufficient
+  // For free plan, basic info + name is sufficient
   if (profile.plan === 'free') {
     const isComplete = hasBasicInfo;
-    console.log('Free plan completion check:', { hasBasicInfo, isComplete });
+    console.log('✅ Free plan completion check:', { hasBasicInfo, isComplete });
     return isComplete;
   }
   
   // For pro plan, also check campaign fields
   if (profile.plan === 'ipro') {
-    const hasPostsInfo = profile.campaignType;
+    const hasPostsInfo = !!(profile.campaign_type || profile.content_niche);
     const isComplete = hasBasicInfo && hasPostsInfo;
-    console.log('Pro plan completion check:', { hasBasicInfo, hasPostsInfo, isComplete });
+    console.log('✅ Pro plan completion check:', { hasBasicInfo, hasPostsInfo, isComplete });
     return isComplete;
   }
   
   // For business plan, check additional business-specific fields and campaign info
   if (profile.plan === 'business') {
-    const hasBusinessInfo = profile.businessName || profile.industry;
-    const hasPostsInfo = profile.campaignType;
+    const hasBusinessInfo = !!(profile.business_name || profile.industry);
+    const hasPostsInfo = !!(profile.campaign_type || profile.content_niche);
     const isComplete = hasBasicInfo && hasBusinessInfo && hasPostsInfo;
-    console.log('Business plan completion check:', { hasBasicInfo, hasBusinessInfo, hasPostsInfo, isComplete });
+    console.log('✅ Business plan completion check:', { hasBasicInfo, hasBusinessInfo, hasPostsInfo, isComplete });
     return isComplete;
   }
   
   // Default fallback
-  console.log('Default fallback completion check:', hasBasicInfo);
+  console.log('⚠️ Default fallback completion check:', hasBasicInfo);
   return hasBasicInfo;
 };
 
@@ -242,6 +245,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        // Check if token is expired (persistent storage)
+        const persistentToken = localStorage.getItem('auth_token');
+        const expiry = localStorage.getItem('auth_token_expiry');
+        const remember = localStorage.getItem('auth_remember');
+        
+        if (persistentToken && expiry && remember === 'true') {
+          const expiryDate = new Date(expiry);
+          if (new Date() > expiryDate) {
+            // Token expired, clear storage
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_token_expiry');
+            localStorage.removeItem('auth_remember');
+            dispatch({ type: 'SET_LOADING', payload: false });
+            return;
+          }
+        }
+        
+        // Check for session token if no valid persistent token
+        const sessionToken = sessionStorage.getItem('auth_token');
+        if (!persistentToken && !sessionToken) {
+          dispatch({ type: 'SET_LOADING', payload: false });
+          return;
+        }
+        
         let authResult = await getCurrentUser();
         
         // If no authenticated user found, they need to log in
@@ -268,7 +295,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
           // Check if user has tier selection and profile setup
           try {
-            const token = localStorage.getItem('auth_token');
+            const token = persistentToken || sessionToken;
             const profileResponse = await fetch('/api/auth/profile', {
               headers: {
                 'Authorization': `Bearer ${token}`
@@ -360,6 +387,9 @@ export const useAppContext = () => {
     } finally {
       // Always clear local storage and reset state
       localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_token_expiry');
+      localStorage.removeItem('auth_remember');
+      sessionStorage.removeItem('auth_token');
       context.dispatch({ type: 'RESET_STATE' });
     }
   };

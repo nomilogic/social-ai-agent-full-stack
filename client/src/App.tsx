@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { AppProvider, useAppContext } from './context/AppContext';
+import { AuthProvider } from './contexts/AuthContext';
 import { AppLayout } from './components/Layout/AppLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthPage } from './pages/AuthPage';
@@ -39,7 +40,8 @@ function App() {
 
   return (
     <AppProvider>
-      <Routes>
+      <AuthProvider>
+        <Routes>
         {/* Landing page (public) */}
         <Route path="/" element={<LandingPage />} />
 
@@ -134,7 +136,8 @@ function App() {
 
         {/* Catch all - redirect to auth by default if not logged in, otherwise to dashboard */}
         <Route path="*" element={<Navigate to="/auth" replace />} />
-      </Routes>
+        </Routes>
+      </AuthProvider>
     </AppProvider>
   );
 }

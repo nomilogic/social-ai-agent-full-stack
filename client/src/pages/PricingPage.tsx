@@ -1,11 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Star, Zap, Crown, ArrowLeft } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { ProfileSetupFree } from '../components/ProfileSetupFree';
-import { ProfileSetupPro } from '../components/ProfileSetupPro';
-import { ProfileSetupBusiness } from '../components/ProfileSetupBusiness';
+import ProfileSetupSinglePage from '../components/ProfileSetupSinglePage';
 
 interface PricingTier {
   id: 'free' | 'ipro' | 'business';
@@ -82,6 +80,14 @@ export const PricingPage: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<'free' | 'ipro' | 'business' | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Redirect users who have already completed onboarding
+  useEffect(() => {
+    if (state.hasCompletedOnboarding && state.selectedProfile) {
+      console.log('✅ User has completed onboarding, redirecting to content');
+      navigate('/content');
+    }
+  }, [state.hasCompletedOnboarding, state.selectedProfile, navigate]);
+
   const handleSelectPlan = async (planId: 'free' | 'ipro' | 'business') => {
     setLoading(true);
     setSelectedPlan(planId);
@@ -130,9 +136,14 @@ export const PricingPage: React.FC = () => {
     dispatch({ type: 'SET_USER_PLAN', payload: null });
   };
 
-  const handleProfileComplete = () => {
-    // Navigate to dashboard after profile setup
-    navigate('/dashboard');
+  const handleProfileComplete = async () => {
+    // Mark onboarding as complete and navigate to content page
+    dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: true });
+    dispatch({ type: 'SET_PROFILE_SETUP', payload: true });
+    dispatch({ type: 'SET_TIER_SELECTED', payload: true });
+    
+    console.log('✅ Profile setup completed, navigating to content page');
+    navigate('/content');
   };
 
   if (selectedPlan) {
@@ -158,17 +169,8 @@ export const PricingPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            {selectedPlan === 'free' && (
-              <ProfileSetupFree onComplete={handleProfileComplete} />
-            )}
-            {selectedPlan === 'ipro' && (
-              <ProfileSetupPro onComplete={handleProfileComplete} />
-            )}
-            {selectedPlan === 'business' && (
-              <ProfileSetupBusiness onComplete={handleProfileComplete} />
-            )}
-          </div>
+          {/* Use the single-page profile form */}
+          <ProfileSetupSinglePage />
         </div>
       </div>
     );

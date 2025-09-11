@@ -83,8 +83,20 @@ export const ProfileSetupFree: React.FC<ProfileSetupFreeProps> = ({ onComplete }
       const result = await response.json();
       console.log('Profile saved successfully:', result);
       
+      // Update context with the saved profile data
+      const savedProfile = {
+        ...profileData,
+        id: result.profile?.id || result.id,
+        userId: state.user?.id
+      };
+      
+      dispatch({ type: 'SET_SELECTED_PROFILE', payload: savedProfile as any });
+      dispatch({ type: 'SET_USER_PLAN', payload: 'free' });
+      dispatch({ type: 'SET_TIER_SELECTED', payload: true });
+      dispatch({ type: 'SET_PROFILE_SETUP', payload: true });
       dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: true });
-      dispatch({ type: 'SET_SELECTED_PROFILE', payload: profileData as any });
+      
+      console.log('✅ Free profile setup completed successfully');
 
       if (onComplete) {
         onComplete();
