@@ -122,7 +122,7 @@ export const ContentPage: React.FC = () => {
   };
 
   return (
-    <div className=" animated-bg ">
+    <div className="  ">
       <div className="">
         <div className="w-full mx-auto">
           {/* <ProgressBar

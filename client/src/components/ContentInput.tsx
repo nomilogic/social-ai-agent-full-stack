@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import {
   Upload,
   FileText,
-  Tag,
   Camera,
   Wand2,
   Eye,
@@ -22,6 +21,8 @@ import {
   Zap,
   Edit3,
   Trash2,
+  MessageSquare,
+  Play,
 } from "lucide-react";
 import { PostContent, Platform } from "../types";
 import { uploadMedia, getCurrentUser } from "../lib/database";
@@ -71,14 +72,12 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const [formData, setFormData] = useState<PostContent>({
     prompt: initialData?.prompt || "",
     tags: initialData?.tags || [],
-    campaignId: initialData?.campaignId || "",
     selectedPlatforms: initialData?.selectedPlatforms ||
       selectedPlatforms || ["linkedin"],
     media: initialData?.media || undefined,
     mediaUrl: initialData?.mediaUrl || undefined,
   });
   const [dragActive, setDragActive] = useState(false);
-  const [tagInput, setTagInput] = useState("");
   const [uploading, setUploading] = useState(false);
   const [analyzingImage, setAnalyzingImage] = useState(false);
   const [imageAnalysis, setImageAnalysis] = useState("");
@@ -96,6 +95,12 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<Template | undefined>();
   const [templatedImageUrl, setTemplatedImageUrl] = useState<string>("");
   
+  // Post type selection state
+  const [selectedPostType, setSelectedPostType] = useState<'text' | 'image' | 'video'>('text');
+  
+  // Image post sub-type selection state
+  const [selectedImageMode, setSelectedImageMode] = useState<'upload' | 'textToImage'>('upload');
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize with existing data when in edit mode
@@ -105,7 +110,6 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         ...prev,
         prompt: initialData.prompt || "",
         tags: initialData.tags || [],
-        campaignId: initialData.campaignId || "",
         selectedPlatforms: initialData.selectedPlatforms ||
           selectedPlatforms || ["linkedin"],
         media: initialData.media,
@@ -133,8 +137,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           if (campaign.platforms && (!formData.selectedPlatforms || formData.selectedPlatforms.length === 0)) {
             setFormData(prev => ({
               ...prev,
-              selectedPlatforms: campaign.platforms,
-              campaignId: campaign.id || ''
+              selectedPlatforms: campaign.platforms
             }));
           }
         } catch (error) {
@@ -385,22 +388,6 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     }
   };
 
-  const addTag = () => {
-    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
-      setFormData((prev) => ({
-        ...prev,
-        tags: [...prev.tags, tagInput.trim()],
-      }));
-      setTagInput("");
-    }
-  };
-
-  const removeTag = (tag: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      tags: prev.tags.filter((t) => t !== tag),
-    }));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -566,21 +553,23 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   };
 
   return (
-    <div className="w-full mx-auto theme-bg-card backdrop-blur-sm rounded-xl border border-white/10 p-6 m0 h-full-dec-hf">
+    <div className="w-full mx-auto  rounded-xl border border-white/10 p-6 m0 h-full-dec-hf">
       {/* Header */}
-      <div className="text-center mb-6">
-        <div className="w-12 h-12 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl flex items-center justify-center mx-auto ">
+      <div className="text-left mb-6">
+        {/* <div className="w-12 h-12 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl flex items-center justify-center mx-auto ">
           <Wand2 className="w-6 h-6 text-blue-400" />
-        </div>
-        <h2 className="text-xl font-semibold theme-text-primary mb-1">
-          Create Your Content
+        </div> */}
+        <h2 className="text-3xl font-semibold theme-text-primary mb-1">
+          Create auto‑optimize social posts with AI
         </h2>
-        <p className="text-sm theme-text-secondary">
-          Add your media and describe what you want to share
+        <p className="text-sm theme-text-primary">
+         Generate on‑brand content, auto‑design visuals, and 
+publish everywhere in one click. Meet your new 24/7 
+content teammate.
         </p>
         
         {/* Campaign Context Indicator */}
-        {loadingCampaign && (
+        {/* {loadingCampaign && (
           <div className="flex items-center justify-center gap-2 mt-3 text-xs text-blue-400">
             <Loader className="w-3 h-3 animate-spin" />
             <span>Loading campaign info...</span>
@@ -602,37 +591,397 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           <div className="flex items-center justify-center gap-2 mt-3 px-3 py-1 bg-gray-500/10 border border-gray-400/20 rounded-full text-xs text-gray-400">
             <span>No campaign selected - using general content generation</span>
           </div>
-        )}
+        )} */}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Media Upload */}
-          <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-1">
+          {/* Left Column - Post Type Selection */}
+          <div className="space-y-6">
+            {/* Post Type Selection */}
             <div>
-              <label className="block text-sm font-medium theme-text-primary mb-3 flex items-center">
-                <ImageIcon className="w-4 h-4 mr-2 text-blue-400" />
-                Upload Media
-                <span className="ml-2 text-xs theme-text-secondary">
-                  (Optional)
-                </span>
+              <label className="block text-sm font-medium theme-text-primary mb-3">
+                Select Post Type
               </label>
+              <div className="grid grid-cols-3 gap-2">
+                {/* Text Post */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedPostType('text')}
+                  className={` rounded-lg border transition-all duration-200 text-center p-3 ${
+                    selectedPostType === 'text'
+                      ? 'bg-gradient-to-r from-purple-600/90 to-purple-700/90 border-purple-400/50 text-white shadow-lg'
+                      : 'border-white/20theme-bg-primary/10 bg-purple-500/10'
+                  }`}
+                >
+                  <div className="flex flex-col items-center ">
+                    <div className={` rounded-lg ${
+                      selectedPostType === 'text' 
+                        ? '' 
+                        : ''
+                    }`}>
+                      <MessageSquare className={`w-11 h-11 ${
+                        selectedPostType === 'text' 
+                          ? 'text-white' 
+                          : 'text-purple-400'
+                      }`} />
+                    </div>
+                    <div>
+                      <h3 className={`font-semibold text-md leading-none ${
+                        selectedPostType === 'text' 
+                          ? 'text-white' 
+                          : 'theme-text-primary'
+                      }`}>
+                        Create Text Post
+                      </h3>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Image Post */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedPostType('image')}
+                  className={`rounded-lg border transition-all duration-200 text-center px-2 ${
+                    selectedPostType === 'image'
+                      ? 'bg-gradient-to-r from-purple-600/90 to-purple-700/90 border-purple-400/50 theme-text-light shadow-lg'
+                      : 'border-white/20 theme-bg-primary/10'
+                  }`}
+                >
+                  <div className="flex flex-col items-center">
+                    <div className={` rounded-lg `}>
+                      <ImageIcon className={`w-12 h-12 ${
+                        selectedPostType === 'image' 
+                          ? 'text-white' 
+                          : 'text-purple-400'
+                      }`} />
+                    </div>
+                    <div>
+                      <h3 className={`font-semibold text-md leading-none p-0 ${
+                        selectedPostType === 'image' 
+                          ? 'text-white' 
+                          : 'theme-text-primary'
+                      }`}>
+                       Create
+                       <br/>Image Post
+                      </h3>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Video Post */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedPostType('video')}
+                  className={`p-3 rounded-lg border transition-all duration-200 text-center ${
+                    selectedPostType === 'video'
+                      ? 'bg-gradient-to-r from-purple-600/90 to-purple-700/90 border-purple-400/50 text-white shadow-lg'
+                      : 'border-white/20 hover:border-purple-400/50 theme-bg-primary/10 hover:bg-purple-500/10'
+                  }`}
+                >
+                  <div className="flex flex-col items-center ">
+                    <div className={` rounded-lg ${
+                      selectedPostType === 'video' 
+                        
+                    }`}>
+                      <Play className={`w-11 h-11 ${
+                        selectedPostType === 'video' 
+                          ? 'text-white' 
+                          : 'text-purple-400'
+                      }`} />
+                    </div>
+                    <div>
+                      <h3 className={`font-semibold text-md leading-none ${
+                        selectedPostType === 'video' 
+                          ? 'text-white' 
+                          : 'theme-text-primary'
+                      }`}>
+                       Create
+                       <br/> Video Post
+                      </h3>
+                    </div>
+                  </div>
+                </button>
+              </div>
             </div>
-            <div
-              className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 ${
-                dragActive
-                  ? "border-blue-400/50 bg-blue-500/10"
-                  : "border-white/20 hover:border-white/30"
-              }`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
+
+            {/* Image Post - Mode Selection */}
+            {selectedPostType === 'image' && (
+              <div>
+                <label className="block text-sm font-medium theme-text-primary mb-3">
+                  Image Post Mode
+                </label>
+                
+                {/* Image Mode Toggle */}
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedImageMode('upload')}
+                    className={`p-3 rounded-lg border transition-all duration-200 text-center ${
+                      selectedImageMode === 'upload'
+                        ? 'bg-gradient-to-r from-green-600/90 to-green-700/90 border-green-400/50 text-white shadow-lg'
+                        : 'border-white/20 hover:border-green-400/50 theme-bg-primary/10 hover:bg-green-500/10'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className={`p-2 rounded-lg ${
+                        selectedImageMode === 'upload' 
+                          ? 'bg-white/20' 
+                          : 'bg-green-500/20'
+                      }`}>
+                        <Upload className={`w-4 h-4 ${
+                          selectedImageMode === 'upload' 
+                            ? 'text-white' 
+                            : 'text-green-400'
+                        }`} />
+                      </div>
+                      <div>
+                        <h3 className={`font-semibold text-xs ${
+                          selectedImageMode === 'upload' 
+                            ? 'text-white' 
+                            : 'theme-text-primary'
+                        }`}>
+                          Upload to Image
+                        </h3>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedImageMode('textToImage')}
+                    className={`p-3 rounded-lg border transition-all duration-200 text-center ${
+                      selectedImageMode === 'textToImage'
+                        ? 'bg-gradient-to-r from-blue-600/90 to-blue-700/90 border-blue-400/50 text-white shadow-lg'
+                        : 'border-white/20 hover:border-blue-400/50 theme-bg-primary/10 hover:bg-blue-500/10'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className={`p-2 rounded-lg ${
+                        selectedImageMode === 'textToImage' 
+                          ? 'bg-white/20' 
+                          : 'bg-blue-500/20'
+                      }`}>
+                        <Wand2 className={`w-4 h-4 ${
+                          selectedImageMode === 'textToImage' 
+                            ? 'text-white' 
+                            : 'text-blue-400'
+                        }`} />
+                      </div>
+                      <div>
+                        <h3 className={`font-semibold text-xs ${
+                          selectedImageMode === 'textToImage' 
+                            ? 'text-white' 
+                            : 'theme-text-primary'
+                        }`}>
+                          Text to Image
+                        </h3>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+
+                {/* Upload to Image Interface */}
+                {selectedImageMode === 'upload' && (
+                  <div>
+                    <h4 className="text-sm font-medium theme-text-primary mb-3 flex items-center">
+                      <Upload className="w-4 h-4 mr-2 text-green-400" />
+                      Upload Image
+                    </h4>
+                
+                {/* Upload Area */}
+                <div className="mb-4">
+                  <div
+                    className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 cursor-pointer ${
+                      dragActive
+                        ? "border-blue-400/50 bg-blue-500/10"
+                        : "border-white/20 hover:border-white/30"
+                    }`}
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    
+                    {formData.media || formData.mediaUrl ? (
+                      <div className="space-y-3">
+                        <div className="relative">
+                          <img
+                            src={
+                              templatedImageUrl ||
+                              formData.mediaUrl ||
+                              (formData.media ? URL.createObjectURL(formData.media) : '')
+                            }
+                            alt="Preview"
+                            className="max-h-32 mx-auto rounded-lg shadow-sm"
+                            onError={(e) => {
+                              console.error('Image failed to load:', templatedImageUrl || formData.mediaUrl || formData.media?.name);
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs theme-text-secondary">
+                          {formData.media?.name || "Uploaded Image"}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="w-12 h-12 bg-gradient-to-r from-purple-500/20 to-purple-600/20 rounded-lg flex items-center justify-center mx-auto">
+                          <ImageIcon className="w-6 h-6 text-purple-400" />
+                        </div>
+                        <div>
+                          <p className="font-medium theme-text-primary text-sm mb-1">
+                            Click to browse image
+                          </p>
+                          <p className="theme-text-secondary text-xs">
+                            or drag and drop
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {uploading && (
+                      <div className="absolute inset-0 bg-black/20 rounded-lg flex items-center justify-center">
+                        <div className="flex items-center space-x-2 text-blue-300">
+                          <Loader className="w-4 h-4 animate-spin" />
+                          <span className="text-xs">Uploading...</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Image Dimensions */}
+                <div className="mb-4">
+                  <p className="text-xs theme-text-secondary mb-3">Image Dimensions</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <button
+                      type="button"
+                      className="p-3 border border-white/20 rounded-lg hover:border-purple-400/50 theme-bg-primary/10 hover:bg-purple-500/10 transition-all duration-200"
+                    >
+                      <div className="w-8 h-8 bg-white/20 rounded mx-auto mb-2"></div>
+                      <p className="text-xs theme-text-primary">1:1</p>
+                    </button>
+                    <button
+                      type="button"
+                      className="p-3 border-2 border-purple-400/50 bg-gradient-to-r from-purple-600/90 to-purple-700/90 rounded-lg transition-all duration-200"
+                    >
+                      <div className="w-6 h-10 bg-white/20 rounded mx-auto mb-2"></div>
+                      <p className="text-xs text-white">9:16</p>
+                    </button>
+                    <button
+                      type="button"
+                      className="p-3 border border-white/20 rounded-lg hover:border-purple-400/50 theme-bg-primary/10 hover:bg-purple-500/10 transition-all duration-200"
+                    >
+                      <div className="w-10 h-6 bg-white/20 rounded mx-auto mb-2"></div>
+                      <p className="text-xs theme-text-primary">16:9</p>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+                {/* Text to Image Interface */}
+                {selectedImageMode === 'textToImage' && (
+                  <div>
+                    <h4 className="text-sm font-medium theme-text-primary mb-3 flex items-center">
+                      <Wand2 className="w-4 h-4 mr-2 text-blue-400" />
+                      Text to Image
+                    </h4>
+
+                    {/* Text to Image Area */}
+                    <div className="mb-4">
+                      <div className="relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 border-white/20 hover:border-white/30">
+                        <div className="space-y-3">
+                          <div className="w-12 h-12 bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-lg flex items-center justify-center mx-auto">
+                            <Wand2 className="w-6 h-6 text-blue-400" />
+                          </div>
+                          <div>
+                            <p className="font-medium theme-text-primary text-sm mb-1">
+                              Generate image with AI
+                            </p>
+                            <p className="theme-text-secondary text-xs">
+                              Enter your prompt to create image
+                            </p>
+                          </div>
+                          <div className="flex gap-2 justify-center">
+                            <button
+                              type="button"
+                              onClick={() => setShowAIGenerator(true)}
+                              className="bg-gradient-to-r from-blue-500/80 to-indigo-500/80 text-white px-4 py-2 rounded text-xs hover:from-blue-600/80 hover:to-indigo-600/80 transition-all duration-200 flex items-center space-x-1"
+                            >
+                              <Sparkles className="w-3 h-3" />
+                              <span>Generate AI Image</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Image Dimensions */}
+                    <div className="mb-4">
+                      <p className="text-xs theme-text-secondary mb-3">Image Dimensions</p>
+                      <div className="grid grid-cols-3 gap-3">
+                        <button
+                          type="button"
+                          className="p-3 border border-white/20 rounded-lg hover:border-purple-400/50 theme-bg-primary/10 hover:bg-purple-500/10 transition-all duration-200"
+                        >
+                          <div className="w-8 h-8 bg-white/20 rounded mx-auto mb-2"></div>
+                          <p className="text-xs theme-text-primary">1:1</p>
+                        </button>
+                        <button
+                          type="button"
+                          className="p-3 border-2 border-purple-400/50 bg-gradient-to-r from-purple-600/90 to-purple-700/90 rounded-lg transition-all duration-200"
+                        >
+                          <div className="w-6 h-10 bg-white/20 rounded mx-auto mb-2"></div>
+                          <p className="text-xs text-white">9:16</p>
+                        </button>
+                        <button
+                          type="button"
+                          className="p-3 border border-white/20 rounded-lg hover:border-purple-400/50 theme-bg-primary/10 hover:bg-purple-500/10 transition-all duration-200"
+                        >
+                          <div className="w-10 h-6 bg-white/20 rounded mx-auto mb-2"></div>
+                          <p className="text-xs theme-text-primary">16:9</p>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Video Post - Upload Interface */}
+            {selectedPostType === 'video' && (
+              <div>
+                <label className="block text-sm font-medium theme-text-primary mb-3 flex items-center">
+                  <Video className="w-4 h-4 mr-2 text-purple-400" />
+                  Upload Video
+                  <span className="ml-2 text-xs theme-text-secondary">
+                    (Optional)
+                  </span>
+                </label>
+                <div
+                  className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 ${
+                    dragActive
+                      ? "border-blue-400/50 bg-blue-500/10"
+                      : "border-white/20 hover:border-white/30"
+                  }`}
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                >
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*,video/*"
+                accept={selectedPostType === 'image' ? 'image/*' : selectedPostType === 'video' ? 'video/*' : 'image/*,video/*'}
                 onChange={handleFileChange}
                 className="hidden"
               />
@@ -873,29 +1222,31 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                   </p>
                 </div>
               )}
-            </div>
-
-            {/* Image Analysis Results */}
-            {imageAnalysis && (
-              <div className="bg-blue-500/10 border border-blue-400/20 rounded-lg p-3">
-                <div className="space-y-2">
-                  <h4 className="font-medium text-blue-300 flex items-center text-xs">
-                    <Eye className="w-3 h-3 mr-1" />
-                    AI Analysis Complete
-                  </h4>
-                  <div className="max-h-24 overflow-y-auto">
-                    <p className="text-blue-200 text-xs leading-relaxed">
-                      {imageAnalysis}
-                    </p>
-                  </div>
-                  <button
-                    onClick={useImageAnalysis}
-                    className="bg-gradient-to-r from-blue-500/80 to-indigo-500/80 text-white px-3 py-1.5 rounded text-xs hover:from-blue-600/80 hover:to-indigo-600/80 transition-all duration-200 flex items-center space-x-1"
-                  >
-                    <span>Add to Description</span>
-                    <Sparkles className="w-3 h-3" />
-                  </button>
                 </div>
+
+                {/* Image Analysis Results */}
+                {imageAnalysis && (
+                  <div className="bg-blue-500/10 border border-blue-400/20 rounded-lg p-3">
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-blue-300 flex items-center text-xs">
+                        <Eye className="w-3 h-3 mr-1" />
+                        AI Analysis Complete
+                      </h4>
+                      <div className="max-h-24 overflow-y-auto">
+                        <p className="text-blue-200 text-xs leading-relaxed">
+                          {imageAnalysis}
+                        </p>
+                      </div>
+                      <button
+                        onClick={useImageAnalysis}
+                        className="bg-gradient-to-r from-blue-500/80 to-indigo-500/80 text-white px-3 py-1.5 rounded text-xs hover:from-blue-600/80 hover:to-indigo-600/80 transition-all duration-200 flex items-center space-x-1"
+                      >
+                        <span>Add to Description</span>
+                        <Sparkles className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -912,7 +1263,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, prompt: e.target.value }))
                 }
-                className="w-full px-3 py-2 theme-bg-primary/20 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-200 min-h-[160px] text-sm  placeholder-gray-400"
+                className="w-full px-3 py-2 theme-bg-primary/20 border border-grey/10 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-200 min-h-[160px] text-sm  placeholder-gray-400"
                 placeholder="Describe what you want to share... (e.g., 'Launch of our new eco-friendly water bottles')"
                 required
               />
@@ -921,68 +1272,6 @@ export const ContentInput: React.FC<ContentInputProps> = ({
               </p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium theme-text-primary mb-2">
-                Campaign ID
-              </label>
-              <input
-                type="text"
-                value={formData.campaignId}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    campaignId: e.target.value,
-                  }))
-                }
-                className="w-full px-3 py-2 theme-bg-primary/20 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-200 text-sm placeholder-gray-400"
-                placeholder="e.g., spring-launch-2024"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium theme-text-primary mb-2">
-                <Tag className="w-4 h-4 inline mr-2" />
-                Tags & Keywords
-              </label>
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyPress={(e) =>
-                    e.key === "Enter" && (e.preventDefault(), addTag())
-                  }
-                  className="flex-1 px-3 py-2 theme-bg-primary/20 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-200 text-sm  placeholder-gray-400"
-                  placeholder="Add keywords..."
-                />
-                <button
-                  type="button"
-                  onClick={addTag}
-                  className="theme-bg-primary/40 theme-text-primary px-3 py-2 rounded-lg hover:theme-bg-primary/60 transition-colors duration-200 text-sm"
-                >
-                  Add
-                </button>
-              </div>
-              {formData.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {formData.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="bg-blue-500/20 text-blue-300 px-2 py-1 rounded-full text-xs flex items-center gap-1"
-                    >
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => removeTag(tag)}
-                        className="text-blue-400 hover:text-blue-200"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
           <div>
             <label className="block text-sm font-medium theme-text-primary mb-3">
