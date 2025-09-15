@@ -13,7 +13,7 @@ export interface ThemeColors {
   background: {
     primary: string;
     secondary: string;
-    trinary?: string;
+    trinary : string;
     card: string;
     light: string;
     dark: string;
@@ -29,6 +29,35 @@ export interface ThemeColors {
 }
 
 export const themes: Record<string, ThemeColors> = {
+  "omni-share": {
+    name: "Omni Share",
+    bgGradient: "from-white to-grey-200",
+    primary: "#3B82F6",
+    secondary: "#8B5CF6",
+    accent: "#6366F1",
+    text: {
+      primary: "#000",
+      secondary: "rgb(118 80 227)",
+      light: "rgba(255, 255, 255, 0.7)",
+      dark: "rgba(0, 0, 0, 0.7)",
+    },
+    background: {
+      primary: "rgb(255 255 255)",
+      secondary: "rgb(168 85 247 / 0.2)",
+      trinary: "rgb(118 80 227)",
+      card: "rgb(255 255 255)",
+      light: "rgba(255, 255, 255, 0.95)",
+      dark: "rgba(0, 0, 0, 0.95)",
+    },
+    border: "rgba(255, 255, 255, 0.2)",
+    button: {
+      primary: "#FFFFFF",
+      secondary: "rgba(255, 255, 255, 0.2)",
+      hover: "rgba(255, 255, 255, 0.9)",
+      dark: "rgba(0, 0, 0, 0.9)",
+      light: "rgba(255, 255, 255, 0.9)",
+    },
+  },
   "ai-revolution": {
     name: "AI Revolution",
     bgGradient: "from-blue-600 via-purple-600 to-indigo-700",
@@ -73,6 +102,7 @@ export const themes: Record<string, ThemeColors> = {
     background: {
       primary: "rgba(255, 255, 255, 0.1)",
       secondary: "rgba(255, 255, 255, 0.05)",
+      trinary: "rgba(25, 25, 25, 0.05)",
       card: "rgba(25, 25, 25, 0.50)",
       light: "rgba(255, 255, 255, 0.95)",
       dark: "rgba(0, 0, 0, 0.95)",
@@ -101,6 +131,7 @@ export const themes: Record<string, ThemeColors> = {
     background: {
       primary: "rgba(255, 255, 255, 0.1)",
       secondary: "rgba(255, 255, 255, 0.05)",
+      trinary: "rgba(25, 25, 25, 0.05)",
       card: "rgba(25, 25, 25, 0.50)",
       light: "rgba(255, 255, 255, 0.95)",
       dark: "rgba(0, 0, 0, 0.95)",
@@ -129,6 +160,7 @@ export const themes: Record<string, ThemeColors> = {
     background: {
       primary: "rgba(255, 255, 255, 0.1)",
       secondary: "rgba(255, 255, 255, 0.05)",
+      trinary: "rgba(25, 25, 25, 0.05)",
       card: "rgba(25, 25, 25, 0.50)",
       light: "rgba(255, 255, 255, 0.95)",
       dark: "rgba(0, 0, 0, 0.95)",
@@ -157,6 +189,7 @@ export const themes: Record<string, ThemeColors> = {
     background: {
       primary: "rgba(255, 255, 255, 0.1)",
       secondary: "rgba(255, 255, 255, 0.05)",
+      trinary: "rgba(25, 25, 25, 0.05)",  
       card: "rgba(25, 25, 25, 0.50)",
       light: "rgba(255, 255, 255, 0.95)",
       dark: "rgba(0, 0, 0, 0.95)",
@@ -185,6 +218,7 @@ export const themes: Record<string, ThemeColors> = {
     background: {
       primary: "rgba(255, 255, 255, 0.1)",
       secondary: "rgba(255, 255, 255, 0.05)",
+      trinary: "rgba(25, 25, 25, 0.05)",
       card: "rgba(25, 25, 25, 0.50)",
       light: "rgba(255, 255, 255, 0.95)",
       dark: "rgba(0, 0, 0, 0.95)",
@@ -242,11 +276,9 @@ export class ThemeManager {
     root.style.setProperty("--theme-text-light", theme.text.light);
     root.style.setProperty("--theme-bg-primary", theme.background.primary);
     root.style.setProperty("--theme-bg-secondary", theme.background.secondary);
+    //root.style.setProperty("--theme-bg-trinary", theme.background.trinary ?? theme.background.card);
     root.style.setProperty("--theme-bg-card", theme.background.card);
-    root.style.setProperty(
-      "--theme-bg-trinary",
-      theme.background.trinary ?? theme.background.card,
-    );
+    root.style.setProperty("--theme-bg-trinary", theme.background.trinary);
     root.style.setProperty("--theme-border", theme.border);
     root.style.setProperty("--theme-button-primary", theme.button.primary);
     root.style.setProperty("--theme-button-secondary", theme.button.secondary);

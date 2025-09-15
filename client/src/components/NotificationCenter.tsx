@@ -116,7 +116,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         {/* Header */}
         <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 theme-text-secondary">
               <Bell className="w-5 h-5" />
               <h2 className="text-lg font-semibold">Notifications</h2>
               {unreadCount > 0 && (

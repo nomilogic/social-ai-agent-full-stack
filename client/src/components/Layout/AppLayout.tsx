@@ -83,8 +83,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       <div
         className={`fixed inset-0 bg-gradient-to-br ${currentTheme.bgGradient}`}
       >
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
+        {/* <div className="absolute inset-0 bg-black/20"></div> */}
+        {/* <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div> */}
       </div>
 
       {/* Mobile Menu Overlay */}
@@ -104,10 +104,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 lg:w-auto`}
         >
           <div className="flex items-center justify-between h-16 px-4 border-b border-white/20 lg:hidden">
-            <h1 className="text-xl font-bold theme-text-primary">Social AI</h1>
+            {/* <h1 className="text-xl font-bold theme-text-primary">Social AI</h1> */}
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-1 rounded-md theme-text-light hover:theme-text-primary lg:hidden"
+              className="p-1 rounded-md theme-text-primary hover:theme-text-secondary lg:hidden"
             >
               <X className="w-6 h-6" />
             </button>
@@ -139,7 +139,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             <div className="flex items-center">
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="p-1 rounded-md theme-text-light hover:theme-text-primary lg:hidden"
+                className="p-1 rounded-md theme-text-primary hover:theme-text-secondary lg:hidden"
               >
                 <Menu className="w-6 h-6" />
               </button>
@@ -165,7 +165,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               <div className="relative" ref={notificationRef}>
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="p-2 theme-text-light hover:theme-text-primary relative"
+                  className="p-2 theme-text-primary hover:theme-text-secondary relative"
                 >
                   <Bell className="w-5 h-5" />
                   <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center text-xs text-white">
@@ -187,10 +187,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   className="flex items-center p-2 text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-white/30"
                 >
                   <img
-                    className="h-8 w-8 rounded-full object-cover border-2 border-white/30"
+                    className="h-8 w-8 rounded-full object-cover border-2 border-white/30 theme-bg-trinary"
                     src={
                       user?.avatar_url ||
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user_metadata?.name || user?.email || "User")}&background=3b82f6&color=fff`
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user_metadata?.name || user?.email || "User")}&background=00000000&color=fff`
                     }
                     alt=""
                   />
@@ -226,20 +226,19 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         </div>
 
         {/* Main Content */}
-        <main className="py-0 h-full-dec-hf overflow-auto">
+        <main className="py-0 h-full-dec-hf overflow-auto theme-bg-card">
           <div className="w-full mx-auto sm:px-0 lg:px-0 overflow-auto">
-            <div className="  p-0 backdrop-blur-sm ">{children}</div>
+            <div className="  p-0  ">{children}</div>
           </div>
         </main>
 
         {/* Footer */}
-        <footer className="fixed bottom-0 w-full theme-bg-card border-t border-white/20 mt-0">
+        <footer className="fixed bottom-0 w-full theme-bg-card border-t border-white/20 mt-0 hidden">
           <div className="w-full mx-auto px-4 sm:px-6 lg:px-4 py-2">
-            <div className="text-center">
-              <p className="theme-text-secondary text-xs">
-                © 2025 Social AI Agent. Powered by advanced AI for smarter
-                social media content.
-              </p>
+            <div className="text-center flex flex-col items-center justify-center">
+              <div className="theme-text-secondary text-xs">
+                © 2025 OMNI SHARE. Powered by 
+              </div>
               <div className="mt-2 flex justify-center space-x-6 text-sm theme-text-secondary">
                 <Link
                   to="/privacy"
