@@ -995,21 +995,23 @@ router.post('/generate-image', async (req: Request, res: Response) => {
     let imageUrl: string;
     let provider: string;
 
-    // Determine provider based on model selection - exactly like working reference
+    // Determine provider based on model selection with Gemini 2.5 Flash Image Preview as default
     const selectedModel = availableModels.find(m => m.id === model);
     const isHuggingFaceModel = selectedModel?.provider === 'huggingface';
-    const isGeminiModel = selectedModel?.provider === 'gemini';
+    const isGeminiModel = selectedModel?.provider === 'gemini' || model === 'gemini-2.5-flash-image-preview';
+    const isPollinationsModel = selectedModel?.provider === 'pollinations' || model === 'default';
     
     if (isGeminiModel) {
-      console.log('🔮 Generating image with Gemini:', model)
+      console.log('🔮 Generating image with Gemini 2.5 Flash Image Preview:', model)
       try {
         const geminiResult = await generateImageWithGemini(enhancedPrompt)
         imageUrl = geminiResult.imageData // This is a base64 data URL
         provider = 'gemini'
+        console.log('✅ Gemini generation successful')
       } catch (geminiError: any) {
-        console.warn('Gemini failed, falling back to Pollinations:', geminiError.message)
+        console.warn('❌ Gemini failed, falling back to Pollinations:', geminiError.message)
         // Fallback to Pollinations if Gemini fails
-        imageUrl = await generateImageWithPollinations(enhancedPrompt, width, height, finalSeed)
+        imageUrl = await generateImageWithPollinationsWithRetry(enhancedPrompt, width, height, finalSeed)
         provider = 'pollinations'
       }
     } else if (isHuggingFaceModel && model !== 'default') {
@@ -1017,27 +1019,20 @@ router.post('/generate-image', async (req: Request, res: Response) => {
       try {
         imageUrl = await generateImageWithHuggingFace(model, enhancedPrompt, width, height)
         provider = 'huggingface'
+        console.log('✅ Hugging Face generation successful')
       } catch (hfError: any) {
-        console.warn('Hugging Face failed, falling back to Pollinations:', hfError.message)
+        console.warn('❌ Hugging Face failed, falling back to Pollinations:', hfError.message)
         // Fallback to Pollinations if Hugging Face fails
-        imageUrl = await generateImageWithPollinations(enhancedPrompt, width, height, finalSeed)
+        imageUrl = await generateImageWithPollinationsWithRetry(enhancedPrompt, width, height, finalSeed)
         provider = 'pollinations'
       }
     } else {
-      console.log('🌸 Generating image with Pollinations AI (free)')
-      imageUrl = await generateImageWithPollinations(enhancedPrompt, width, height, finalSeed)
+      console.log('🌸 Generating image with Pollinations AI (free) with retry logic')
+      imageUrl = await generateImageWithPollinationsWithRetry(enhancedPrompt, width, height, finalSeed)
       provider = 'pollinations'
     }
 
-    // Test if the image generates successfully (only for Pollinations)
-    if (provider === 'pollinations') {
-      try {
-        const testResponse = await axios.head(imageUrl, { timeout: 10000 })
-        console.log('Pollinations generation successful, content-type:', testResponse.headers['content-type'])
-      } catch (testError) {
-        console.warn('Pollinations test failed, but continuing...')
-      }
-    }
+    // Image validation is now handled within the retry logic for Pollinations
 
     let finalImageUrl = imageUrl
     let supabaseUrl = null
@@ -1098,7 +1093,79 @@ router.post('/generate-image', async (req: Request, res: Response) => {
 
 
 
-// Pollinations image generation helper - exactly like working reference
+// Pollinations image generation helper with retry logic for 0kb images
+async function generateImageWithPollinationsWithRetry(
+  prompt: string,
+  width: number,
+  height: number,
+  seed: number,
+  maxRetries: number = 5
+): Promise<string> {
+  let attempt = 0;
+  
+  while (attempt < maxRetries) {
+    attempt++;
+    console.log(`🌸 Generating image with Pollinations AI (attempt ${attempt}/${maxRetries})`);
+    
+    try {
+      const encodedPrompt = encodeURIComponent(prompt);
+      // Add random seed variation for retry attempts
+      const currentSeed = seed + attempt - 1;
+      const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${currentSeed}&nologo=true`;
+      
+      // Test if the image is valid (not 0kb)
+      console.log(`🔍 Testing Pollinations image (attempt ${attempt}):`, url.substring(0, 100) + '...');
+      const testResponse = await axios.head(url, { 
+        timeout: 15000,
+        maxRedirects: 5 
+      });
+      
+      const contentLength = parseInt(testResponse.headers['content-length'] || '0');
+      const contentType = testResponse.headers['content-type'] || '';
+      
+      console.log(`📊 Pollinations response (attempt ${attempt}):`, {
+        contentLength,
+        contentType,
+        status: testResponse.status
+      });
+      
+      // Check if image is valid (not 0kb and has proper content type)
+      if (contentLength > 1000 && contentType.startsWith('image/')) {
+        console.log(`✅ Pollinations generation successful (attempt ${attempt}): ${contentLength} bytes`);
+        return url;
+      } else if (contentLength === 0) {
+        console.warn(`⚠️  Pollinations returned 0kb image (attempt ${attempt}), retrying...`);
+        if (attempt < maxRetries) {
+          // Wait a bit before retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+      } else {
+        console.warn(`⚠️  Pollinations returned small/invalid image (attempt ${attempt}): ${contentLength} bytes, retrying...`);
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+      }
+    } catch (error: any) {
+      console.error(`❌ Pollinations error (attempt ${attempt}):`, error.message);
+      if (attempt < maxRetries) {
+        console.log(`🔄 Retrying Pollinations in ${attempt * 1000}ms...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        continue;
+      }
+    }
+  }
+  
+  // If all retries failed, return the last attempt URL anyway
+  console.error(`❌ All ${maxRetries} Pollinations attempts failed, returning last URL`);
+  const encodedPrompt = encodeURIComponent(prompt);
+  const fallbackSeed = seed + maxRetries;
+  const fallbackUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${fallbackSeed}&nologo=true`;
+  return fallbackUrl;
+}
+
+// Legacy Pollinations helper (kept for compatibility)
 async function generateImageWithPollinations(
   prompt: string,
   width: number,
@@ -1106,10 +1173,10 @@ async function generateImageWithPollinations(
   seed: number
 ): Promise<string> {
   try {
-    console.log('🌸 Generating image with Pollinations AI');
+    console.log('🌸 Generating image with Pollinations AI (legacy)');
     
     const encodedPrompt = encodeURIComponent(prompt);
-    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&nologo=true`;
+    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${seed}&nologo=true`;
     
     // For Pollinations, the URL itself is the image
     return url;

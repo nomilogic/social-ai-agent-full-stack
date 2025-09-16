@@ -24,7 +24,6 @@ import Icon from './Icon';
 import { PostContent, Platform } from "../types";
 import { uploadMedia, getCurrentUser } from "../lib/database";
 import { analyzeImage as analyzeImageWithGemini } from "../lib/gemini"; // Renamed to avoid conflict
-import { AIImageGenerator } from "./AIImageGenerator";
 import { PostPreview } from "./PostPreview";
 import { getPlatformColors, platformOptions } from "../utils/platformIcons";
 import { getCampaignById } from "../lib/database";
@@ -79,7 +78,6 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const [uploading, setUploading] = useState(false);
   const [analyzingImage, setAnalyzingImage] = useState(false);
   const [imageAnalysis, setImageAnalysis] = useState("");
-  const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [useForAIReference, setUseForAIReference] = useState(true);
   const [useInPost, setUseInPost] = useState(true);
   const [generatedResults, setGeneratedResults] = useState<any[]>([]);
@@ -404,7 +402,38 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🚀 Form submitted with conditions:', {
+      generateImageWithPost,
+      selectedPostType,
+      selectedImageMode,
+      hasMediaUrl: !!formData.mediaUrl,
+      promptLength: formData.prompt.trim().length
+    });
+    
     if (formData.prompt.trim()) {
+      // For text-to-image mode with combined generation enabled, do the combined generation
+      if (selectedPostType === 'image' && selectedImageMode === 'textToImage' && generateImageWithPost && !formData.mediaUrl) {
+        console.log('🚀 Starting combined generation from Generate Post button...');
+        await handleCombinedGenerationWithPost(formData.prompt);
+        return; // Exit here as handleCombinedGenerationWithPost handles the rest
+      }
+      
+      // For text-to-image mode without combined generation, check if image exists
+      if (selectedPostType === 'image' && selectedImageMode === 'textToImage' && !generateImageWithPost && !formData.mediaUrl) {
+        console.log('🎯 Image generation required - no image found');
+        alert('Please generate an image first using the "Generate Image" button, then generate the post.');
+        return;
+      }
+
+      // For upload mode, check if image is uploaded
+      if (selectedPostType === 'image' && selectedImageMode === 'upload' && !formData.mediaUrl && !formData.media) {
+        console.log('🎯 Image upload required');
+        alert('Please upload an image first, then generate the post.');
+        return;
+      }
+      
+      let currentFormData = formData; // Track the current form data state
+      
       // Use fetched campaign info if available, otherwise use default values
       const currentCampaignInfo = campaignInfo || {
         name: "Default Campaign",
@@ -420,12 +449,15 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         fromContext: !!state.selectedCampaign
       });
 
-      const mediaAssets = formData.mediaUrl
-        ? [{ url: formData.mediaUrl, type: formData.media?.type || "image" }]
+      // Use the current form data (which should include the generated image)
+      const mediaAssets = currentFormData.mediaUrl
+        ? [{ url: currentFormData.mediaUrl, type: currentFormData.media?.type || "image" }]
         : [];
 
+      console.log('📋 Final media assets for post data:', mediaAssets);
+
       const postData = {
-        ...formData,
+        ...currentFormData, // Use the updated form data
         prompt: formData.prompt,
         selectedPlatforms: formData.selectedPlatforms,
         platforms: formData.selectedPlatforms,
@@ -445,6 +477,12 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         keywords: currentCampaignInfo.keywords,
         hashtags: currentCampaignInfo.hashtags,
       };
+
+      console.log('📤 Final post data being sent:', {
+        hasMediaAssets: mediaAssets.length > 0,
+        mediaAssetsCount: mediaAssets.length,
+        prompt: postData.prompt?.substring(0, 50) + '...'
+      });
 
       // If onNext callback is provided, use it
       if (onNext && typeof onNext === "function") {
@@ -497,6 +535,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   };
 
   const handleAIImageGenerated = async (imageUrl: string) => {
+    console.log('🖼️ handleAIImageGenerated called with URL:', imageUrl);
     try {
       // Convert the AI generated image URL to a File object
       const response = await fetch(imageUrl);
@@ -504,21 +543,62 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       const file = new File([blob], "ai-generated-image.png", {
         type: "image/png",
       });
+      console.log('📋 Created File object:', { name: file.name, size: file.size, type: file.type });
 
       // Upload the AI generated image to our storage
       const user = await getCurrentUser();
-      if (user) {
-        const mediaUrl = await uploadMedia(file, user.user?.id);
-        setFormData((prev) => ({ ...prev, media: file, mediaUrl }));
+      if (user && user.user?.id) {
+        console.log('📤 Uploading to storage for user:', user.user.id);
+        const mediaUrl = await uploadMedia(file, user.user.id);
+        console.log('✅ Upload successful, server URL:', mediaUrl);
+        
+        setFormData((prev) => {
+          console.log('🔄 Updating formData with server URL - before:', { 
+            hasMedia: !!prev.media, 
+            hasMediaUrl: !!prev.mediaUrl 
+          });
+          const newData = { ...prev, media: file, mediaUrl };
+          console.log('🔄 Updating formData with server URL - after:', { 
+            hasMedia: !!newData.media, 
+            hasMediaUrl: !!newData.mediaUrl,
+            mediaUrl: newData.mediaUrl?.substring(0, 50) + '...' 
+          });
+          return newData;
+        });
       } else {
+        console.log('⚠️ No authenticated user, using direct URL');
         // If no user, just use the direct URL
-        setFormData((prev) => ({ ...prev, mediaUrl: imageUrl }));
+        setFormData((prev) => {
+          console.log('🔄 Updating formData with direct URL - before:', { 
+            hasMedia: !!prev.media, 
+            hasMediaUrl: !!prev.mediaUrl 
+          });
+          const newData = { ...prev, mediaUrl: imageUrl };
+          console.log('🔄 Updating formData with direct URL - after:', { 
+            hasMedia: !!newData.media, 
+            hasMediaUrl: !!newData.mediaUrl,
+            mediaUrl: newData.mediaUrl?.substring(0, 50) + '...' 
+          });
+          return newData;
+        });
       }
     } catch (error) {
-      console.error("Error handling AI generated image:", error);
+      console.error("❌ Error handling AI generated image:", error);
       // Fallback: just use the URL directly
-
-      setFormData((prev) => ({ ...prev, mediaUrl: imageUrl }));
+      console.log('🔄 Using fallback direct URL');
+      setFormData((prev) => {
+        console.log('🔄 Fallback update - before:', { 
+          hasMedia: !!prev.media, 
+          hasMediaUrl: !!prev.mediaUrl 
+        });
+        const newData = { ...prev, mediaUrl: imageUrl };
+        console.log('🔄 Fallback update - after:', { 
+          hasMedia: !!newData.media, 
+          hasMediaUrl: !!newData.mediaUrl,
+          mediaUrl: newData.mediaUrl?.substring(0, 50) + '...' 
+        });
+        return newData;
+      });
     }
   };
 
@@ -566,9 +646,227 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   };
 
   const [aspectRatio, setAspectRatio] = useState<string>('1:1');
+  const [imageDescription, setImageDescription] = useState<string>('');
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [generateImageWithPost, setGenerateImageWithPost] = useState(true );
+  const [isGeneratingBoth, setIsGeneratingBoth] = useState(false);
 
   const handleAspectRatioChange = (newAspectRatio: string) => {
     setAspectRatio(newAspectRatio);
+  };
+
+  // Inline image generation function
+  const handleGenerateImage = async () => {
+    if (!imageDescription.trim()) return;
+    
+    setIsGeneratingImage(true);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 
+        (typeof window !== "undefined" 
+          ? `${window.location.protocol}//${window.location.host}` 
+          : "http://localhost:5000/api");
+      
+      const response = await fetch(`${apiUrl}/ai/generate-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: imageDescription,
+          style: 'professional',
+          aspectRatio: aspectRatio,
+          quality: 'standard',
+          model: 'gemini-2.5-flash-image-preview'
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate image');
+      }
+      
+      const result = await response.json();
+      console.log('🎨 Image generation API response:', result);
+      if (result.success && result.imageUrl) {
+        await handleAIImageGenerated(result.imageUrl);
+        setImageDescription(''); // Clear the description field
+      } else {
+        throw new Error(result.error || 'Image generation failed');
+      }
+    } catch (error) {
+      console.error('Error generating image:', error);
+      // You might want to show an error message to the user here
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
+  // Combined generation function - generates both post and image from main prompt
+  const handleCombinedGeneration = async (prompt: string): Promise<string | null> => {
+    setIsGeneratingImage(true);
+    try {
+      console.log('🖼️ Combined generation started with prompt:', prompt.substring(0, 100) + '...');
+      
+      const apiUrl = import.meta.env.VITE_API_URL || 
+        (typeof window !== "undefined" 
+          ? `${window.location.protocol}//${window.location.host}` 
+          : "http://localhost:5000/api");
+      
+      console.log('🌍 API URL for image generation:', apiUrl);
+      
+      const requestBody = {
+        prompt: prompt,
+        style: 'professional',
+        aspectRatio: aspectRatio,
+        quality: 'standard',
+        model: 'gemini-2.5-flash-image-preview'
+      };
+      
+      console.log('📝 Request body:', requestBody);
+      
+      const response = await fetch(`${apiUrl}/ai/generate-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+      
+      console.log('🚀 Response status:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Response error:', errorText);
+        throw new Error(`Failed to generate image: ${response.status} ${errorText}`);
+      }
+      
+      const result = await response.json();
+      console.log('🎨 Image generation result:', result);
+      
+      if (result.success && result.imageUrl) {
+        console.log('✅ Image generated successfully, processing...', result.imageUrl);
+        await handleAIImageGenerated(result.imageUrl);
+        console.log('✅ Combined generation completed successfully!');
+        return result.imageUrl;
+      } else {
+        console.error('❌ Image generation result invalid:', result);
+        throw new Error(result.error || 'Image generation failed - no image URL in response');
+      }
+    } catch (error) {
+      console.error('❌ Error in combined generation:', error);
+      if (error instanceof Error) {
+        console.error('❌ Error details:', error.message, error.stack);
+      }
+      return null;
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
+  // Enhanced combined generation function - generates image and then post automatically
+  const handleCombinedGenerationWithPost = async (prompt: string) => {
+    setIsGeneratingBoth(true);
+    try {
+      console.log('🚀 Starting combined generation with automatic post creation...');
+      console.log('📝 Prompt for combined generation:', prompt.substring(0, 100) + '...');
+      
+      // Step 1: Generate the image
+      console.log('🖼️ Step 1: Generating image from content...');
+      const imageUrl = await handleCombinedGeneration(prompt);
+      
+      if (!imageUrl) {
+        console.error('❌ Image generation failed, cannot proceed with post generation');
+        throw new Error('Image generation failed');
+      }
+      
+      console.log('✅ Step 1 completed: Image generated successfully');
+      
+      // Wait a moment to ensure state is updated
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Step 2: Automatically generate the post
+      console.log('📝 Step 2: Automatically generating post with the new image...');
+      
+      // Use current campaign info or defaults
+      const currentCampaignInfo = campaignInfo || {
+        name: "Default Campaign",
+        industry: "General",
+        brand_tone: "professional",
+        target_audience: "General",
+        description: "General content generation without specific campaign context",
+      };
+      
+      // Prepare current form data with the new image
+      const currentFormData = {
+        ...formData,
+        mediaUrl: imageUrl
+      };
+      
+      const mediaAssets = [{ url: imageUrl, type: "image" }];
+      
+      console.log('📋 Preparing post data with generated image:', {
+        hasMediaAssets: mediaAssets.length > 0,
+        imageUrl: imageUrl?.substring(0, 50) + '...',
+        prompt: prompt.substring(0, 50) + '...'
+      });
+      
+      const postData = {
+        ...currentFormData,
+        prompt: prompt,
+        selectedPlatforms: formData.selectedPlatforms,
+        platforms: formData.selectedPlatforms,
+        campaignName: currentCampaignInfo.name,
+        campaignInfo: currentCampaignInfo,
+        mediaAssets,
+        analysisResults: imageAnalysis,
+        industry: currentCampaignInfo.industry,
+        tone: currentCampaignInfo.brand_tone || currentCampaignInfo.brandTone,
+        targetAudience: currentCampaignInfo.target_audience || currentCampaignInfo.targetAudience,
+        description: currentCampaignInfo.description,
+        imageAnalysis: imageAnalysis,
+        website: currentCampaignInfo.website,
+        objective: currentCampaignInfo.objective,
+        goals: currentCampaignInfo.goals,
+        keywords: currentCampaignInfo.keywords,
+        hashtags: currentCampaignInfo.hashtags,
+      };
+      
+      console.log('📤 Final post data for combined generation:', {
+        hasMediaAssets: mediaAssets.length > 0,
+        mediaAssetsCount: mediaAssets.length,
+        prompt: postData.prompt?.substring(0, 50) + '...'
+      });
+      
+      // Call onNext to proceed with post generation
+      if (onNext && typeof onNext === "function") {
+        console.log('✅ Step 2: Calling onNext with post data...');
+        onNext(postData);
+        console.log('✅ Combined generation with automatic post creation completed!');
+      } else {
+        console.log('⚠️ No onNext function provided, showing preview instead');
+        // Fallback: simulate generation for preview
+        const simulatedGeneratedPosts = [
+          {
+            platform: (formData.selectedPlatforms && formData.selectedPlatforms[0]) || "linkedin",
+            content: prompt,
+            caption: prompt,
+            hashtags: formData.tags,
+            engagement: Math.floor(Math.random() * 1000),
+          },
+        ];
+        setGeneratedResults(simulatedGeneratedPosts);
+        setShowPreview(true);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error in combined generation with post:', error);
+      if (error instanceof Error) {
+        console.error('❌ Error details:', error.message, error.stack);
+        // You might want to show an error message to the user here
+        alert(`Failed to generate image and post: ${error.message}`);
+      }
+    } finally {
+      setIsGeneratingBoth(false);
+    }
   };
 
   return (
@@ -889,26 +1187,80 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           className="hidden"
                         />
 
-                        {formData.media || formData.mediaUrl ? (
-                          <div className="space-y-3">
-                            <div className="relative">
-                              <img
-                                src={
-                                  templatedImageUrl ||
-                                  formData.mediaUrl ||
-                                  (formData.media ? URL.createObjectURL(formData.media) : '')
-                                }
-                                alt="Preview"
-                                className="max-h-32 mx-auto  shadow-sm"
-                                onError={(e) => {
-                                  console.error('Image failed to load:', templatedImageUrl || formData.mediaUrl || formData.media?.name);
-                                }}
-                              />
+                          {formData.media || formData.mediaUrl ? (
+                            <div className="space-y-3">
+                              <div className="relative">
+                                {/* Debug info for upload preview */}
+                                {(() => {
+                                  const imageSrc = templatedImageUrl ||
+                                    formData.mediaUrl ||
+                                    (formData.media ? URL.createObjectURL(formData.media) : '');
+                                  console.log('🖼️ Upload preview rendering with:', {
+                                    templatedImageUrl: templatedImageUrl?.substring(0, 50) + '...',
+                                    mediaUrl: formData.mediaUrl?.substring(0, 50) + '...',
+                                    hasMedia: !!formData.media,
+                                    mediaType: formData.media?.type,
+                                    finalSrc: imageSrc.substring(0, 50) + '...'
+                                  });
+                                  return (
+                                    <img
+                                      src={imageSrc}
+                                      alt="Preview"
+                                      className="max-h-32 mx-auto  shadow-sm"
+                                      onLoad={() => {
+                                        console.log('✅ Upload preview image loaded successfully:', imageSrc.substring(0, 30) + '...');
+                                      }}
+                                      onError={(e) => {
+                                        console.error('❌ Upload preview image failed to load:', imageSrc);
+                                        console.error('❌ Error details:', e);
+                                      }}
+                                    />
+                                  );
+                                })()}
+                                {/* Remove button overlay */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      media: undefined,
+                                      mediaUrl: undefined,
+                                    }));
+                                    // Also clear template-related state
+                                    setTemplatedImageUrl("");
+                                    setSelectedTemplate(undefined);
+                                    setImageAnalysis("");
+                                  }}
+                                  className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-colors duration-200"
+                                  title="Remove image"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <p className="text-xs theme-text-secondary">
+                                  {formData.media?.name || "Uploaded Image"}
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      media: undefined,
+                                      mediaUrl: undefined,
+                                    }));
+                                    // Also clear template-related state
+                                    setTemplatedImageUrl("");
+                                    setSelectedTemplate(undefined);
+                                    setImageAnalysis("");
+                                  }}
+                                  className="text-red-400 hover:text-red-300 text-xs font-medium flex items-center space-x-1"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                  <span>Remove</span>
+                                </button>
+                              </div>
                             </div>
-                            <p className="text-xs theme-text-secondary">
-                              {formData.media?.name || "Uploaded Image"}
-                            </p>
-                          </div>
                         ) : (
                           <div className="">
                               <Icon name="upload" size={44} />
@@ -943,86 +1295,183 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                   <div>
                     <h4 className="text-sm font-medium theme-text-primary mb-2 flex items-center">
                       <Wand2 className="w-4 h-4 mr-2 text-blue-400" />
-                      Text to Image
+                      Generate Image with AI
                     </h4>
 
-                    {/* Text to Image Area */}
-                    <div className="mb-4">
-                      <div className=" border-2 border-dashed  p-8 text-center transition-all duration-200 border-white/20 hover:border-white/30">
+                    {/* Image Generation Form */}
+                    <div className={`space-y-4 ${generateImageWithPost ? 'hidden' : 'hidden'}`}>
+                      {/* Combined Generation Checkbox */}
+                      <div className="p-3 bg-gradient-to-r from-blue-500/5 to-purple-500/5 border border-blue-400/20 rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            id="generateImageWithPostTextToImage"
+                            checked={generateImageWithPost}
+                            onChange={(e) => setGenerateImageWithPost(e.target.checked)}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                          />
+                          <div className="flex-1">
+                            <label htmlFor="generateImageWithPostTextToImage" className="flex items-center cursor-pointer">
+                              <Sparkles className="w-4 h-4 mr-2 text-blue-400" />
+                              <span className="text-sm font-medium theme-text-primary">
+                                Use main content description as image prompt
+                              </span>
+                            </label>
+                            <p className="text-xs theme-text-secondary mt-1">
+                              Instead of using the image description below, use your main post content to generate the image
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Image Description Field - Only show when combined generation is NOT checked */}
+                      {!generateImageWithPost && (
+                        <div>
+                          <label className="block text-sm font-medium theme-text-primary mb-2">
+                            Image Description *
+                          </label>
+                          <textarea
+                            value={imageDescription}
+                            onChange={(e) => setImageDescription(e.target.value)}
+                            className="w-full px-3 py-2 theme-bg-primary/20 border border-grey/10 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-200 min-h-[80px] text-sm placeholder-gray-400"
+                            placeholder="Describe the image you want to generate... (e.g., 'A professional product photo of eco-friendly water bottles')"
+                            required
+                          />
+                        </div>
+                      )}
+
+                      {/* Generate Button - Only show when combined generation is NOT checked */}
+                      {!generateImageWithPost && (
+                        <button
+                          type="button"
+                          onClick={handleGenerateImage}
+                          disabled={isGeneratingImage || !imageDescription.trim()}
+                          className="w-full bg-gradient-to-r from-blue-500/80 to-indigo-500/80 text-white py-3 px-4 rounded font-medium hover:from-blue-600/80 hover:to-indigo-600/80 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                        >
+                          {isGeneratingImage ? (
+                            <>
+                              <Loader className="w-4 h-4 animate-spin" />
+                              <span>Generating Image...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-4 h-4" />
+                              <span>Generate Image</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      {/* Generate Image from Main Content - Only show when combined generation is checked */}
+                      {generateImageWithPost && (
                         <div className="space-y-3">
-                          <div className="w-12 h-12 bg-gradient-to-r from-blue-500/20 to-blue-600/20  flex items-center justify-center mx-auto">
-                            <Icon name="text-to-image" size={40} />
+                          <div className="p-3 bg-green-500/10 border border-green-400/20 rounded-lg">
+                            <div className="flex items-center space-x-2">
+                              <CheckCircle className="w-4 h-4 text-green-400" />
+                              <span className="text-sm font-medium text-green-300">
+                                Using your main content description to generate the image
+                              </span>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium theme-text-primary text-sm mb-1">
-                              Generate image with AI
-                            </p>
-                            <p className="theme-text-secondary text-xs">
-                              Enter your prompt to create image
-                            </p>
-                          </div>
-                          <div className="flex gap-2 justify-center">
+                          <button
+                            type="button"
+                            onClick={() => handleCombinedGenerationWithPost(formData.prompt)}
+                            disabled={isGeneratingBoth || !formData.prompt.trim()}
+                            className="w-full bg-gradient-to-r from-green-500/80 to-teal-500/80 text-white py-3 px-4 rounded font-medium hover:from-green-600/80 hover:to-teal-600/80 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                          >
+                            {isGeneratingBoth ? (
+                              <>
+                                <Loader className="w-4 h-4 animate-spin" />
+                                <span>Generating Image & Post...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="w-4 h-4" />
+                                <span>Generate Image & Post</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Generated Image Preview */}
+                    {(formData.media || formData.mediaUrl) && (
+                      <div className="mt-4">
+                        <div className="border border-white/20 rounded p-4">
+                          <div className="relative">
+                            {(() => {
+                              const imageSrc = templatedImageUrl ||
+                                formData.mediaUrl ||
+                                (formData.media ? URL.createObjectURL(formData.media) : '');
+                              console.log('🎨 Text-to-image preview rendering with:', {
+                                templatedImageUrl: templatedImageUrl?.substring(0, 50) + '...',
+                                mediaUrl: formData.mediaUrl?.substring(0, 50) + '...',
+                                hasMedia: !!formData.media,
+                                mediaType: formData.media?.type,
+                                finalSrc: imageSrc.substring(0, 50) + '...'
+                              });
+                              return (
+                                <img
+                                  src={imageSrc}
+                                  alt="Generated Image"
+                                  className="max-h-32 mx-auto shadow-sm rounded"
+                                  onLoad={() => {
+                                    console.log('✅ Text-to-image preview loaded successfully:', imageSrc.substring(0, 30) + '...');
+                                  }}
+                                  onError={(e) => {
+                                    console.error('❌ Text-to-image preview failed to load:', imageSrc);
+                                    console.error('❌ Error details:', e);
+                                  }}
+                                />
+                              );
+                            })()}
+                            {/* Remove button overlay */}
                             <button
                               type="button"
-                              onClick={() => setShowAIGenerator(true)}
-                              className="bg-gradient-to-r from-blue-500/80 to-indigo-500/80 text-white px-4 py-2 rounded text-xs hover:from-blue-600/80 hover:to-indigo-600/80 transition-all duration-200 flex items-center space-x-1"
+                              onClick={() => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  media: undefined,
+                                  mediaUrl: undefined,
+                                }));
+                                // Also clear template-related state
+                                setTemplatedImageUrl("");
+                                setSelectedTemplate(undefined);
+                                setImageAnalysis("");
+                              }}
+                              className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-colors duration-200"
+                              title="Remove image"
                             >
-                              <Sparkles className="w-3 h-3" />
-                              <span>Generate AI Image</span>
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <div className="flex items-center justify-between mt-2">
+                            <p className="text-xs theme-text-secondary">
+                              {formData.media?.name || "AI Generated Image"}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  media: undefined,
+                                  mediaUrl: undefined,
+                                }));
+                                // Also clear template-related state
+                                setTemplatedImageUrl("");
+                                setSelectedTemplate(undefined);
+                                setImageAnalysis("");
+                              }}
+                              className="text-red-400 hover:text-red-300 text-xs font-medium flex items-center space-x-1"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Remove</span>
                             </button>
                           </div>
                         </div>
                       </div>
-                    </div>
-
-                    {/* Image Dimensions */}
-                    <div className="mb-4">
-                      <p className="text-xs theme-text-secondary mb-2">Image Dimensions</p>
-                      <div className="grid grid-cols-3 gap-3">
-                        <button
-                          type="button"
-                          className={`p-3 border transition-all duration-200 text-center ${aspectRatio === '1:1'
-                              ? 'theme-bg-quaternary shadow-lg  theme-text-secondary'
-                              : 'theme-bg-primary  theme-text-primary'
-                            }`}
-                          onClick={() => setAspectRatio('1:1')}
-                        >
-                          <div className={`w-8 h-8 border mx-auto mb-2  ${aspectRatio === '1:1'
-                              ? 'shadow-lg theme-border-trinary border-2'
-                              : 'theme-border-dark border-1'
-                            }`}></div>
-                          <p className="text-xs">1:1</p>
-                        </button>
-                        <button
-                          type="button"
-                          className={`p-3 border transition-all duration-200 text-center ${aspectRatio === '9:16'
-                              ? 'theme-bg-quaternary shadow-lg  theme-text-secondary'
-                              : 'theme-bg-primary  theme-text-primary'
-                            }`}
-                          onClick={() => setAspectRatio('9:16')}
-                        >
-                          <div className={`w-6 h-10 border mx-auto mb-2  ${aspectRatio === '9:16'
-                              ? 'shadow-lg theme-border-trinary border-2'
-                              : 'theme-border-dark border-1'
-                            }`}></div>
-                          <p className="text-xs">9:16</p>
-                        </button>
-                        <button
-                          type="button"
-                          className={`p-3 border transition-all duration-200 text-center ${aspectRatio === '16:9'
-                              ? 'theme-bg-quaternary shadow-lg  theme-text-secondary'
-                              : ' theme-bg-primary  theme-text-primary'
-                            }`}
-                          onClick={() => setAspectRatio('16:9')}
-                        >
-                          <div className={`w-10 h-6 border mx-auto mb-2  ${aspectRatio === '16:9'
-                              ? 'shadow-lg theme-border-trinary border-2'
-                              : 'theme-border-dark border-1'
-                            }`}></div>
-                          <p className="text-xs">16:9</p>
-                        </button>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </>
@@ -1292,14 +1741,6 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           <Upload className="w-3 h-3" />
                           <span>Choose Files</span>
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowAIGenerator(true)}
-                          className="bg-gradient-to-r from-purple-500/80 to-pink-500/80 text-white px-4 py-2 rounded text-xs hover:from-purple-600/80 hover:to-pink-600/80 transition-all duration-200 flex items-center space-x-1"
-                        >
-                          <Sparkles className="w-3 h-3" />
-                          <span>Generate AI</span>
-                        </button>
                       </div>
                       <p className="text-xs theme-text-secondary">
                         Images, videos up to 50MB
@@ -1404,28 +1845,29 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           <button
             type="submit"
             disabled={
-              !formData.prompt.trim() || !formData.selectedPlatforms?.length
+              !formData.prompt.trim() || !formData.selectedPlatforms?.length || isGeneratingBoth
             }
             className="rounded-full flex-1 flex items-center justify-between theme-bg-trinary theme-text-light py-2 px-4 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm"
           >
-
-            <div className="flex items-center">  <Wand2 className="w-6 h-6 mr-1" /> GENERATE POST</div>
+            {isGeneratingBoth ? (
+              <div className="flex items-center">
+                <Loader className="w-5 h-5 mr-2 animate-spin" />
+                GENERATING POST & IMAGE...
+              </div>
+            ) : (
+              <div className="flex items-center">
+                <Wand2 className="w-6 h-6 mr-1" /> 
+                GENERATE POST
+              </div>
+            )}
             <div className=" sm:inline-block rounded-full theme-bg-quaternary theme-text-secondary px-2 py-1">
               <Icon name="wallet" size={14} className="inline mr-1 mt-[-1px]" />
-              500</div>
+              500
+            </div>
           </button>
         </div>
       </form>
 
-      {/* AI Image Generator Modal */}
-      {showAIGenerator && (
-        <AIImageGenerator
-          onImageGenerated={handleAIImageGenerated}
-          contentText={formData.prompt}
-          selectedPlatforms={formData.selectedPlatforms}
-          onClose={() => setShowAIGenerator(false)}
-        />
-      )}
 
       {/* Template Selector Modal */}
       {showTemplateSelector && (
