@@ -75,6 +75,15 @@ export default {
           },
         },
       },
+      lineHeight: {
+    none: '1',
+    tight: '1.25',
+    snug: '1.375',
+    normal: '1.5',
+    relaxed: '1.625',
+    loose: '2',
+    // numeric values also work e.g. '3': '.75rem'
+  },
       backgroundImage: {
         // Gradient definitions for each theme
         'gradient-ai-revolution': 'linear-gradient(135deg, #3B82F6, #8B5CF6, #6366F1)',
@@ -94,6 +103,7 @@ export default {
       backdropBlur: {
         xs: '2px',
       },
+
     },
   },
   plugins: [],

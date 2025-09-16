@@ -18,6 +18,8 @@ import { useAppContext } from "../../context/AppContext";
 import { NotificationCenter } from "../NotificationCenter";
 import { ThemeSelector } from "../ThemeSelector";
 import { useTheme } from "../../hooks/useTheme";
+import Icon from "../Icon";
+import { WalletBalance } from "../WalletBalance";
 
 // Define the props for AppLayout
 interface AppLayoutProps {
@@ -135,7 +137,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         </div>
         {/* Top Navigation */}
         <div className="sticky top-0 z-10 backdrop-blur-lg border-b border-white/20 px-4 py-0">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mt-3">
             <div className="flex items-center">
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
@@ -143,6 +145,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               >
                 <Menu className="w-6 h-6" />
               </button>
+            <Icon name="logo" size={50} className="ml-0 lg:ml-0" />
+              {/* Uncomment if you want to add a search bar */}
 
               {/* Search */}
               {/* <div className="relative ml-4 lg:ml-0">
@@ -157,12 +161,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               </div> */}
             </div>
             {/* Right Side */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-1">
               {/* Theme Selector */}
               <ThemeSelector />
 
               {/* Notifications */}
-              <div className="relative" ref={notificationRef}>
+              {/* <div className="relative" ref={notificationRef}>
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
                   className="p-2 theme-text-primary hover:theme-text-secondary relative"
@@ -178,13 +182,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     userId={user?.id}
                   />
                 )}
-              </div>
+              </div> */}
+                <div>
+                <WalletBalance /></div>
 
               {/* User Menu */}
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center p-2 text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-white/30"
+                  className="flex items-center p-0 text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-white/30"
                 >
                   <img
                     className="h-8 w-8 rounded-full object-cover border-2 border-white/30 theme-bg-trinary"
@@ -233,13 +239,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         </main>
 
         {/* Footer */}
-        <footer className="fixed bottom-0 w-full theme-bg-card border-t border-white/20 mt-0 hidden">
+        <footer className="fixed bottom-0 w-full theme-bg-card border-t border-white/20 mt-0">
           <div className="w-full mx-auto px-4 sm:px-6 lg:px-4 py-2">
             <div className="text-center flex flex-col items-center justify-center">
-              <div className="theme-text-secondary text-xs">
+              <div className="theme-text-primary text-xs">
                 © 2025 OMNI SHARE. Powered by 
               </div>
-              <div className="mt-2 flex justify-center space-x-6 text-sm theme-text-secondary">
+              <div className="mt-2 flex justify-center space-x-6 text-xs theme-text-secondary">
                 <Link
                   to="/privacy"
                   className="hover:theme-text-primary transition-colors duration-200"
