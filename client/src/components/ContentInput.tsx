@@ -262,6 +262,12 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           templatedImageUrl: !!templatedImageUrl,
           showPreview: !!(formData.media || formData.mediaUrl)
         });
+        
+        // Auto-open template selector after successful upload
+        if (file.type.startsWith("image/")) {
+          console.log('🎨 Auto-opening template selector for uploaded image');
+          setShowTemplateSelector(true);
+        }
       }, 100);
     }
   };
@@ -565,6 +571,12 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           });
           return newData;
         });
+        
+        // Auto-open template selector after successful AI image generation
+        console.log('🎨 Auto-opening template selector for AI generated image');
+        setTimeout(() => {
+          setShowTemplateSelector(true);
+        }, 500); // Small delay to ensure state is updated
       } else {
         console.log('⚠️ No authenticated user, using direct URL');
         // If no user, just use the direct URL
@@ -581,6 +593,12 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           });
           return newData;
         });
+        
+        // Auto-open template selector even without user authentication
+        console.log('🎨 Auto-opening template selector for AI generated image (no auth)');
+        setTimeout(() => {
+          setShowTemplateSelector(true);
+        }, 500); // Small delay to ensure state is updated
       }
     } catch (error) {
       console.error("❌ Error handling AI generated image:", error);
@@ -599,6 +617,12 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         });
         return newData;
       });
+      
+      // Auto-open template selector even for fallback case
+      console.log('🎨 Auto-opening template selector for fallback image');
+      setTimeout(() => {
+        setShowTemplateSelector(true);
+      }, 500); // Small delay to ensure state is updated
     }
   };
 
