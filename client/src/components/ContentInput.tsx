@@ -540,7 +540,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     }
   };
 
-  const handleAIImageGenerated = async (imageUrl: string) => {
+  const handleAIImageGenerated = async (imageUrl: string, shouldAutoOpenTemplate: boolean = true) => {
     console.log('🖼️ handleAIImageGenerated called with URL:', imageUrl);
     try {
       // Convert the AI generated image URL to a File object
@@ -572,11 +572,13 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           return newData;
         });
         
-        // Auto-open template selector after successful AI image generation
-        console.log('🎨 Auto-opening template selector for AI generated image');
-        setTimeout(() => {
-          setShowTemplateSelector(true);
-        }, 500); // Small delay to ensure state is updated
+        // Auto-open template selector only if requested
+        if (shouldAutoOpenTemplate) {
+          console.log('🎨 Auto-opening template selector for AI generated image');
+          setTimeout(() => {
+            setShowTemplateSelector(true);
+          }, 500); // Small delay to ensure state is updated
+        }
       } else {
         console.log('⚠️ No authenticated user, using direct URL');
         // If no user, just use the direct URL
@@ -594,11 +596,13 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           return newData;
         });
         
-        // Auto-open template selector even without user authentication
-        console.log('🎨 Auto-opening template selector for AI generated image (no auth)');
-        setTimeout(() => {
-          setShowTemplateSelector(true);
-        }, 500); // Small delay to ensure state is updated
+        // Auto-open template selector only if requested
+        if (shouldAutoOpenTemplate) {
+          console.log('🎨 Auto-opening template selector for AI generated image (no auth)');
+          setTimeout(() => {
+            setShowTemplateSelector(true);
+          }, 500); // Small delay to ensure state is updated
+        }
       }
     } catch (error) {
       console.error("❌ Error handling AI generated image:", error);
@@ -618,11 +622,13 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         return newData;
       });
       
-      // Auto-open template selector even for fallback case
-      console.log('🎨 Auto-opening template selector for fallback image');
-      setTimeout(() => {
-        setShowTemplateSelector(true);
-      }, 500); // Small delay to ensure state is updated
+      // Auto-open template selector only if requested
+      if (shouldAutoOpenTemplate) {
+        console.log('🎨 Auto-opening template selector for fallback image');
+        setTimeout(() => {
+          setShowTemplateSelector(true);
+        }, 500); // Small delay to ensure state is updated
+      }
     }
   };
 
@@ -640,20 +646,107 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     setShowTemplateEditor(true);
   };
 
-  const handleTemplateEditorSave = (imageUrl: string) => {
+  const handleTemplateEditorSave = async (imageUrl: string) => {
     console.log('Template editor saved with image URL:', imageUrl);
     setTemplatedImageUrl(imageUrl);
     setFormData((prev) => ({ ...prev, mediaUrl: imageUrl }));
     setShowTemplateEditor(false);
+    
+    // Check if we have pending post generation (from combined generation workflow)
+    if (pendingPostGeneration) {
+      console.log('🚀 Continuing post generation with templated image...');
+      
+      const { prompt, campaignInfo: currentCampaignInfo, selectedPlatforms, imageAnalysis, formData: originalFormData } = pendingPostGeneration;
+      
+      // Prepare final form data with the templated image
+      const currentFormData = {
+        ...originalFormData,
+        mediaUrl: imageUrl // Use the templated image URL
+      };
+      
+      const mediaAssets = [{ url: imageUrl, type: "image" }];
+      
+      console.log('📋 Preparing final post data with templated image:', {
+        hasMediaAssets: mediaAssets.length > 0,
+        templatedImageUrl: imageUrl?.substring(0, 50) + '...',
+        prompt: prompt.substring(0, 50) + '...'
+      });
+      
+      const postData = {
+        ...currentFormData,
+        prompt: prompt,
+        selectedPlatforms: selectedPlatforms,
+        platforms: selectedPlatforms,
+        campaignName: currentCampaignInfo.name,
+        campaignInfo: currentCampaignInfo,
+        mediaAssets,
+        analysisResults: imageAnalysis,
+        industry: currentCampaignInfo.industry,
+        tone: currentCampaignInfo.brand_tone || currentCampaignInfo.brandTone,
+        targetAudience: currentCampaignInfo.target_audience || currentCampaignInfo.targetAudience,
+        description: currentCampaignInfo.description,
+        imageAnalysis: imageAnalysis,
+        website: currentCampaignInfo.website,
+        objective: currentCampaignInfo.objective,
+        goals: currentCampaignInfo.goals,
+        keywords: currentCampaignInfo.keywords,
+        hashtags: currentCampaignInfo.hashtags,
+      };
+      
+      console.log('📤 Final post data with templated image:', {
+        hasMediaAssets: mediaAssets.length > 0,
+        mediaAssetsCount: mediaAssets.length,
+        prompt: postData.prompt?.substring(0, 50) + '...'
+      });
+      
+      // Clear pending post generation
+      setPendingPostGeneration(null);
+      setIsGeneratingBoth(false);
+      
+      // Proceed with post generation
+      if (onNext && typeof onNext === "function") {
+        console.log('✅ Final step: Calling onNext with final templated post data...');
+        onNext(postData);
+        console.log('✅ Combined generation with template editing completed!');
+      } else {
+        console.log('⚠️ No onNext function provided, showing preview instead');
+        // Fallback: simulate generation for preview
+        const simulatedGeneratedPosts = [
+          {
+            platform: (selectedPlatforms && selectedPlatforms[0]) || "linkedin",
+            content: prompt,
+            caption: prompt,
+            hashtags: originalFormData.tags,
+            engagement: Math.floor(Math.random() * 1000),
+          },
+        ];
+        setGeneratedResults(simulatedGeneratedPosts);
+        setShowPreview(true);
+      }
+    }
   };
 
   const handleTemplateEditorCancel = () => {
     setShowTemplateEditor(false);
     setSelectedTemplate(undefined);
+    
+    // If we have pending post generation, cancel it and reset state
+    if (pendingPostGeneration) {
+      console.log('❌ Template editor cancelled, aborting post generation');
+      setPendingPostGeneration(null);
+      setIsGeneratingBoth(false);
+    }
   };
 
   const handleTemplateSelectorCancel = () => {
     setShowTemplateSelector(false);
+    
+    // If we have pending post generation, cancel it and reset state
+    if (pendingPostGeneration) {
+      console.log('❌ Template selector cancelled, aborting post generation');
+      setPendingPostGeneration(null);
+      setIsGeneratingBoth(false);
+    }
   };
 
   const handleEditTemplate = () => {
@@ -725,7 +818,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   };
 
   // Combined generation function - generates both post and image from main prompt
-  const handleCombinedGeneration = async (prompt: string): Promise<string | null> => {
+  const handleCombinedGeneration = async (prompt: string, shouldAutoOpenTemplate: boolean = true): Promise<string | null> => {
     setIsGeneratingImage(true);
     try {
       console.log('🖼️ Combined generation started with prompt:', prompt.substring(0, 100) + '...');
@@ -768,7 +861,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       
       if (result.success && result.imageUrl) {
         console.log('✅ Image generated successfully, processing...', result.imageUrl);
-        await handleAIImageGenerated(result.imageUrl);
+        await handleAIImageGenerated(result.imageUrl, shouldAutoOpenTemplate);
         console.log('✅ Combined generation completed successfully!');
         return result.imageUrl;
       } else {
@@ -786,16 +879,19 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     }
   };
 
-  // Enhanced combined generation function - generates image and then post automatically
+  // State to hold pending post generation data
+  const [pendingPostGeneration, setPendingPostGeneration] = useState<any>(null);
+  
+  // Enhanced combined generation function - generates image and waits for template editor completion
   const handleCombinedGenerationWithPost = async (prompt: string) => {
     setIsGeneratingBoth(true);
     try {
-      console.log('🚀 Starting combined generation with automatic post creation...');
+      console.log('🚀 Starting combined generation with template editor workflow...');
       console.log('📝 Prompt for combined generation:', prompt.substring(0, 100) + '...');
       
-      // Step 1: Generate the image
+      // Step 1: Generate the image (but don't auto-open template selector yet)
       console.log('🖼️ Step 1: Generating image from content...');
-      const imageUrl = await handleCombinedGeneration(prompt);
+      const imageUrl = await handleCombinedGeneration(prompt, false); // Don't auto-open template
       
       if (!imageUrl) {
         console.error('❌ Image generation failed, cannot proceed with post generation');
@@ -804,13 +900,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       
       console.log('✅ Step 1 completed: Image generated successfully');
       
-      // Wait a moment to ensure state is updated
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Step 2: Automatically generate the post
-      console.log('📝 Step 2: Automatically generating post with the new image...');
-      
-      // Use current campaign info or defaults
+      // Store the post generation data to be used after template editor
       const currentCampaignInfo = campaignInfo || {
         name: "Default Campaign",
         industry: "General",
@@ -819,78 +909,35 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         description: "General content generation without specific campaign context",
       };
       
-      // Prepare current form data with the new image
-      const currentFormData = {
-        ...formData,
-        mediaUrl: imageUrl
-      };
-      
-      const mediaAssets = [{ url: imageUrl, type: "image" }];
-      
-      console.log('📋 Preparing post data with generated image:', {
-        hasMediaAssets: mediaAssets.length > 0,
-        imageUrl: imageUrl?.substring(0, 50) + '...',
-        prompt: prompt.substring(0, 50) + '...'
-      });
-      
-      const postData = {
-        ...currentFormData,
-        prompt: prompt,
-        selectedPlatforms: formData.selectedPlatforms,
-        platforms: formData.selectedPlatforms,
-        campaignName: currentCampaignInfo.name,
+      const postGenerationData = {
+        prompt,
+        originalImageUrl: imageUrl,
         campaignInfo: currentCampaignInfo,
-        mediaAssets,
-        analysisResults: imageAnalysis,
-        industry: currentCampaignInfo.industry,
-        tone: currentCampaignInfo.brand_tone || currentCampaignInfo.brandTone,
-        targetAudience: currentCampaignInfo.target_audience || currentCampaignInfo.targetAudience,
-        description: currentCampaignInfo.description,
-        imageAnalysis: imageAnalysis,
-        website: currentCampaignInfo.website,
-        objective: currentCampaignInfo.objective,
-        goals: currentCampaignInfo.goals,
-        keywords: currentCampaignInfo.keywords,
-        hashtags: currentCampaignInfo.hashtags,
+        selectedPlatforms: formData.selectedPlatforms,
+        imageAnalysis,
+        formData
       };
       
-      console.log('📤 Final post data for combined generation:', {
-        hasMediaAssets: mediaAssets.length > 0,
-        mediaAssetsCount: mediaAssets.length,
-        prompt: postData.prompt?.substring(0, 50) + '...'
-      });
+      console.log('💾 Storing post generation data for later use');
+      setPendingPostGeneration(postGenerationData);
       
-      // Call onNext to proceed with post generation
-      if (onNext && typeof onNext === "function") {
-        console.log('✅ Step 2: Calling onNext with post data...');
-        onNext(postData);
-        console.log('✅ Combined generation with automatic post creation completed!');
-      } else {
-        console.log('⚠️ No onNext function provided, showing preview instead');
-        // Fallback: simulate generation for preview
-        const simulatedGeneratedPosts = [
-          {
-            platform: (formData.selectedPlatforms && formData.selectedPlatforms[0]) || "linkedin",
-            content: prompt,
-            caption: prompt,
-            hashtags: formData.tags,
-            engagement: Math.floor(Math.random() * 1000),
-          },
-        ];
-        setGeneratedResults(simulatedGeneratedPosts);
-        setShowPreview(true);
-      }
+      // Step 2: Open template selector and wait for user to complete editing
+      console.log('🎨 Step 2: Opening template selector - waiting for user to complete editing...');
+      setTimeout(() => {
+        setShowTemplateSelector(true);
+      }, 500);
+      
+      // The post generation will continue when handleTemplateEditorSave is called
       
     } catch (error) {
       console.error('❌ Error in combined generation with post:', error);
       if (error instanceof Error) {
         console.error('❌ Error details:', error.message, error.stack);
-        // You might want to show an error message to the user here
-        alert(`Failed to generate image and post: ${error.message}`);
+        alert(`Failed to generate image: ${error.message}`);
       }
-    } finally {
       setIsGeneratingBoth(false);
     }
+    // Don't set setIsGeneratingBoth(false) here - it will be set after template editor completion
   };
 
   return (
