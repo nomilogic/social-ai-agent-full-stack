@@ -1012,16 +1012,16 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-white z-50 flex">
-      {/* Tools Panel - Left Column - Fixed Width with Scroll */}
-      <div className="w-80 min-w-80 max-w-80 bg-white border-r border-gray-200 flex flex-col h-full">
+    <div className="fixed inset-0 bg-white z-50 flex flex-col md:flex-row">
+      {/* Tools Panel - Top Row on Mobile, Left Column on Desktop - Fixed Height/Width with Scroll */}
+      <div className="w-full md:w-80 md:min-w-80 md:max-w-80 h-80 md:h-full bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-col">
         {/* Tools Header - Fixed */}
-        <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-white">
+        <div className="flex-shrink-0 p-3 md:p-4 border-b border-gray-200 bg-white">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Template Editor</h3>
+            <h3 className="text-base md:text-lg font-semibold text-gray-900">Template Editor</h3>
             <button
               onClick={onCancel}
-              className="text-gray-400 hover:text-gray-600 text-2xl font-bold leading-none p-1 hover:bg-gray-100 rounded transition-colors"
+              className="text-gray-400 hover:text-gray-600 text-xl md:text-2xl font-bold leading-none p-1 hover:bg-gray-100 rounded transition-colors"
             >
               ×
             </button>
@@ -1029,42 +1029,42 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
         </div>
         
         {/* Tools Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto p-3 md:p-4 min-h-0">
+          <div className="space-y-3 md:space-y-4">
             {/* Element Creation Toolbar */}
-            <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Add Elements</h4>
-              <div className="grid grid-cols-2 gap-2">
+            <div className="border border-gray-200 rounded-lg p-2 md:p-3 bg-gray-50">
+              <h4 className="text-xs md:text-sm font-semibold text-gray-700 mb-2 md:mb-3">Add Elements</h4>
+              <div className="grid grid-cols-4 md:grid-cols-2 gap-1.5 md:gap-2">
                 <button
                   onClick={createNewTextElement}
-                  className="p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 flex flex-col items-center justify-center space-y-1 transition-colors min-h-16"
+                  className="p-2 md:p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 flex flex-col items-center justify-center space-y-0.5 md:space-y-1 transition-colors min-h-12 md:min-h-16"
                   title="Add Text"
                 >
-                  <Type className="w-5 h-5" />
+                  <Type className="w-4 h-4 md:w-5 md:h-5" />
                   <span className="text-xs font-medium">Text</span>
                 </button>
                 <button
                   onClick={createNewLogoElement}
-                  className="p-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 flex flex-col items-center justify-center space-y-1 transition-colors min-h-16"
+                  className="p-2 md:p-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 flex flex-col items-center justify-center space-y-0.5 md:space-y-1 transition-colors min-h-12 md:min-h-16"
                   title="Add Logo"
                 >
-                  <Upload className="w-5 h-5" />
+                  <Upload className="w-4 h-4 md:w-5 md:h-5" />
                   <span className="text-xs font-medium">Logo</span>
                 </button>
                 <button
                   onClick={() => createNewShapeElement('rectangle')}
-                  className="p-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 flex flex-col items-center justify-center space-y-1 transition-colors min-h-16"
+                  className="p-2 md:p-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 flex flex-col items-center justify-center space-y-0.5 md:space-y-1 transition-colors min-h-12 md:min-h-16"
                   title="Add Rectangle"
                 >
-                  <Square className="w-5 h-5" />
+                  <Square className="w-4 h-4 md:w-5 md:h-5" />
                   <span className="text-xs font-medium">Rectangle</span>
                 </button>
                 <button
                   onClick={() => createNewShapeElement('circle')}
-                  className="p-3 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 flex flex-col items-center justify-center space-y-1 transition-colors min-h-16"
+                  className="p-2 md:p-3 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 flex flex-col items-center justify-center space-y-0.5 md:space-y-1 transition-colors min-h-12 md:min-h-16"
                   title="Add Circle"
                 >
-                  <Circle className="w-5 h-5" />
+                  <Circle className="w-4 h-4 md:w-5 md:h-5" />
                   <span className="text-xs font-medium">Circle</span>
                 </button>
               </div>
@@ -1072,9 +1072,9 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
 
             {/* Selected Element Properties */}
             {selectedElementData && (
-              <div className="border border-gray-200 rounded-lg p-4 bg-white">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-semibold text-gray-900">
+              <div className="border border-gray-200 rounded-lg p-3 md:p-4 bg-white">
+                <div className="flex items-center justify-between mb-3 md:mb-4">
+                  <h4 className="text-xs md:text-sm font-semibold text-gray-900">
                     {selectedElementData.type.charAt(0).toUpperCase() + selectedElementData.type.slice(1)} Element
                   </h4>
                   
@@ -1098,9 +1098,9 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                 </div>
 
                 {/* Layer Controls */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Layer Order</label>
-                  <div className="grid grid-cols-4 gap-1.5">
+                <div className="mb-3 md:mb-4">
+                  <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5 md:mb-2">Layer Order</label>
+                  <div className="grid grid-cols-4 gap-1 md:gap-1.5">
                     <button
                       onClick={bringToFront}
                       className="p-2 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 flex items-center justify-center transition-colors text-xs"
@@ -1132,7 +1132,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                   </div>
                 </div>
                 {/* W H X Y Controls in one row */}
-                <div className="grid grid-cols-4 gap-2 mb-4 text-center">
+                <div className="grid grid-cols-4 gap-1.5 md:gap-2 mb-3 md:mb-4 text-center">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1 text-center">W</label>
                     <input
@@ -1178,8 +1178,8 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                 </div>
 
                 {/* Rotation Control - Universal */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Rotation</label>
+                <div className="mb-3 md:mb-4">
+                  <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5 md:mb-2">Rotation</label>
                   <input
                     type="range"
                     min="0"
@@ -1466,10 +1466,10 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
               )}
 
               {!selectedElementData && (
-                <div className="text-center py-12 text-gray-500">
-                  <div className="bg-gray-50 rounded-lg p-6">
-                    <Palette className="w-8 h-8 mx-auto mb-3 text-gray-400" />
-                    <p className="text-sm font-medium mb-1">No Element Selected</p>
+                <div className="text-center py-6 md:py-12 text-gray-500">
+                  <div className="bg-gray-50 rounded-lg p-4 md:p-6">
+                    <Palette className="w-6 h-6 md:w-8 md:h-8 mx-auto mb-2 md:mb-3 text-gray-400" />
+                    <p className="text-xs md:text-sm font-medium mb-1">No Element Selected</p>
                     <p className="text-xs text-gray-400">Click on a template element to edit its properties</p>
                   </div>
                 </div>
@@ -1477,30 +1477,32 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
             </div>
         </div>
         
-        {/* Tools Actions - Fixed at bottom of left column */}
-        <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-white">
-          <div className="space-y-2.5">
+        {/* Tools Actions - Fixed at bottom of tools panel */}
+        <div className="flex-shrink-0 p-3 md:p-4 border-t border-gray-200 bg-white">
+          <div className="flex md:flex-col space-x-2 md:space-x-0 md:space-y-2.5">
             <button
               onClick={exportImage}
               disabled={isSaving}
-              className="w-full bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 font-medium text-sm"
+              className="flex-1 md:w-full bg-green-600 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-1.5 md:space-x-2 font-medium text-xs md:text-sm"
             >
               {isSaving ? (
                 <>
-                  <Loader className="w-4 h-4 animate-spin" />
-                  <span>Saving Template...</span>
+                  <Loader className="w-3 h-3 md:w-4 md:h-4 animate-spin" />
+                  <span className="hidden sm:inline">Saving Template...</span>
+                  <span className="sm:hidden">Saving...</span>
                 </>
               ) : (
                 <>
-                  <Download className="w-4 h-4" />
-                  <span>Save & Apply Template</span>
+                  <Download className="w-3 h-3 md:w-4 md:h-4" />
+                  <span className="hidden sm:inline">Save & Apply Template</span>
+                  <span className="sm:hidden">Save</span>
                 </>
               )}
             </button>
             
             <button
               onClick={onCancel}
-              className="w-full bg-gray-100 text-gray-700 px-4 py-2.5 rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm"
+              className="flex-1 md:w-full bg-gray-100 text-gray-700 px-3 md:px-4 py-2 md:py-2.5 rounded-lg hover:bg-gray-200 transition-colors font-medium text-xs md:text-sm"
             >
               Cancel
             </button>
@@ -1508,20 +1510,23 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
         </div>
       </div>
 
-      {/* Canvas Area - Right Column - Flexible Width with Scroll */}
-      <div className="flex-1 bg-gray-50 flex flex-col">
+      {/* Canvas Area - Bottom Row on Mobile, Right Column on Desktop - Flexible Height/Width with Scroll */}
+      <div className="flex-1 bg-gray-50 flex flex-col min-h-0">
         {/* Canvas Controls - Fixed Header */}
-        <div className="flex-shrink-0 p-4 bg-white border-b border-gray-200">
+        <div className="flex-shrink-0 p-3 md:p-4 bg-white border-b border-gray-200">
           <div className="flex items-center justify-between">
             {/* Canvas Info */}
             <div className="text-xs text-gray-600 font-mono">
               {imageDimensions && (
-                <span>{imageDimensions.width} × {imageDimensions.height} | {Math.round(zoomLevel * 100)}%</span>
+                <>
+                  <span className="hidden sm:inline">{imageDimensions.width} × {imageDimensions.height} | {Math.round(zoomLevel * 100)}%</span>
+                  <span className="sm:hidden">{Math.round(zoomLevel * 100)}%</span>
+                </>
               )}
             </div>
             
             {/* Zoom Controls */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1.5 md:space-x-2">
               <button
                 onClick={() => setZoomLevel(Math.max(0.1, zoomLevel - 0.1))}
                 className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
@@ -1529,7 +1534,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
               >
                 −
               </button>
-              <span className="text-xs text-gray-600 min-w-12 text-center">
+              <span className="text-xs text-gray-600 min-w-8 md:min-w-12 text-center">
                 {Math.round(zoomLevel * 100)}%
               </span>
               <button
@@ -1546,7 +1551,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                     setZoomLevel(zoom);
                   }
                 }}
-                className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors ml-2"
+                className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors ml-1 md:ml-2"
               >
                 Fit
               </button>
@@ -1561,7 +1566,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
         </div>
         
         {/* Canvas Container - Scrollable */}
-        <div className="flex-1 overflow-auto bg-gray-100 flex items-center justify-center p-4">
+        <div className="flex-1 overflow-auto bg-gray-100 flex items-center justify-center p-2 md:p-4 min-h-0">
           <div 
             className="flex items-center justify-center"
             style={{
