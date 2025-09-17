@@ -31,6 +31,7 @@ import { useAppContext } from "../context/AppContext";
 import { TemplateSelector } from "./TemplateSelector";
 import { ImageTemplateEditor } from "./ImageTemplateEditor";
 import { Template } from "../types/templates";
+import { getTemplateById } from "../utils/templates";
 import { s } from "node_modules/vite/dist/node/types.d-aGj9QkWt";
 
 // Helper function to convert file to base64
@@ -263,10 +264,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           showPreview: !!(formData.media || formData.mediaUrl)
         });
         
-        // Auto-open template selector after successful upload
+        // Note: Template editor will open when user clicks Generate Post
         if (file.type.startsWith("image/")) {
-          console.log('🎨 Auto-opening template selector for uploaded image');
-          setShowTemplateSelector(true);
+          console.log('🖼️ Image uploaded successfully, template editor will open on Generate Post');
         }
       }, 100);
     }
@@ -438,6 +438,42 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         return;
       }
       
+      // NEW: For uploaded images, open template editor directly with blank template
+      if (selectedPostType === 'image' && selectedImageMode === 'upload' && (formData.media || formData.mediaUrl)) {
+        console.log('🎨 Opening template editor for uploaded image with blank template...');
+        
+        // Get blank template
+        const blankTemplate = getTemplateById('blank-template');
+        if (blankTemplate) {
+          console.log('📋 Setting blank template and opening editor');
+          setSelectedTemplate(blankTemplate);
+          setShowTemplateEditor(true);
+          
+          // Store post generation data for later use (similar to combined generation)
+          const currentCampaignInfo = campaignInfo || {
+            name: "Default Campaign",
+            industry: "General",
+            brand_tone: "professional",
+            target_audience: "General",
+            description: "General content generation without specific campaign context",
+          };
+          
+          const postGenerationData = {
+            prompt: formData.prompt,
+            originalImageUrl: formData.mediaUrl,
+            campaignInfo: currentCampaignInfo,
+            selectedPlatforms: formData.selectedPlatforms,
+            imageAnalysis,
+            formData
+          };
+          
+          setPendingPostGeneration(postGenerationData);
+          return; // Exit here to wait for template editor completion
+        } else {
+          console.error('❌ Blank template not found, proceeding with normal flow');
+        }
+      }
+      
       let currentFormData = formData; // Track the current form data state
       
       // Use fetched campaign info if available, otherwise use default values
@@ -572,12 +608,21 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           return newData;
         });
         
-        // Auto-open template selector only if requested
+        // Auto-open template editor with blank template only if requested
         if (shouldAutoOpenTemplate) {
-          console.log('🎨 Auto-opening template selector for AI generated image');
-          setTimeout(() => {
-            setShowTemplateSelector(true);
-          }, 500); // Small delay to ensure state is updated
+          console.log('🎨 Auto-opening template editor with blank template for AI generated image');
+          // Get blank template
+          const blankTemplate = getTemplateById('blank-template');
+          if (blankTemplate) {
+            console.log('📋 Setting blank template and opening editor for AI image');
+            setTimeout(() => {
+              setSelectedTemplate(blankTemplate);
+              setShowTemplateEditor(true);
+            }, 500); // Small delay to ensure state is updated
+          } else {
+            console.error('❌ Blank template not found for AI image - this should not happen!');
+            // Don't open anything if blank template is missing - this is a critical error
+          }
         }
       } else {
         console.log('⚠️ No authenticated user, using direct URL');
@@ -596,12 +641,21 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           return newData;
         });
         
-        // Auto-open template selector only if requested
+        // Auto-open template editor with blank template only if requested
         if (shouldAutoOpenTemplate) {
-          console.log('🎨 Auto-opening template selector for AI generated image (no auth)');
-          setTimeout(() => {
-            setShowTemplateSelector(true);
-          }, 500); // Small delay to ensure state is updated
+          console.log('🎨 Auto-opening template editor with blank template for AI generated image (no auth)');
+          // Get blank template
+          const blankTemplate = getTemplateById('blank-template');
+          if (blankTemplate) {
+            console.log('📋 Setting blank template and opening editor for AI image (no auth)');
+            setTimeout(() => {
+              setSelectedTemplate(blankTemplate);
+              setShowTemplateEditor(true);
+            }, 500); // Small delay to ensure state is updated
+          } else {
+            console.error('❌ Blank template not found for AI image (no auth) - this should not happen!');
+            // Don't open anything if blank template is missing - this is a critical error
+          }
         }
       }
     } catch (error) {
@@ -622,12 +676,21 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         return newData;
       });
       
-      // Auto-open template selector only if requested
+      // Auto-open template editor with blank template only if requested
       if (shouldAutoOpenTemplate) {
-        console.log('🎨 Auto-opening template selector for fallback image');
-        setTimeout(() => {
-          setShowTemplateSelector(true);
-        }, 500); // Small delay to ensure state is updated
+        console.log('🎨 Auto-opening template editor with blank template for fallback image');
+        // Get blank template
+        const blankTemplate = getTemplateById('blank-template');
+        if (blankTemplate) {
+          console.log('📋 Setting blank template and opening editor for fallback image');
+          setTimeout(() => {
+            setSelectedTemplate(blankTemplate);
+            setShowTemplateEditor(true);
+          }, 500); // Small delay to ensure state is updated
+        } else {
+          console.error('❌ Blank template not found for fallback image - this should not happen!');
+          // Don't open anything if blank template is missing - this is a critical error
+        }
       }
     }
   };
@@ -722,6 +785,49 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         ];
         setGeneratedResults(simulatedGeneratedPosts);
         setShowPreview(true);
+      }
+    } else {
+      // Standalone template application - navigate to generation screen if user has content
+      console.log('🎯 Standalone template applied. Checking if user has content to proceed...');
+      
+      if (formData.prompt && formData.prompt.trim()) {
+        console.log('✅ User has content, proceeding to post generation after template application');
+        
+        // Prepare the post data with the templated image
+        const currentCampaignInfo = campaignInfo || {
+          name: "Default Campaign",
+          industry: "General", 
+          brand_tone: "professional",
+          target_audience: "General",
+          description: "General content generation without specific campaign context",
+        };
+        
+        const postData = {
+          ...formData,
+          mediaUrl: imageUrl, // Use the templated image URL
+          campaignName: currentCampaignInfo.name,
+          campaignInfo: currentCampaignInfo,
+          mediaAssets: [{ url: imageUrl, type: "image" }],
+          industry: currentCampaignInfo.industry,
+          tone: currentCampaignInfo.brand_tone || currentCampaignInfo.brandTone,
+          targetAudience: currentCampaignInfo.target_audience || currentCampaignInfo.targetAudience,
+          description: currentCampaignInfo.description,
+          imageAnalysis: imageAnalysis,
+          website: currentCampaignInfo.website,
+          objective: currentCampaignInfo.objective,
+          goals: currentCampaignInfo.goals,
+          keywords: currentCampaignInfo.keywords,
+          hashtags: currentCampaignInfo.hashtags,
+        };
+        
+        console.log('🚀 Navigating to post generation with templated image');
+        
+        // Navigate to the generation screen
+        if (onNext && typeof onNext === "function") {
+          onNext(postData);
+        }
+      } else {
+        console.log('⚠️ No content provided - template applied but staying on current screen');
       }
     }
   };
@@ -921,11 +1027,22 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       console.log('💾 Storing post generation data for later use');
       setPendingPostGeneration(postGenerationData);
       
-      // Step 2: Open template selector and wait for user to complete editing
-      console.log('🎨 Step 2: Opening template selector - waiting for user to complete editing...');
-      setTimeout(() => {
-        setShowTemplateSelector(true);
-      }, 500);
+      // Step 2: Open template editor directly with blank template and wait for user to complete editing
+      console.log('🎨 Step 2: Opening template editor with blank template - waiting for user to complete editing...');
+      // Get blank template
+      const blankTemplate = getTemplateById('blank-template');
+      if (blankTemplate) {
+        console.log('📋 Setting blank template and opening editor for combined generation');
+        setTimeout(() => {
+          setSelectedTemplate(blankTemplate);
+          setShowTemplateEditor(true);
+        }, 500);
+      } else {
+        console.error('❌ Blank template not found for combined generation - this should not happen!');
+        // This is a critical error - the blank template should always exist
+        setIsGeneratingBoth(false);
+        throw new Error('Blank template not found - cannot proceed with template editing');
+      }
       
       // The post generation will continue when handleTemplateEditorSave is called
       
@@ -1735,7 +1852,15 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                               </button>
                               <button
                                 type="button"
-                                onClick={() => setShowTemplateSelector(true)}
+                                onClick={() => {
+                                  const blankTemplate = getTemplateById('blank-template');
+                                  if (blankTemplate) {
+                                    setSelectedTemplate(blankTemplate);
+                                    setShowTemplateEditor(true);
+                                  } else {
+                                    console.error('❌ Blank template not found for Apply Template button');
+                                  }
+                                }}
                                 className="flex-1 bg-gradient-to-r from-purple-500/80 to-pink-500/80 text-white px-3 py-2 rounded text-xs hover:from-purple-600/80 hover:to-pink-600/80 transition-all duration-200 flex items-center justify-center space-x-1"
                               >
                                 <Palette className="w-3 h-3" />

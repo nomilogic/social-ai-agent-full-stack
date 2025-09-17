@@ -560,23 +560,17 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
 
 
   return (
-    <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-lg p-8">
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-gradient-to-r from-green-100 to-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Eye className="w-8 h-8 text-green-600" />
-        </div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">
-          Your AI-Generated Posts
-        </h2>
-        <p className="text-gray-600">
-          Review, copy, and share your optimized content
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
+    <div className="w-full mx-auto  rounded-2xl shadow-lg p-0">
+      <h2 className="text-3xl font-semibold theme-text-primary mb-1">
+           Your AI-Generated Posts
+         </h2>
+         <p className="text-sm theme-text-primary">
+            Review, copy, and share your optimized content
+         </p>
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-1">
         {/* Platform Selector */}
         <div className="lg:col-span-1 space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
+          <h3 className="text-lg font-semibold text-gray-900 mb-0 text-left lg:text-center">
             Select Platform
           </h3>
              <div className="flex flex-wrap gap-3 justify-center">
@@ -660,7 +654,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
 
         {/* Preview */}
         <div className="lg:col-span-2">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Preview</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-1 px-1 text-left lg:text-center">Preview</h3>
 
           {/* Platform Preview */}
           <div className="flex justify-center mb-6">

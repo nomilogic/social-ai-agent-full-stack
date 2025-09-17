@@ -1002,12 +1002,12 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex">
-      <div className="bg-white w-full h-full flex flex-col lg:flex-row overflow-hidden">
+      <div className="bg-white w-full h-fit flex flex-col lg:flex-row overflow-hidden">
         {/* Mobile: Canvas at top, Tools below */}
         {/* Desktop: Tools left (30%), Canvas right (70%) */}
         
         {/* Canvas Area */}
-        <div className="order-1 lg:order-2 flex-1 lg:w-0 bg-gray-50 flex flex-col relative min-h-[35vh] fixed">
+        <div className="order-1 lg:order-2 flex-1 lg:w-0 bg-gray-50 flex flex-col relative min-h-[35vh]">
           {/* Canvas Controls */}
           <div className="flex-shrink-0 p-4 bg-white border-b border-gray-200">
             <div className="flex items-center justify-between">
