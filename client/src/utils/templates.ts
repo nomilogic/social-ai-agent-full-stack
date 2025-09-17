@@ -375,6 +375,35 @@ export const templates: Template[] = [
         zIndex: 1
       } as ShapeElement
     ]
+  },
+
+  // Blank Template
+  {
+    id: 'blank-template',
+    name: 'Blank Canvas',
+    description: 'Start with a clean slate - add your own elements',
+    category: 'blank',
+    platforms: ['instagram', 'facebook', 'twitter', 'linkedin', 'youtube'],
+    dimensions: { width: 1080, height: 1080 },
+    thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmOWZhZmIiIHN0cm9rZT0iI2U1ZTdlYiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtZGFzaGFycmF5PSI1IDUiLz48dGV4dCB4PSI1MCIgeT0iNTUiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiI+QmxhbmsgQ2FudmFzPC90ZXh0Pjwvc3ZnPg==',
+    elements: [
+      // Start with minimal elements - just a sample text that can be edited
+      {
+        id: 'sample-text',
+        type: 'text',
+        content: 'Add your text here',
+        x: 540,
+        y: 540,
+        width: 600,
+        height: 80,
+        fontSize: 36,
+        fontFamily: 'Inter, sans-serif',
+        fontWeight: '600',
+        color: '#374151',
+        textAlign: 'center',
+        zIndex: 2
+      } as TextElement
+    ]
   }
 ];
 
