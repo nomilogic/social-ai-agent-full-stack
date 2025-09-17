@@ -989,9 +989,20 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
 
   const selectedElementData = elements.find(el => el.id === selectedElement);
 
+  // Disable body scroll when template editor is open
+  useEffect(() => {
+    // Disable body scroll when component mounts
+    document.body.style.overflow = 'hidden';
+    
+    // Re-enable body scroll when component unmounts
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
           <p className="text-sm text-gray-600">Loading editor...</p>
@@ -1001,272 +1012,189 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex">
-      <div className="bg-white w-full h-fit flex flex-col lg:flex-row overflow-hidden">
-        {/* Mobile: Canvas at top, Tools below */}
-        {/* Desktop: Tools left (30%), Canvas right (70%) */}
-        
-        {/* Canvas Area */}
-        <div className="order-1 lg:order-2 flex-1 lg:w-0 bg-gray-50 flex flex-col relative min-h-[35vh]">
-          {/* Canvas Controls */}
-          <div className="flex-shrink-0 p-4 bg-white border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              {/* Canvas Info */}
-              <div className="text-xs text-gray-600 font-mono">
-                {imageDimensions && (
-                  <span>{imageDimensions.width} × {imageDimensions.height} | {Math.round(zoomLevel * 100)}%</span>
-                )}
-              </div>
-              
-              {/* Zoom Controls */}
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setZoomLevel(Math.max(0.1, zoomLevel - 0.1))}
-                  className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
-                  disabled={zoomLevel <= 0.1}
-                >
-                  −
-                </button>
-                <span className="text-xs text-gray-600 min-w-12 text-center">
-                  {Math.round(zoomLevel * 100)}%
-                </span>
-                <button
-                  onClick={() => setZoomLevel(Math.min(maxZoom, zoomLevel + 0.1))}
-                  className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
-                  disabled={zoomLevel >= maxZoom}
-                >
-                  +
-                </button>
-                <button
-                  onClick={() => {
-                    if (imageDimensions) {
-                      const { zoom } = calculateZoomLevel(imageDimensions.width, imageDimensions.height);
-                      setZoomLevel(zoom);
-                    }
-                  }}
-                  className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors ml-2"
-                >
-                  Fit
-                </button>
-                <button
-                  onClick={() => setZoomLevel(1)}
-                  className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
-                >
-                  100%
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex-1 overflow-auto bg-gray-100 flex items-center justify-center min-h-0 p-4">
-            <div 
-              className="flex items-center justify-center"
-              style={{
-                zoom: `${zoomLevel}`,
-                transformOrigin: 'center center'
-              }}
+    <div className="fixed inset-0 bg-white z-50 flex">
+      {/* Tools Panel - Left Column - Fixed Width with Scroll */}
+      <div className="w-80 min-w-80 max-w-80 bg-white border-r border-gray-200 flex flex-col h-full">
+        {/* Tools Header - Fixed */}
+        <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-white">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">Template Editor</h3>
+            <button
+              onClick={onCancel}
+              className="text-gray-400 hover:text-gray-600 text-2xl font-bold leading-none p-1 hover:bg-gray-100 rounded transition-colors"
             >
-              <canvas
-                ref={canvasRef}
-                onClick={handleCanvasClick}
-                onMouseDown={handleCanvasMouseDown}
-                onMouseMove={handleCanvasMouseMove}
-                onMouseUp={handleCanvasMouseUp}
-                onMouseLeave={handleCanvasMouseUp}
-                onTouchStart={handleCanvasTouchStart}
-                onTouchMove={handleCanvasTouchMove}
-                onTouchEnd={handleCanvasTouchEnd}
-                className="border-2 border-gray-300 rounded-lg shadow-2xl cursor-pointer bg-white transition-all duration-200"
-                style={{ 
-                  width: `${canvasDimensions.width}px`,
-                  height: `${canvasDimensions.height}px`
-                }}
-              />
-            </div>
+              ×
+            </button>
           </div>
         </div>
-
-        {/* Tools Panel - Scrollable */}
-        <div className="order-2 lg:order-1 w-full lg:w-80 lg:min-w-80 lg:max-w-80 bg-white border-t lg:border-t-0 lg:border-r border-gray-200 flex flex-col h-full">
-          <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-white">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Template Editor</h3>
-              <button
-                onClick={onCancel}
-                className="text-gray-400 hover:text-gray-600 text-2xl font-bold leading-none p-1 hover:bg-gray-100 rounded transition-colors"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-4 min-h-0">
-            <div className="space-y-4">
-              {/* Element Creation Toolbar */}
-              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">Add Elements</h4>
-                <div className="grid grid-cols-4 gap-2">
-                  <button
-                    onClick={createNewTextElement}
-                    className="p-2 lg:p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 flex flex-col items-center justify-center space-y-1 transition-colors min-h-16"
-                    title="Add Text"
-                  >
-                    <Type className="w-4 h-4 lg:w-5 lg:h-5" />
-                    <span className="text-xs font-medium">Text</span>
-                  </button>
-                  <button
-                    onClick={createNewLogoElement}
-                    className="p-2 lg:p-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 flex flex-col items-center justify-center space-y-1 transition-colors min-h-16"
-                    title="Add Logo"
-                  >
-                    <Upload className="w-4 h-4 lg:w-5 lg:h-5" />
-                    <span className="text-xs font-medium">Logo</span>
-                  </button>
-                  <button
-                    onClick={() => createNewShapeElement('rectangle')}
-                    className="p-2 lg:p-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 flex flex-col items-center justify-center space-y-1 transition-colors min-h-16"
-                    title="Add Rectangle"
-                  >
-                    <Square className="w-4 h-4 lg:w-5 lg:h-5" />
-                    <span className="text-xs font-medium">Rectangle</span>
-                  </button>
-                  <button
-                    onClick={() => createNewShapeElement('circle')}
-                    className="p-2 lg:p-3 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 flex flex-col items-center justify-center space-y-1 transition-colors min-h-16"
-                    title="Add Circle"
-                  >
-                    <Circle className="w-4 h-4 lg:w-5 lg:h-5" />
-                    <span className="text-xs font-medium">Circle</span>
-                  </button>
-                </div>
+        
+        {/* Tools Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-4">
+            {/* Element Creation Toolbar */}
+            <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Add Elements</h4>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={createNewTextElement}
+                  className="p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 flex flex-col items-center justify-center space-y-1 transition-colors min-h-16"
+                  title="Add Text"
+                >
+                  <Type className="w-5 h-5" />
+                  <span className="text-xs font-medium">Text</span>
+                </button>
+                <button
+                  onClick={createNewLogoElement}
+                  className="p-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 flex flex-col items-center justify-center space-y-1 transition-colors min-h-16"
+                  title="Add Logo"
+                >
+                  <Upload className="w-5 h-5" />
+                  <span className="text-xs font-medium">Logo</span>
+                </button>
+                <button
+                  onClick={() => createNewShapeElement('rectangle')}
+                  className="p-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 flex flex-col items-center justify-center space-y-1 transition-colors min-h-16"
+                  title="Add Rectangle"
+                >
+                  <Square className="w-5 h-5" />
+                  <span className="text-xs font-medium">Rectangle</span>
+                </button>
+                <button
+                  onClick={() => createNewShapeElement('circle')}
+                  className="p-3 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 flex flex-col items-center justify-center space-y-1 transition-colors min-h-16"
+                  title="Add Circle"
+                >
+                  <Circle className="w-5 h-5" />
+                  <span className="text-xs font-medium">Circle</span>
+                </button>
               </div>
+            </div>
 
-              {/* Selected Element Properties */}
-              {selectedElementData && (
-                <div className="border border-gray-200 rounded-lg p-4 bg-white">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-sm font-semibold text-gray-900">
-                      {selectedElementData.type.charAt(0).toUpperCase() + selectedElementData.type.slice(1)} Element
-                    </h4>
-                    
-                    {/* Element Control Buttons */}
-                    <div className="flex items-center space-x-1">
-                      <button
-                        onClick={toggleElementLock}
-                        className={`p-2 rounded-lg ${isElementLocked(selectedElement) ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'} hover:bg-opacity-80 transition-colors`}
-                        title={isElementLocked(selectedElement) ? 'Unlock Element' : 'Lock Element'}
-                      >
-                        {isElementLocked(selectedElement) ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
-                      </button>
-                      <button
-                        onClick={deleteSelectedElement}
-                        className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash className="w-4 h-4" />
-                      </button>
-                    </div>
+            {/* Selected Element Properties */}
+            {selectedElementData && (
+              <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-semibold text-gray-900">
+                    {selectedElementData.type.charAt(0).toUpperCase() + selectedElementData.type.slice(1)} Element
+                  </h4>
+                  
+                  {/* Element Control Buttons */}
+                  <div className="flex items-center space-x-1">
+                    <button
+                      onClick={toggleElementLock}
+                      className={`p-2 rounded-lg ${isElementLocked(selectedElement) ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'} hover:bg-opacity-80 transition-colors`}
+                      title={isElementLocked(selectedElement) ? 'Unlock Element' : 'Lock Element'}
+                    >
+                      {isElementLocked(selectedElement) ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                    </button>
+                    <button
+                      onClick={deleteSelectedElement}
+                      className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
+                      title="Delete"
+                    >
+                      <Trash className="w-4 h-4" />
+                    </button>
                   </div>
+                </div>
 
-                  {/* Layer Controls */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Layer Order</label>
-                    <div className="grid grid-cols-4 gap-1.5">
-                      <button
-                        onClick={bringToFront}
-                        className="p-2 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 flex items-center justify-center transition-colors text-xs"
-                        title="Bring to Front"
-                      >
-                        <ChevronUp className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={moveUp}
-                        className="p-2 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 flex items-center justify-center transition-colors text-xs"
-                        title="Move Up"
-                      >
-                        <ArrowUp className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={moveDown}
-                        className="p-2 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 flex items-center justify-center transition-colors text-xs"
-                        title="Move Down"
-                      >
-                        <ArrowDown className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={sendToBack}
-                        className="p-2 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 flex items-center justify-center transition-colors text-xs"
-                        title="Send to Back"
-                      >
-                        <ChevronDown className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                {/* Layer Controls */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Layer Order</label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    <button
+                      onClick={bringToFront}
+                      className="p-2 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 flex items-center justify-center transition-colors text-xs"
+                      title="Bring to Front"
+                    >
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={moveUp}
+                      className="p-2 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 flex items-center justify-center transition-colors text-xs"
+                      title="Move Up"
+                    >
+                      <ArrowUp className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={moveDown}
+                      className="p-2 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 flex items-center justify-center transition-colors text-xs"
+                      title="Move Down"
+                    >
+                      <ArrowDown className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={sendToBack}
+                      className="p-2 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 flex items-center justify-center transition-colors text-xs"
+                      title="Send to Back"
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  {/* W H X Y Controls in one row */}
-                  <div className="grid grid-cols-4 gap-2 mb-4 text-center">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1 text-center">W</label>
-                      <input
-                        type="number"
-                        value={selectedElementData.width || 100}
-                        onChange={(e) => updateSelectedElement({ width: parseInt(e.target.value) })}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                        min="1"
-                        disabled={isElementLocked(selectedElement)}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1 text-center">H</label>
-                      <input
-                        type="number"
-                        value={selectedElementData.height || 100}
-                        onChange={(e) => updateSelectedElement({ height: parseInt(e.target.value) })}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                        min="1"
-                        disabled={isElementLocked(selectedElement)}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1 text-center">X</label>
-                      <input
-                        type="number"
-                        value={Math.round(selectedElementData.x || 0)}
-                        onChange={(e) => updateSelectedElement({ x: parseInt(e.target.value) })}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-center"
-                        disabled={isElementLocked(selectedElement)}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Y</label>
-                      <input
-                        type="number"
-                        value={Math.round(selectedElementData.y || 0)}
-                        onChange={(e) => updateSelectedElement({ y: parseInt(e.target.value) })}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                        disabled={isElementLocked(selectedElement)}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Rotation Control - Universal */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Rotation</label>
+                </div>
+                {/* W H X Y Controls in one row */}
+                <div className="grid grid-cols-4 gap-2 mb-4 text-center">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1 text-center">W</label>
                     <input
-                      type="range"
-                      min="0"
-                      max="360"
-                      value={selectedElementData.rotation || 0}
-                      onChange={(e) => updateSelectedElement({ rotation: parseInt(e.target.value) })}
-                      className="w-full template-range"
+                      type="number"
+                      value={selectedElementData.width || 100}
+                      onChange={(e) => updateSelectedElement({ width: parseInt(e.target.value) })}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                      min="1"
                       disabled={isElementLocked(selectedElement)}
                     />
-                    <div className="flex justify-between text-sm text-gray-500 mt-1">
-                      <span>0°</span>
-                      <span className="font-medium">{selectedElementData.rotation || 0}°</span>
-                      <span>360°</span>
-                    </div>
                   </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1 text-center">H</label>
+                    <input
+                      type="number"
+                      value={selectedElementData.height || 100}
+                      onChange={(e) => updateSelectedElement({ height: parseInt(e.target.value) })}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                      min="1"
+                      disabled={isElementLocked(selectedElement)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1 text-center">X</label>
+                    <input
+                      type="number"
+                      value={Math.round(selectedElementData.x || 0)}
+                      onChange={(e) => updateSelectedElement({ x: parseInt(e.target.value) })}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-center"
+                      disabled={isElementLocked(selectedElement)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Y</label>
+                    <input
+                      type="number"
+                      value={Math.round(selectedElementData.y || 0)}
+                      onChange={(e) => updateSelectedElement({ y: parseInt(e.target.value) })}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                      disabled={isElementLocked(selectedElement)}
+                    />
+                  </div>
+                </div>
+
+                {/* Rotation Control - Universal */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Rotation</label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="360"
+                    value={selectedElementData.rotation || 0}
+                    onChange={(e) => updateSelectedElement({ rotation: parseInt(e.target.value) })}
+                    className="w-full template-range"
+                    disabled={isElementLocked(selectedElement)}
+                  />
+                  <div className="flex justify-between text-sm text-gray-500 mt-1">
+                    <span>0°</span>
+                    <span className="font-medium">{selectedElementData.rotation || 0}°</span>
+                    <span>360°</span>
+                  </div>
+                </div>
 
                   {selectedElementData.type === 'logo' && (
                     <div className="space-y-4">
@@ -1547,36 +1475,116 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                 </div>
               )}
             </div>
+        </div>
+        
+        {/* Tools Actions - Fixed at bottom of left column */}
+        <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-white">
+          <div className="space-y-2.5">
+            <button
+              onClick={exportImage}
+              disabled={isSaving}
+              className="w-full bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 font-medium text-sm"
+            >
+              {isSaving ? (
+                <>
+                  <Loader className="w-4 h-4 animate-spin" />
+                  <span>Saving Template...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  <span>Save & Apply Template</span>
+                </>
+              )}
+            </button>
+            
+            <button
+              onClick={onCancel}
+              className="w-full bg-gray-100 text-gray-700 px-4 py-2.5 rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm"
+            >
+              Cancel
+            </button>
           </div>
-          
-          {/* Actions - Fixed at bottom */}
-          <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-white mt-auto">
-            <div className="space-y-2.5">
+        </div>
+      </div>
+
+      {/* Canvas Area - Right Column - Flexible Width with Scroll */}
+      <div className="flex-1 bg-gray-50 flex flex-col">
+        {/* Canvas Controls - Fixed Header */}
+        <div className="flex-shrink-0 p-4 bg-white border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            {/* Canvas Info */}
+            <div className="text-xs text-gray-600 font-mono">
+              {imageDimensions && (
+                <span>{imageDimensions.width} × {imageDimensions.height} | {Math.round(zoomLevel * 100)}%</span>
+              )}
+            </div>
+            
+            {/* Zoom Controls */}
+            <div className="flex items-center space-x-2">
               <button
-                onClick={exportImage}
-                disabled={isSaving}
-                className="w-full bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 font-medium text-sm"
+                onClick={() => setZoomLevel(Math.max(0.1, zoomLevel - 0.1))}
+                className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
+                disabled={zoomLevel <= 0.1}
               >
-                {isSaving ? (
-                  <>
-                    <Loader className="w-4 h-4 animate-spin" />
-                    <span>Saving Template...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    <span>Save & Apply Template</span>
-                  </>
-                )}
+                −
               </button>
-              
+              <span className="text-xs text-gray-600 min-w-12 text-center">
+                {Math.round(zoomLevel * 100)}%
+              </span>
               <button
-                onClick={onCancel}
-                className="w-full bg-gray-100 text-gray-700 px-4 py-2.5 rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm"
+                onClick={() => setZoomLevel(Math.min(maxZoom, zoomLevel + 0.1))}
+                className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
+                disabled={zoomLevel >= maxZoom}
               >
-                Cancel
+                +
+              </button>
+              <button
+                onClick={() => {
+                  if (imageDimensions) {
+                    const { zoom } = calculateZoomLevel(imageDimensions.width, imageDimensions.height);
+                    setZoomLevel(zoom);
+                  }
+                }}
+                className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors ml-2"
+              >
+                Fit
+              </button>
+              <button
+                onClick={() => setZoomLevel(1)}
+                className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
+              >
+                100%
               </button>
             </div>
+          </div>
+        </div>
+        
+        {/* Canvas Container - Scrollable */}
+        <div className="flex-1 overflow-auto bg-gray-100 flex items-center justify-center p-4">
+          <div 
+            className="flex items-center justify-center"
+            style={{
+              zoom: `${zoomLevel}`,
+              transformOrigin: 'center center'
+            }}
+          >
+            <canvas
+              ref={canvasRef}
+              onClick={handleCanvasClick}
+              onMouseDown={handleCanvasMouseDown}
+              onMouseMove={handleCanvasMouseMove}
+              onMouseUp={handleCanvasMouseUp}
+              onMouseLeave={handleCanvasMouseUp}
+              onTouchStart={handleCanvasTouchStart}
+              onTouchMove={handleCanvasTouchMove}
+              onTouchEnd={handleCanvasTouchEnd}
+              className="border-2 border-gray-300 rounded-lg shadow-2xl cursor-pointer bg-white transition-all duration-200"
+              style={{ 
+                width: `${canvasDimensions.width}px`,
+                height: `${canvasDimensions.height}px`
+              }}
+            />
           </div>
         </div>
       </div>
