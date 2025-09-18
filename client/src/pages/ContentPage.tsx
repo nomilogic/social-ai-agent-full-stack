@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { ContentInput } from "../components/ContentInput";
 import { AIGenerator } from "../components/AIGenerator";
@@ -15,6 +15,15 @@ export const ContentPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showPublishModal, setShowPublishModal] = useState(false);
+
+  // Cleanup background scrolling on component unmount
+  useEffect(() => {
+    return () => {
+      // Restore background scrolling when component unmounts
+      document.body.classList.remove('modal-open');
+      document.documentElement.classList.remove('modal-open');
+    };
+  }, []);
 
   const handleContentNext = (contentData: any) => {
     dispatch({ type: "SET_CONTENT_DATA", payload: contentData });
@@ -68,6 +77,9 @@ export const ContentPage: React.FC = () => {
 
   const handleGoToPublish = () => {
     setShowPublishModal(true);
+    // Prevent background scrolling when modal is open
+    document.body.classList.add('modal-open');
+    document.documentElement.classList.add('modal-open');
   };
 
   // Handle individual platform regeneration
@@ -229,11 +241,16 @@ export const ContentPage: React.FC = () => {
 
           {/* Publish Modal */}
           {showPublishModal && state.generatedPosts && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-auto">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center z-50">
+              <div className="bg-white w-full h-screen overflow-y-auto modal-content">
                 <PublishPosts
                   posts={state.generatedPosts}
-                  onBack={() => setShowPublishModal(false)}
+                  onBack={() => {
+                    setShowPublishModal(false);
+                    // Restore background scrolling when modal is closed
+                    document.body.classList.remove('modal-open');
+                    document.documentElement.classList.remove('modal-open');
+                  }}
                   userId={state.user?.id || ""}
                 />
               </div>

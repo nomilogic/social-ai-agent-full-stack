@@ -12,7 +12,9 @@ import {
   Edit,
   Save,
   X,
+  Wand2,
 } from "lucide-react";
+import Icon from './Icon';
 import { GeneratedPost, Platform } from "../types";
 import { getPlatformIcon, getPlatformColors, getPlatformDisplayName } from "../utils/platformIcons";
 
@@ -41,6 +43,8 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
   const [editingMode, setEditingMode] = useState<boolean>(false);
   const [posts, setPosts] = useState<GeneratedPost[]>(generatedPosts);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
+  const [isRegeneratingMode, setIsRegeneratingMode] = useState<boolean>(false);
+  const [regenerationPrompt, setRegenerationPrompt] = useState<string>('');
 
   // Calculate initial character counts for all posts
   useEffect(() => {
@@ -112,6 +116,29 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
     setEditingMode(false);
   }, [generatedPosts]);
 
+  // Handle regeneration mode toggle
+  const handleRegenerateClick = useCallback(() => {
+    setIsRegeneratingMode(true);
+    setRegenerationPrompt('');
+  }, []);
+
+  // Handle regeneration submission
+  const handleRegenerateSubmit = useCallback(() => {
+    const currentPost = posts.find((post) => post.platform === selectedPlatform);
+    if (onRegeneratePlatform && currentPost) {
+      onRegeneratePlatform(currentPost.platform);
+      // Reset regeneration mode after submitting
+      setIsRegeneratingMode(false);
+      setRegenerationPrompt('');
+    }
+  }, [onRegeneratePlatform, posts, selectedPlatform]);
+
+  // Handle regeneration cancel
+  const handleRegenerateCancel = useCallback(() => {
+    setIsRegeneratingMode(false);
+    setRegenerationPrompt('');
+  }, []);
+
 
 
 
@@ -180,8 +207,8 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                   FB
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-900">Your Campaign</h3>
-                  <p className="text-xs text-gray-500">Just now · 🌍</p>
+                  {/* <h3 className="font-medium text-gray-900">Your Campaign</h3>
+                  <p className="text-xs text-gray-500">Just now · 🌍</p> */}
                 </div>
               </div>
             </div>
@@ -322,10 +349,10 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-1">
-                    <h3 className="font-bold text-gray-900">Your Campaign</h3>
+                    {/* <h3 className="font-bold text-gray-900">Your Campaign</h3>
                     <span className="text-gray-500">@yourcampaign</span>
                     <span className="text-gray-500">·</span>
-                    <span className="text-gray-500">now</span>
+                    <span className="text-gray-500">now</span> */}
                   </div>
                   <p 
                     className={`text-gray-800 whitespace-pre-wrap ${editingMode ? 'border border-blue-300 rounded p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent' : ''}`}
@@ -381,9 +408,9 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                   LI
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-900">Your Campaign</h3>
+                  {/* <h3 className="font-medium text-gray-900">Your Campaign</h3>
                   <p className="text-sm text-gray-500">Campaign • 1st</p>
-                  <p className="text-xs text-gray-400">Just now</p>
+                  <p className="text-xs text-gray-400">Just now</p> */}
                 </div>
               </div>
               <p 
@@ -498,11 +525,14 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                     }}
                   />
                 )
-              ) : (
-                <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-2xl">▶</span>
-                </div>
-              )}
+              ) 
+              : (
+                // <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
+                //   <span className="text-white text-2xl">▶</span>
+                // </div>
+                <></>
+              )
+              }
             </div>
             <div className="p-4">
               <h3 
@@ -597,13 +627,13 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                   )}
                   
                   {/* Indicator Light */}
-                  <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full border-2 border-white shadow-lg ${
+                  {/* <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full border-2 border-white shadow-lg ${
                     post.engagement === "high"
                       ? "bg-green-500"
                       : post.engagement === "medium"
                         ? "bg-yellow-500"
                         : "bg-red-500"
-                  }`}></div>
+                  }`}></div> */}
                   
                   {/* Selected Indicator */}
                   {selectedPlatform === post.platform && (
@@ -693,10 +723,10 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                   // View Mode - Show edit button
                   <button
                     onClick={() => setEditingMode(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    className="inline-flex items-center gap-2 px-4 py-2 theme-bg-quaternary theme-text-secondary rounded-lg hover:theme-bg-tertiary transition-colors w-full justify-center"
                   >
                     <Edit className="w-4 h-4" />
-                    Edit Post Directly
+                    Edit Post Text
                   </button>
                 )}
                 
@@ -793,64 +823,79 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
             </div>
           )}
           
-          {/* Generate Post Text Section */}
-          {selectedPost && (
-            <div className="flex justify-center mt-6">
-              <div className="max-w-lg w-full">
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4 text-center">
-                    Generate Post Text
-                  </h4>
-                  <div className="flex items-center justify-center gap-4">
-                    <button
-                      onClick={() => {
-                        if (onRegeneratePlatform && selectedPost) {
-                          onRegeneratePlatform(selectedPost.platform);
-                        }
-                      }}
-                      className="btn-primary"
-                    >
-                      <Edit className="w-4 h-4" />
-                      GENERATE POST TEXT
-                    </button>
-                    <div className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg border flex items-center gap-2">
-                      <span className="text-sm font-medium">100</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Action Buttons */}
+      {/* Action Buttons / Regeneration Mode */}
       <div className="pt-8 border-t border-gray-200 mt-8">
-        {/* Publish Button */}
-        <button
-          onClick={onPublish}
-          className="btn-success w-full py-4 px-8"
-        >
-          PUBLISH TO PLATFORMS
-        </button>
-        
-        {/* Or divider */}
-        <div className="text-center text-gray-500 mb-4">
-          <span className="text-lg font-medium">or</span>
-        </div>
-        
-        {/* Regenerate Post Text Button */}
-        <button
-          onClick={() => {
-            if (onRegeneratePlatform && selectedPost) {
-              onRegeneratePlatform(selectedPost.platform);
-            }
-          }}
-          className="btn-primary w-full py-4 px-8"
-        >
-          <Edit className="w-5 h-5" />
-          REGENERATE POST TEXT
-        </button>
+        {!isRegeneratingMode ? (
+          // Normal mode - show publish and regenerate buttons
+          <>
+            {/* Publish Button */}
+            <button
+              onClick={onPublish}
+              className="btn-success w-full py-4 px-8"
+            >
+              PUBLISH TO PLATFORMS
+            </button>
+            
+            {/* Or divider */}
+            <div className="text-center theme-text-secondary my-4">
+              <span className="text-lg font-medium">or</span>
+            </div>
+            
+            {/* Regenerate Post Text Button */}
+            <button
+              onClick={handleRegenerateClick}
+              className="btn-primary w-full py-4 px-8"
+            >
+              <Edit className="w-5 h-5" />
+              REGENERATE POST TEXT
+            </button>
+          </>
+        ) : (
+          // Regeneration mode - show textarea and generate button
+          <div className="theme-bg-quaternary rounded-lg p-6 border border-purple-200">
+            <h4 className="text-lg font-semibold theme-text-secondary mb-4 text-center">
+              Generate Post Text
+            </h4>
+            
+            {/* Text Area */}
+            <div className="mb-4">
+              <textarea
+                value={regenerationPrompt}
+                onChange={(e) => setRegenerationPrompt(e.target.value)}
+                placeholder="Enter your prompt to regenerate the post text for the selected platform..."
+                className="w-full h-32 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent theme-text-secondary"
+              />
+            </div>
+            
+            {/* Generate Button with Coin Counter - Match ContentInput styling */}
+            <button
+              onClick={handleRegenerateSubmit}
+              className="rounded-full w-full flex items-center justify-between theme-bg-trinary theme-text-light py-2 px-4 font-medium transition-all duration-200 text-sm"
+            >
+              <div className="flex items-center">
+                <Wand2 className="w-6 h-6 mr-1" /> 
+                GENERATE POST TEXT
+              </div>
+              <div className="rounded-full theme-bg-quaternary theme-text-secondary px-2 py-1">
+                <Icon name="wallet" size={14} className="inline mr-1 mt-[-1px]" />
+                100
+              </div>
+            </button>
+            
+            {/* Cancel Button */}
+            <div className="flex justify-center mt-4">
+              <button
+                onClick={handleRegenerateCancel}
+                className="text-gray-500 hover:text-gray-700 px-4 py-2 text-sm font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

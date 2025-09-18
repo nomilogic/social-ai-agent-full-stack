@@ -245,18 +245,11 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="h-screen theme-bg-light">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-              <div className="text-white font-bold text-sm">500</div>
-            </div>
-            <div>
-              <div className="text-xs text-gray-500 uppercase tracking-wide">LEFT TODAY</div>
-            </div>
-          </div>
+      
           <button
             onClick={onBack}
             className="text-gray-400 hover:text-gray-600 transition-colors"

@@ -105,6 +105,39 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Helper function to get appropriate platforms based on content type
+  const getAppropiatePlatforms = (postType: 'text' | 'image' | 'video', imageMode?: string, videoMode?: string): Platform[] => {
+    switch (postType) {
+      case 'text':
+        // Text post: all platforms except YouTube and TikTok
+        return ['facebook', 'instagram', 'twitter', 'linkedin'];
+      case 'image':
+        // Image post: all platforms except TikTok and YouTube
+        return ['facebook', 'instagram', 'twitter', 'linkedin'];
+      case 'video':
+        if (videoMode === 'uploadShorts') {
+          // 9:16 video (shorts): all platforms
+          return ['facebook', 'instagram', 'twitter', 'linkedin', 'tiktok', 'youtube'];
+        } else if (videoMode === 'upload') {
+          // 16:9 video: all platforms except Instagram and TikTok
+          return ['facebook', 'twitter', 'linkedin', 'youtube'];
+        }
+        // Default video: all platforms
+        return ['facebook', 'instagram', 'twitter', 'linkedin', 'tiktok', 'youtube'];
+      default:
+        return ['linkedin']; // Default fallback
+    }
+  };
+
+  // Auto-select platforms based on content type and modes
+  useEffect(() => {
+    const appropriatePlatforms = getAppropiatePlatforms(selectedPostType, selectedImageMode, selectedVideoMode);
+    setFormData(prev => ({
+      ...prev,
+      selectedPlatforms: appropriatePlatforms
+    }));
+  }, [selectedPostType, selectedImageMode, selectedVideoMode]);
+
   // Initialize with existing data when in edit mode
   useEffect(() => {
     if (initialData) {
