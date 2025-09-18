@@ -1012,7 +1012,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-white z-50 flex flex-col md:flex-row">
+    <div className="fixed inset-0 bg-white z-50 flex flex-col md:flex-row-reverse">
       {/* Tools Panel - Top Row on Mobile, Left Column on Desktop - Fixed Height/Width with Scroll */}
       <div className="w-full md:w-80 md:min-w-80 md:max-w-80 h-80 md:h-full bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-col">
         {/* Tools Header - Fixed */}

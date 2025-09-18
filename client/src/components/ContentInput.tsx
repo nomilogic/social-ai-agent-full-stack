@@ -1058,7 +1058,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   };
 
   return (
-    <div className="w-full mx-auto  rounded-xl border border-white/10 p-6 m0 h-full-dec-hf">
+    <div className="w-full mx-auto  rounded-xl border border-white/10 p-2 m0 ">
       {/* Header */}
       <div className="text-left mb-4">
         {/* <div className="w-12 h-12 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl flex items-center justify-center mx-auto ">

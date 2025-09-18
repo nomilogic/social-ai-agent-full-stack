@@ -3,6 +3,7 @@ import { GeneratedPost, Platform } from '../types';
 import { postToAllPlatforms } from '../lib/socialPoster';
 import { SocialMediaManager } from './SocialMediaManager';
 import { socialMediaAPI } from '../lib/socialMediaApi';
+import { oauthManagerClient } from '../lib/oauthManagerClient';
 
 interface PublishProps {
   posts: GeneratedPost[];
@@ -17,6 +18,7 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
   const [error, setError] = useState<string | null>(null);
   const [connectedPlatforms, setConnectedPlatforms] = useState<Platform[]>([]);
   const [publishProgress, setPublishProgress] = useState<Record<string, 'pending' | 'success' | 'error'>>({});
+  const [connectingPlatforms, setConnectingPlatforms] = useState<Platform[]>([]);
   const [facebookPages, setFacebookPages] = useState<any[]>([]);
   const [youtubeChannels, setYoutubeChannels] = useState<any[]>([]);
   const [selectedFacebookPage, setSelectedFacebookPage] = useState<string>('');
@@ -136,6 +138,61 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
     }
   };
 
+  const handleConnect = async (platform: Platform) => {
+    console.log('Connecting to platform:', platform);
+    
+    try {
+      setConnectingPlatforms(prev => [...prev, platform]);
+      
+      // Use the OAuth client to start OAuth flow (uses JWT authentication)
+      const result = await oauthManagerClient.startOAuthFlow(platform);
+      const { authUrl } = result;
+      console.log('Opening OAuth popup with URL:', authUrl);
+
+      const authWindow = window.open(
+        authUrl,
+        `${platform}_oauth`,
+        "width=600,height=700,scrollbars=yes,resizable=yes",
+      );
+
+      if (!authWindow) {
+        throw new Error("OAuth popup blocked");
+      }
+
+      // Listen for messages from the OAuth callback
+      const messageListener = (event: MessageEvent) => {
+        if (
+          event.data.type === "oauth_success" &&
+          event.data.platform === platform
+        ) {
+          console.log("OAuth success for", platform);
+          setTimeout(checkConnectedPlatforms, 1000);
+          window.removeEventListener("message", messageListener);
+        } else if (event.data.type === "oauth_error") {
+          console.error("OAuth error:", event.data.error);
+          setError(`Failed to connect ${platform}: ${event.data.error || "OAuth failed"}`);
+          window.removeEventListener("message", messageListener);
+        }
+      };
+
+      window.addEventListener("message", messageListener);
+
+      // Monitor window closure
+      const checkClosed = setInterval(() => {
+        if (authWindow?.closed) {
+          clearInterval(checkClosed);
+          window.removeEventListener("message", messageListener);
+          setTimeout(checkConnectedPlatforms, 1000);
+        }
+      }, 1000);
+    } catch (error) {
+      console.error('Error connecting to platform:', error);
+      setError(`Failed to connect ${platform}: ${error instanceof Error ? error.message : "Connection failed"}`);
+    } finally {
+      setConnectingPlatforms(prev => prev.filter(p => p !== platform));
+    }
+  };
+
   const handlePublish = async () => {
     // Filter to only connected platforms that are selected
     const connectedSelectedPlatforms = selectedPlatforms.filter(p => connectedPlatforms.includes(p));
@@ -188,238 +245,352 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
   };
 
   return (
-    <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg p-8">
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">Publish Your Posts</h2>
-      <p className="mb-6 text-gray-600">Connect your social media accounts and publish your AI-generated posts directly.</p>
-      
-      {/* Connection Status Alert */}
-      {posts.some(post => !connectedPlatforms.includes(post.platform)) && (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="text-blue-800 font-medium mb-2">📱 Connect Your Accounts</h3>
-          <p className="text-blue-700 text-sm mb-3">
-            You need to connect your social media accounts before publishing. Click the "Connect" buttons below.
-          </p>
-          <div className="text-sm text-blue-600">
-            <strong>Platforms needing connection:</strong> {' '}
-            {posts
-              .filter(post => !connectedPlatforms.includes(post.platform))
-              .map(post => post.platform)
-              .join(', ')}
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between max-w-4xl mx-auto">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+              <div className="text-white font-bold text-sm">500</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500 uppercase tracking-wide">LEFT TODAY</div>
+            </div>
           </div>
+          <button
+            onClick={onBack}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-      )}
-
-      {/* Social Media Connection Management */}
-      <div className="mb-6">
-        <h3 className="font-semibold mb-4 text-gray-900">Social Media Accounts</h3>
-        <SocialMediaManager
-          userId={userId || ''}
-          onCredentialsUpdate={checkConnectedPlatforms}
-        />
       </div>
 
-      <div className="mb-6">
-        <h3 className="font-semibold mb-4">Select Platforms to Publish:</h3>
-        <div className="space-y-3">
-          {posts.map(post => {
-            const isConnected = connectedPlatforms.includes(post.platform);
-            const progress = publishProgress[post.platform];
-            
-            return (
-              <label key={post.platform} className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-                !isConnected ? 'border-gray-200 bg-gray-50' : 
-                selectedPlatforms.includes(post.platform) ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-              }`}>
-                <input
-                  type="checkbox"
-                  checked={selectedPlatforms.includes(post.platform)}
-                  disabled={!isConnected}
-                  onChange={e => {
-                    setSelectedPlatforms(prev =>
-                      e.target.checked
-                        ? [...prev, post.platform]
-                        : prev.filter(p => p !== post.platform)
-                    );
-                  }}
-                  className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="capitalize font-medium text-gray-900">{post.platform}</span>
-                    {isConnected ? (
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full flex-shrink-0">Connected</span>
-                    ) : (
-                      <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full flex-shrink-0">Not Connected</span>
-                    )}
-                    {progress && (
-                      <span className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${
-                        progress === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        progress === 'success' ? 'bg-green-100 text-green-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {progress === 'pending' ? 'Publishing...' : 
-                         progress === 'success' ? 'Published' : 'Failed'}
-                      </span>
-                    )}
-                  </div>
-                  {!isConnected && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Connect your {post.platform} account above to enable publishing
-                    </p>
-                  )}
-                </div>
-              </label>
-            );
-          })}
-        </div>
-      </div>
-      {/* Platform-specific options */}
-      {(connectedPlatforms.includes('facebook') && selectedPlatforms.includes('facebook') && facebookPages.length > 0) && (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h4 className="font-medium text-blue-900 mb-2">📄 Facebook Page Selection</h4>
-          <p className="text-blue-700 text-sm mb-3">Choose which Facebook page to post to:</p>
-          <select
-            value={selectedFacebookPage}
-            onChange={(e) => setSelectedFacebookPage(e.target.value)}
-            className="w-full p-2 border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            {facebookPages.map((page) => (
-              <option key={page.id} value={page.id}>
-                {page.name} ({page.category})
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+      {/* Main Content */}
+      <div className="max-w-md mx-auto px-6 py-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Publish Your Posts</h1>
+        <p className="text-gray-600 mb-8 leading-relaxed">
+          Connect your social media accounts and publish your AI-generated posts directly.
+        </p>
 
-      {(connectedPlatforms.includes('youtube') && selectedPlatforms.includes('youtube') && youtubeChannels.length > 0) && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <h4 className="font-medium text-red-900 mb-2">📺 YouTube Channel Selection</h4>
-          <p className="text-red-700 text-sm mb-3">Choose which YouTube channel to upload to:</p>
-          <select
-            value={selectedYoutubeChannel}
-            onChange={(e) => setSelectedYoutubeChannel(e.target.value)}
-            className="w-full p-2 border border-red-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
-          >
-            {youtubeChannels.map((channel) => (
-              <option key={channel.id} value={channel.id}>
-                {channel.snippet.title}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-800 text-sm">{error}</p>
-        </div>
-      )}
-
-      <button
-        className={`py-3 px-6 rounded-lg font-medium shadow transition-all duration-200 ${
-          selectedPlatforms.length === 0 || selectedPlatforms.every(p => !connectedPlatforms.includes(p))
-            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            : publishing
-            ? 'bg-blue-400 text-white cursor-not-allowed'
-            : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
-        }`}
-        onClick={handlePublish}
-        disabled={publishing || selectedPlatforms.length === 0 || selectedPlatforms.every(p => !connectedPlatforms.includes(p))}
-      >
-        {publishing 
-          ? 'Publishing...' 
-          : selectedPlatforms.length === 0 
-            ? 'Select platforms to publish'
-            : selectedPlatforms.every(p => !connectedPlatforms.includes(p))
-              ? 'Connect accounts first'
-              : `Publish to ${selectedPlatforms.filter(p => connectedPlatforms.includes(p)).length} Connected Platform${selectedPlatforms.filter(p => connectedPlatforms.includes(p)).length === 1 ? '' : 's'}`
-        }
-      </button>
-      
-      {selectedPlatforms.length === 0 && (
-        <p className="mt-2 text-sm text-gray-500">Please select at least one connected platform to publish.</p>
-      )}
-      
-      {selectedPlatforms.length > 0 && selectedPlatforms.every(p => !connectedPlatforms.includes(p)) && (
-        <p className="mt-2 text-sm text-gray-500">Please connect to at least one selected platform to publish.</p>
-      )}
-      
-      {error && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-600 font-medium">Error:</p>
-          <p className="text-red-600 text-sm">{error}</p>
-        </div>
-      )}
-      
-      {results && (
-        <div className="mt-6">
-          <h3 className="font-semibold mb-3 text-gray-900">📊 Publishing Results:</h3>
-          
-          {/* Summary */}
-          {results._summary && (
-            <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-blue-600">{results._summary.total}</div>
-                  <div className="text-sm text-gray-600">Total</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-green-600">{results._summary.successful}</div>
-                  <div className="text-sm text-gray-600">Successful</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-red-600">{results._summary.failed}</div>
-                  <div className="text-sm text-gray-600">Failed</div>
-                </div>
+        {/* Connection Status Alert */}
+        {posts.some(post => !connectedPlatforms.includes(post.platform)) && (
+          <div className="mb-8 p-4 theme-bg-quaternary rounded-xl border border-purple-200">
+            <div className="flex items-start gap-3">
+              <div className="w-5 h-5 text-purple-600 mt-0.5">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-white mb-1">Connect Your Accounts</h3>
+                <p className="text-sm theme-text-secondary leading-relaxed">
+                  You need to connect your social media accounts before publishing. Click the
+                  Connect buttons below.
+                </p>
               </div>
             </div>
-          )}
-          
-          {/* Individual Results */}
+          </div>
+        )}
+
+        {/* Platforms Section */}
+        <div className="mb-8">
+          <h2 className="font-semibold text-gray-900 mb-1">Select Platforms to Publish:</h2>
+          <p className="text-sm text-gray-600 mb-6">
+            Connect your social media accounts to enable direct publishing across all platforms.
+          </p>
+
           <div className="space-y-3">
-            {Object.entries(results)
-              .filter(([key]) => key !== '_summary')
-              .map(([platform, result]: [string, any]) => (
-                <div key={platform} className={`border rounded-lg p-3 ${
-                  result.success 
-                    ? 'bg-green-50 border-green-200' 
-                    : 'bg-red-50 border-red-200'
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <h4 className={`font-medium capitalize ${
-                      result.success ? 'text-green-800' : 'text-red-800'
+            {posts.map(post => {
+              const isConnected = connectedPlatforms.includes(post.platform);
+              const isConnecting = connectingPlatforms.includes(post.platform);
+              const progress = publishProgress[post.platform];
+              
+              return (
+                <div key={post.platform} className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    {/* Platform Icon */}
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white ${
+                      post.platform === 'linkedin' ? 'bg-blue-600' :
+                      post.platform === 'facebook' ? 'bg-blue-700' :
+                      post.platform === 'instagram' ? 'bg-gradient-to-r from-purple-500 to-pink-500' :
+                      post.platform === 'twitter' ? 'bg-black' :
+                      post.platform === 'youtube' ? 'bg-red-600' :
+                      post.platform === 'tiktok' ? 'bg-black' :
+                      'bg-gray-600'
                     }`}>
-                      {result.success ? '✅' : '❌'} {platform}
-                    </h4>
-                    {result.success && result.postId && (
-                      <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
-                        ID: {result.postId}
-                      </span>
-                    )}
+                      {post.platform === 'linkedin' && (
+                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                        </svg>
+                      )}
+                      {post.platform === 'facebook' && (
+                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                        </svg>
+                      )}
+                      {post.platform === 'instagram' && (
+                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                        </svg>
+                      )}
+                      {(post.platform === 'twitter' || post.platform === 'x') && (
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                        </svg>
+                      )}
+                      {!['linkedin', 'facebook', 'instagram', 'twitter', 'x'].includes(post.platform) && (
+                        <span className="text-lg font-bold uppercase">
+                          {post.platform.substring(0, 2)}
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Platform Info */}
+                    <div>
+                      <h4 className="font-medium text-gray-900 capitalize">
+                        {post.platform === 'x' ? 'X (Twitter)' : post.platform}
+                      </h4>
+                      <p className={`text-sm ${
+                        isConnected ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {isConnected ? 'Connected' : 'Not Connected'}
+                      </p>
+                      {progress && (
+                        <p className={`text-xs mt-1 ${
+                          progress === 'pending' ? 'text-yellow-600' :
+                          progress === 'success' ? 'text-green-600' :
+                          'text-red-600'
+                        }`}>
+                          {progress === 'pending' ? 'Publishing...' : 
+                           progress === 'success' ? 'Published' : 'Failed'}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <p className={`text-sm mt-1 ${
-                    result.success ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {result.message || result.error}
-                  </p>
-                  {!result.success && result.retryable && (
-                    <p className="text-xs text-amber-600 mt-1">
-                      💡 This error might be temporary - you can try again
-                    </p>
-                  )}
+
+                  {/* Action Button or Status */}
+                  <div className="flex items-center gap-3">
+                    {isConnected && (
+                      <div className="w-5 h-5 text-green-600">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                    <div>
+                      <input
+                        type="checkbox"
+                        checked={selectedPlatforms.includes(post.platform)}
+                        disabled={!isConnected}
+                        onChange={e => {
+                          setSelectedPlatforms(prev =>
+                            e.target.checked
+                              ? [...prev, post.platform]
+                              : prev.filter(p => p !== post.platform)
+                          );
+                        }}
+                        className="sr-only"
+                        id={`platform-${post.platform}`}
+                      />
+                      <button
+                        onClick={() => {
+                          if (!isConnected || isConnecting) {
+                            // Trigger connection flow for this platform
+                            handleConnect(post.platform);
+                            return;
+                          }
+                          // For connected platforms, this could be a reconnect or toggle selection
+                          handleConnect(post.platform); // Reconnect
+                        }}
+                        disabled={isConnecting}
+                        className={`rounded-full py-2 px-4 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm theme-text-light ${
+                          isConnected
+                            ? 'theme-bg-success'
+                            : 'theme-bg-danger'
+                        }`}
+                      >
+                        {isConnecting ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                            <span>CONNECTING...</span>
+                          </div>
+                        ) : (
+                          isConnected ? 'RECONNECT' : 'CONNECT'
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              ))
-            }
+              );
+            })}
           </div>
         </div>
-      )}
-      <button
-        className="mt-8 w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200"
-        onClick={onBack}
-      >
-        Back to Preview
-      </button>
+
+        {/* Hidden Social Media Manager */}
+        <div className="hidden">
+          <SocialMediaManager
+            userId={userId || ''}
+            onCredentialsUpdate={checkConnectedPlatforms}
+          />
+        </div>
+        {/* Platform-specific options (if needed) */}
+        {(connectedPlatforms.includes('facebook') && selectedPlatforms.includes('facebook') && facebookPages.length > 0) && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+            <h4 className="font-medium text-blue-900 mb-2">Facebook Page Selection</h4>
+            <p className="text-blue-700 text-sm mb-3">Choose which Facebook page to post to:</p>
+            <select
+              value={selectedFacebookPage}
+              onChange={(e) => setSelectedFacebookPage(e.target.value)}
+              className="w-full p-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              {facebookPages.map((page) => (
+                <option key={page.id} value={page.id}>
+                  {page.name} ({page.category})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {(connectedPlatforms.includes('youtube') && selectedPlatforms.includes('youtube') && youtubeChannels.length > 0) && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <h4 className="font-medium text-red-900 mb-2">YouTube Channel Selection</h4>
+            <p className="text-red-700 text-sm mb-3">Choose which YouTube channel to upload to:</p>
+            <select
+              value={selectedYoutubeChannel}
+              onChange={(e) => setSelectedYoutubeChannel(e.target.value)}
+              className="w-full p-3 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            >
+              {youtubeChannels.map((channel) => (
+                <option key={channel.id} value={channel.id}>
+                  {channel.snippet.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Error Messages */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <p className="text-red-800 text-sm">{error}</p>
+          </div>
+        )}
+
+        {/* Main Publish Button */}
+        <button
+          onClick={handlePublish}
+          disabled={publishing || selectedPlatforms.length === 0 || selectedPlatforms.every(p => !connectedPlatforms.includes(p))}
+          className={`w-full rounded-full py-2 px-4 font-medium theme-text-light transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+            selectedPlatforms.length === 0 || selectedPlatforms.every(p => !connectedPlatforms.includes(p))
+              ? 'bg-gray-400'
+              : publishing
+              ? 'theme-bg-trinary'
+              : 'theme-bg-success'
+          }`}
+        >
+          {publishing ? (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+              <span>PUBLISHING...</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span>
+                {selectedPlatforms.length === 0 
+                  ? 'SELECT PLATFORMS TO PUBLISH'
+                  : selectedPlatforms.every(p => !connectedPlatforms.includes(p))
+                    ? 'CONNECT ACCOUNTS FIRST'
+                    : 'PUBLISH TO PLATFORMS'
+                }
+              </span>
+            </div>
+          )}
+        </button>
+        
+        {/* Helper text */}
+        {selectedPlatforms.length === 0 && (
+          <p className="mt-3 text-sm text-gray-500 text-center">
+            Please select at least one connected platform to publish.
+          </p>
+        )}
+        
+        {selectedPlatforms.length > 0 && selectedPlatforms.every(p => !connectedPlatforms.includes(p)) && (
+          <p className="mt-3 text-sm text-gray-500 text-center">
+            Please connect to at least one selected platform to publish.
+          </p>
+        )}
+        
+        {/* Publishing Results */}
+        {results && (
+          <div className="mt-8">
+            <h3 className="font-semibold mb-4 text-gray-900">Publishing Results:</h3>
+            
+            {/* Summary */}
+            {results._summary && (
+              <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-blue-600">{results._summary.total}</div>
+                    <div className="text-sm text-gray-600">Total</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-green-600">{results._summary.successful}</div>
+                    <div className="text-sm text-gray-600">Successful</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-red-600">{results._summary.failed}</div>
+                    <div className="text-sm text-gray-600">Failed</div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Individual Results */}
+            <div className="space-y-3">
+              {Object.entries(results)
+                .filter(([key]) => key !== '_summary')
+                .map(([platform, result]: [string, any]) => (
+                  <div key={platform} className={`border rounded-xl p-4 ${
+                    result.success 
+                      ? 'bg-green-50 border-green-200' 
+                      : 'bg-red-50 border-red-200'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <h4 className={`font-medium capitalize ${
+                        result.success ? 'text-green-800' : 'text-red-800'
+                      }`}>
+                        {result.success ? '✅' : '❌'} {platform}
+                      </h4>
+                      {result.success && result.postId && (
+                        <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-lg">
+                          ID: {result.postId}
+                        </span>
+                      )}
+                    </div>
+                    <p className={`text-sm mt-1 ${
+                      result.success ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {result.message || result.error}
+                    </p>
+                    {!result.success && result.retryable && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        💡 This error might be temporary - you can try again
+                      </p>
+                    )}
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

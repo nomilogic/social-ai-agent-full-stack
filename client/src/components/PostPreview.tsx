@@ -23,6 +23,7 @@ interface PostPreviewProps {
   onPublish?: () => void;
   onPostsUpdate?: (updatedPosts: GeneratedPost[]) => void;
   onRegeneratePlatform?: (platform: Platform) => void;
+  onConnectAccounts?: () => void;
 }
 
 export const PostPreview: React.FC<PostPreviewProps> = ({
@@ -791,32 +792,64 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
               </div>
             </div>
           )}
+          
+          {/* Generate Post Text Section */}
+          {selectedPost && (
+            <div className="flex justify-center mt-6">
+              <div className="max-w-lg w-full">
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4 text-center">
+                    Generate Post Text
+                  </h4>
+                  <div className="flex items-center justify-center gap-4">
+                    <button
+                      onClick={() => {
+                        if (onRegeneratePlatform && selectedPost) {
+                          onRegeneratePlatform(selectedPost.platform);
+                        }
+                      }}
+                      className="btn-primary"
+                    >
+                      <Edit className="w-4 h-4" />
+                      GENERATE POST TEXT
+                    </button>
+                    <div className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg border flex items-center gap-2">
+                      <span className="text-sm font-medium">100</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="flex gap-4 pt-8 border-t border-gray-200 mt-8">
-        <button
-          onClick={onEdit}
-          className="flex-1 bg-gray-100 text-gray-700 py-4 px-8 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center space-x-2"
-        >
-          <Edit className="w-5 h-5" />
-          <span>Edit Content</span>
-        </button>
-        <button
-          onClick={onBack}
-          className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-8 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-        >
-          Regenerate
-        </button>
-      </div>
-
-      <div className="mt-4">
+      {/* Action Buttons */}
+      <div className="pt-8 border-t border-gray-200 mt-8">
+        {/* Publish Button */}
         <button
           onClick={onPublish}
-          className="w-full bg-green-600 text-white py-4 px-8 rounded-lg font-medium hover:bg-green-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+          className="btn-success w-full py-4 px-8"
         >
-          <Share2 className="w-5 h-5" />
-          Publish to Platforms
+          PUBLISH TO PLATFORMS
+        </button>
+        
+        {/* Or divider */}
+        <div className="text-center text-gray-500 mb-4">
+          <span className="text-lg font-medium">or</span>
+        </div>
+        
+        {/* Regenerate Post Text Button */}
+        <button
+          onClick={() => {
+            if (onRegeneratePlatform && selectedPost) {
+              onRegeneratePlatform(selectedPost.platform);
+            }
+          }}
+          className="btn-primary w-full py-4 px-8"
+        >
+          <Edit className="w-5 h-5" />
+          REGENERATE POST TEXT
         </button>
       </div>
     </div>
