@@ -347,6 +347,29 @@
   animation: pulse-glow 12s ease-in-out infinite;
 }
 
+/* Modal scrolling prevention */
+body.modal-open {
+  overflow: hidden !important;
+}
+
+html.modal-open {
+  overflow: hidden !important;
+}
+
+/* Prevent all scrolling when modal is open */
+body.modal-open * {
+  overflow: hidden !important;
+}
+
+/* Allow scrolling only in modal content */
+body.modal-open .modal-content {
+  overflow-y: auto !important;
+}
+
+body.modal-open .modal-content * {
+  overflow: visible !important;
+}
+
 /* Theme-aware CSS variables for data attributes - used by components that need data-theme approach */
 :root {
   --primary: #3b82f6;
