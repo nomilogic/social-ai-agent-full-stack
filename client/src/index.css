@@ -364,6 +364,7 @@ body.modal-open * {
 /* Allow scrolling only in modal content */
 body.modal-open .modal-content {
   overflow-y: auto !important;
+  height: auto !important;
 }
 
 body.modal-open .modal-content * {

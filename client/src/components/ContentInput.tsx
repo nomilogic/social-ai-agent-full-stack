@@ -32,6 +32,14 @@ import { TemplateSelector } from "./TemplateSelector";
 import { ImageTemplateEditor } from "./ImageTemplateEditor";
 import { Template } from "../types/templates";
 import { getTemplateById } from "../utils/templates";
+import { 
+  isVideoFile, 
+  generateVideoThumbnail, 
+  createVideoThumbnailUrl, 
+  getVideoAspectRatio, 
+  is16x9Video,
+  is9x16Video 
+} from "../utils/videoUtils";
 import { s } from "node_modules/vite/dist/node/types.d-aGj9QkWt";
 
 // Helper function to convert file to base64
@@ -233,6 +241,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     setTemplatedImageUrl("");
     setSelectedTemplate(undefined);
     setImageAnalysis("");
+    setVideoThumbnailUrl("");
+    setOriginalVideoFile(null);
+    setVideoAspectRatio(null);
 
     console.log('🔄 Setting file immediately for preview...');
 
@@ -246,6 +257,42 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       console.log('New formData after setting file:', { media: !!newData.media, mediaUrl: !!newData.mediaUrl });
       return newData;
     });
+
+    // Handle video files - generate thumbnail and detect aspect ratio
+    if (isVideoFile(file)) {
+      console.log('🎥 Video file detected, generating thumbnail and analyzing aspect ratio...');
+      try {
+        setIsGeneratingThumbnail(true);
+        
+        // Store the original video file
+        setOriginalVideoFile(file);
+        
+        // Get video aspect ratio
+        const aspectRatio = await getVideoAspectRatio(file);
+        setVideoAspectRatio(aspectRatio);
+        console.log('📐 Video aspect ratio:', aspectRatio);
+        
+        // Log video format detection
+        if (is16x9Video(aspectRatio)) {
+          console.log('📺 16:9 video detected - will open template editor on Generate Post');
+        } else if (is9x16Video(aspectRatio)) {
+          console.log('📱 9:16 vertical video detected - will open template editor on Generate Post');
+        } else {
+          console.log('📽️ Other aspect ratio video detected:', aspectRatio);
+        }
+        
+        // Generate thumbnail from video
+        const thumbnailUrl = await createVideoThumbnailUrl(file, 1);
+        setVideoThumbnailUrl(thumbnailUrl);
+        console.log('🖼️ Video thumbnail generated successfully');
+        
+      } catch (error) {
+        console.error('❌ Error processing video:', error);
+        // Continue with video upload even if thumbnail generation fails
+      } finally {
+        setIsGeneratingThumbnail(false);
+      }
+    }
 
     // Force a re-render to ensure file preview shows
     console.log('🔄 File should be visible now with preview');
@@ -294,12 +341,16 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           media: !!formData.media,
           mediaUrl: !!formData.mediaUrl,
           templatedImageUrl: !!templatedImageUrl,
+          videoThumbnailUrl: !!videoThumbnailUrl,
+          isVideo: isVideoFile(file),
           showPreview: !!(formData.media || formData.mediaUrl)
         });
         
         // Note: Template editor will open when user clicks Generate Post
         if (file.type.startsWith("image/")) {
           console.log('🖼️ Image uploaded successfully, template editor will open on Generate Post');
+        } else if (isVideoFile(file)) {
+          console.log('🎥 Video uploaded successfully, thumbnail generated, template editor will open on Generate Post');
         }
       }, 100);
     }
@@ -504,6 +555,46 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           return; // Exit here to wait for template editor completion
         } else {
           console.error('❌ Blank template not found, proceeding with normal flow');
+        }
+      }
+      
+      // NEW: For uploaded videos, open template editor with video thumbnail
+      if (selectedPostType === 'video' && (selectedVideoMode === 'upload' || selectedVideoMode === 'uploadShorts') && originalVideoFile && videoThumbnailUrl) {
+        console.log('🎥 Opening template editor for video thumbnail with blank template...');
+        
+        // Get blank template
+        const blankTemplate = getTemplateById('blank-template');
+        if (blankTemplate) {
+          console.log('📋 Setting blank template and opening editor for video thumbnail');
+          setSelectedTemplate(blankTemplate);
+          setShowTemplateEditor(true);
+          
+          // Store post generation data for later use, including original video file
+          const currentCampaignInfo = campaignInfo || {
+            name: "Default Campaign",
+            industry: "General",
+            brand_tone: "professional",
+            target_audience: "General",
+            description: "General content generation without specific campaign context",
+          };
+          
+          const postGenerationData = {
+            prompt: formData.prompt,
+            originalImageUrl: videoThumbnailUrl, // Use thumbnail for template editor
+            originalVideoUrl: formData.mediaUrl, // Store original video URL
+            originalVideoFile: originalVideoFile, // Store original video file
+            videoAspectRatio: videoAspectRatio,
+            isVideoContent: true, // Flag to indicate this is video content
+            campaignInfo: currentCampaignInfo,
+            selectedPlatforms: formData.selectedPlatforms,
+            imageAnalysis: `Video thumbnail generated from uploaded ${is16x9Video(videoAspectRatio || 0) ? '16:9' : is9x16Video(videoAspectRatio || 0) ? '9:16' : 'aspect ratio'} video`,
+            formData
+          };
+          
+          setPendingPostGeneration(postGenerationData);
+          return; // Exit here to wait for template editor completion
+        } else {
+          console.error('❌ Blank template not found for video, proceeding with normal flow');
         }
       }
       
@@ -752,19 +843,62 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     if (pendingPostGeneration) {
       console.log('🚀 Continuing post generation with templated image...');
       
-      const { prompt, campaignInfo: currentCampaignInfo, selectedPlatforms, imageAnalysis, formData: originalFormData } = pendingPostGeneration;
+      const { 
+        prompt, 
+        campaignInfo: currentCampaignInfo, 
+        selectedPlatforms, 
+        imageAnalysis, 
+        formData: originalFormData,
+        isVideoContent,
+        originalVideoUrl,
+        originalVideoFile,
+        videoAspectRatio
+      } = pendingPostGeneration;
       
-      // Prepare final form data with the templated image
-      const currentFormData = {
-        ...originalFormData,
-        mediaUrl: imageUrl // Use the templated image URL
-      };
+      // Prepare final form data
+      let currentFormData;
+      let mediaAssets;
       
-      const mediaAssets = [{ url: imageUrl, type: "image" }];
+      if (isVideoContent && originalVideoUrl) {
+        console.log('📹 Processing video content with edited thumbnail...');
+        // For video content, keep the original video URL but use the edited thumbnail
+        currentFormData = {
+          ...originalFormData,
+          mediaUrl: originalVideoUrl, // Keep original video URL for publishing
+          thumbnailUrl: imageUrl, // Store edited thumbnail separately
+          videoFile: originalVideoFile, // Keep original video file
+          videoAspectRatio: videoAspectRatio
+        };
+        
+        // Create media assets with both video and thumbnail
+        mediaAssets = [
+          { 
+            url: originalVideoUrl, 
+            type: "video",
+            thumbnailUrl: imageUrl, // Edited thumbnail
+            aspectRatio: videoAspectRatio
+          }
+        ];
+        
+        console.log('📋 Video media assets prepared:', {
+          videoUrl: originalVideoUrl?.substring(0, 50) + '...',
+          thumbnailUrl: imageUrl?.substring(0, 50) + '...',
+          aspectRatio: videoAspectRatio
+        });
+      } else {
+        console.log('🖼️ Processing image content with templated image...');
+        // For image content, use the templated image
+        currentFormData = {
+          ...originalFormData,
+          mediaUrl: imageUrl // Use the templated image URL
+        };
+        
+        mediaAssets = [{ url: imageUrl, type: "image" }];
+      }
       
-      console.log('📋 Preparing final post data with templated image:', {
+      console.log('📋 Preparing final post data:', {
         hasMediaAssets: mediaAssets.length > 0,
-        templatedImageUrl: imageUrl?.substring(0, 50) + '...',
+        mediaType: isVideoContent ? 'video' : 'image',
         prompt: prompt.substring(0, 50) + '...'
       });
       
@@ -787,11 +921,18 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         goals: currentCampaignInfo.goals,
         keywords: currentCampaignInfo.keywords,
         hashtags: currentCampaignInfo.hashtags,
+        // Add video-specific metadata if applicable
+        ...(isVideoContent && {
+          isVideoContent: true,
+          videoAspectRatio: videoAspectRatio,
+          originalVideoFile: originalVideoFile
+        })
       };
       
-      console.log('📤 Final post data with templated image:', {
+      console.log('📤 Final post data:', {
         hasMediaAssets: mediaAssets.length > 0,
         mediaAssetsCount: mediaAssets.length,
+        isVideo: isVideoContent,
         prompt: postData.prompt?.substring(0, 50) + '...'
       });
       
@@ -801,9 +942,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       
       // Proceed with post generation
       if (onNext && typeof onNext === "function") {
-        console.log('✅ Final step: Calling onNext with final templated post data...');
+        console.log('✅ Final step: Calling onNext with final post data...');
         onNext(postData);
-        console.log('✅ Combined generation with template editing completed!');
+        console.log('✅ Template editing completed!');
       } else {
         console.log('⚠️ No onNext function provided, showing preview instead');
         // Fallback: simulate generation for preview
@@ -835,25 +976,60 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           description: "General content generation without specific campaign context",
         };
         
-        const postData = {
-          ...formData,
-          mediaUrl: imageUrl, // Use the templated image URL
-          campaignName: currentCampaignInfo.name,
-          campaignInfo: currentCampaignInfo,
-          mediaAssets: [{ url: imageUrl, type: "image" }],
-          industry: currentCampaignInfo.industry,
-          tone: currentCampaignInfo.brand_tone || currentCampaignInfo.brandTone,
-          targetAudience: currentCampaignInfo.target_audience || currentCampaignInfo.targetAudience,
-          description: currentCampaignInfo.description,
-          imageAnalysis: imageAnalysis,
-          website: currentCampaignInfo.website,
-          objective: currentCampaignInfo.objective,
-          goals: currentCampaignInfo.goals,
-          keywords: currentCampaignInfo.keywords,
-          hashtags: currentCampaignInfo.hashtags,
-        };
+        // Check if this is video content (based on current video state)
+        const isCurrentVideoContent = originalVideoFile && videoThumbnailUrl;
         
-        console.log('🚀 Navigating to post generation with templated image');
+        let postData;
+        if (isCurrentVideoContent) {
+          // For video content, use original video URL but edited thumbnail
+          postData = {
+            ...formData,
+            mediaUrl: formData.mediaUrl, // Keep original video URL
+            thumbnailUrl: imageUrl, // Use edited thumbnail
+            videoFile: originalVideoFile,
+            videoAspectRatio: videoAspectRatio,
+            isVideoContent: true,
+            campaignName: currentCampaignInfo.name,
+            campaignInfo: currentCampaignInfo,
+            mediaAssets: [{ 
+              url: formData.mediaUrl, 
+              type: "video",
+              thumbnailUrl: imageUrl,
+              aspectRatio: videoAspectRatio
+            }],
+            industry: currentCampaignInfo.industry,
+            tone: currentCampaignInfo.brand_tone || currentCampaignInfo.brandTone,
+            targetAudience: currentCampaignInfo.target_audience || currentCampaignInfo.targetAudience,
+            description: currentCampaignInfo.description,
+            imageAnalysis: imageAnalysis,
+            website: currentCampaignInfo.website,
+            objective: currentCampaignInfo.objective,
+            goals: currentCampaignInfo.goals,
+            keywords: currentCampaignInfo.keywords,
+            hashtags: currentCampaignInfo.hashtags,
+          };
+        } else {
+          // For image content, use templated image
+          postData = {
+            ...formData,
+            mediaUrl: imageUrl, // Use the templated image URL
+            campaignName: currentCampaignInfo.name,
+            campaignInfo: currentCampaignInfo,
+            mediaAssets: [{ url: imageUrl, type: "image" }],
+            industry: currentCampaignInfo.industry,
+            tone: currentCampaignInfo.brand_tone || currentCampaignInfo.brandTone,
+            targetAudience: currentCampaignInfo.target_audience || currentCampaignInfo.targetAudience,
+            description: currentCampaignInfo.description,
+            imageAnalysis: imageAnalysis,
+            website: currentCampaignInfo.website,
+            objective: currentCampaignInfo.objective,
+            goals: currentCampaignInfo.goals,
+            keywords: currentCampaignInfo.keywords,
+            hashtags: currentCampaignInfo.hashtags,
+          };
+        }
+        
+        console.log('🚀 Navigating to post generation with templated content');
         
         // Navigate to the generation screen
         if (onNext && typeof onNext === "function") {
@@ -906,6 +1082,12 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [generateImageWithPost, setGenerateImageWithPost] = useState(true );
   const [isGeneratingBoth, setIsGeneratingBoth] = useState(false);
+  
+  // Video-related state
+  const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
+  const [videoThumbnailUrl, setVideoThumbnailUrl] = useState<string>("");
+  const [originalVideoFile, setOriginalVideoFile] = useState<File | null>(null);
+  const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(null);
 
   const handleAspectRatioChange = (newAspectRatio: string) => {
     setAspectRatio(newAspectRatio);
@@ -1867,6 +2049,20 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                             <span className="text-amber-300">Uploading...</span>
                           </div>
                         )}
+                        {isGeneratingThumbnail && (
+                          <div className="flex items-center justify-center p-2 bg-purple-500/10 border border-purple-400/20 rounded text-xs">
+                            <Loader className="w-3 h-3 animate-spin mr-2 text-purple-400" />
+                            <span className="text-purple-300">Generating video thumbnail...</span>
+                          </div>
+                        )}
+                        {videoThumbnailUrl && videoAspectRatio && (
+                          <div className="flex items-center justify-center p-2 bg-green-500/10 border border-green-400/20 rounded text-xs">
+                            <CheckCircle className="w-3 h-3 mr-2 text-green-400" />
+                            <span className="text-green-300">
+                              {is16x9Video(videoAspectRatio) ? '16:9 video' : is9x16Video(videoAspectRatio) ? '9:16 video' : 'Video'} thumbnail ready - will open template editor on Generate Post
+                            </span>
+                          </div>
+                        )}
 
                         {/* AI Analysis Button */}
                         {(formData.media || formData.mediaUrl) &&
@@ -2107,9 +2303,13 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       )}
 
       {/* Template Editor Modal */}
-      {showTemplateEditor && selectedTemplate && (formData.media || formData.mediaUrl) && (
+      {showTemplateEditor && selectedTemplate && (formData.media || formData.mediaUrl || videoThumbnailUrl) && (
         <ImageTemplateEditor
-          imageUrl={templatedImageUrl || (formData.media ? URL.createObjectURL(formData.media) : formData.mediaUrl!)}
+          imageUrl={
+            templatedImageUrl || 
+            videoThumbnailUrl || 
+            (formData.media ? URL.createObjectURL(formData.media) : formData.mediaUrl!)
+          }
           selectedTemplate={selectedTemplate}
           onSave={handleTemplateEditorSave}
           onCancel={handleTemplateEditorCancel}
