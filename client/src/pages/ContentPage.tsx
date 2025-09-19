@@ -80,6 +80,20 @@ export const ContentPage: React.FC = () => {
     // Prevent background scrolling when modal is open
     document.body.classList.add('modal-open');
     document.documentElement.classList.add('modal-open');
+    document.documentElement.scrollTop = 0; // Scroll to top when modal opens
+    document.body.scrollTop = 0;
+    document.body.scrollTop = 0;  
+    let elemnt:any=document.querySelector(".preview");
+     
+     // Adjust timeout as needed
+    if(elemnt){
+     // elemnt.scrollIntoView({ behavior: 'smooth', block: 'start' });
+   
+      elemnt.style.display="none";
+      setTimeout(() => {
+      elemnt.style.display="block";
+    }, 100);
+    }
   };
 
   // Handle individual platform regeneration
@@ -242,7 +256,7 @@ export const ContentPage: React.FC = () => {
           {/* Publish Modal */}
           {showPublishModal && state.generatedPosts && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center z-50">
-              <div className="bg-white w-full h-screen overflow-y-auto modal-content">
+              <div className="bg-white w-full overflow-y-auto modal-content">
                 <PublishPosts
                   posts={state.generatedPosts}
                   onBack={() => {

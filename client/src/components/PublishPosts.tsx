@@ -4,6 +4,7 @@ import { postToAllPlatforms } from '../lib/socialPoster';
 import { SocialMediaManager } from './SocialMediaManager';
 import { socialMediaAPI } from '../lib/socialMediaApi';
 import { oauthManagerClient } from '../lib/oauthManagerClient';
+import Icon from './Icon';
 
 interface PublishProps {
   posts: GeneratedPost[];
@@ -245,7 +246,7 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
   };
 
   return (
-    <div className="h-screen theme-bg-light">
+    <div className="theme-bg-light">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
@@ -272,13 +273,11 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
         {posts.some(post => !connectedPlatforms.includes(post.platform)) && (
           <div className="mb-8 p-4 theme-bg-quaternary rounded-xl border border-purple-200">
             <div className="flex items-start gap-3">
-              <div className="w-5 h-5 text-purple-600 mt-0.5">
-                <svg fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
+              <div className="w-5 h-5">
+               <Icon name="connect-accounts"  size={60} className="inline mr-1" />
               </div>
               <div>
-                <h3 className="font-semibold text-white mb-1">Connect Your Accounts</h3>
+                <h3 className="font-semibold theme-text-secondary mb-1">Connect Your Accounts</h3>
                 <p className="text-sm theme-text-secondary leading-relaxed">
                   You need to connect your social media accounts before publishing. Click the
                   Connect buttons below.
@@ -399,12 +398,13 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
                           handleConnect(post.platform); // Reconnect
                         }}
                         disabled={isConnecting}
-                        className={`rounded-full py-2 px-4 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm theme-text-light ${
+                        className={` flex-inline rounded-full py-2 px-4 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm  ${
                           isConnected
-                            ? 'theme-bg-success'
-                            : 'theme-bg-danger'
+                            ? 'theme-bg-success theme-text-light'
+                            : 'theme-bg-quaternary theme-text-secondary hover:theme-bg-tertiary'
                         }`}
                       >
+                        {!isConnected ? <Icon name="connect-accounts"  size={16} className="inline mr-1" />:""}
                         {isConnecting ? (
                           <div className="flex items-center gap-2">
                             <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>

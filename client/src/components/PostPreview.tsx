@@ -159,10 +159,13 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
     if (!post.mediaUrl) return null;
     
     if (isVideoUrl(post.mediaUrl)) {
+      // For videos, use custom thumbnail if available
+      const videoThumbnail = (post as any).thumbnailUrl;
       return (
         <div className={containerClass}>
           <video
             src={post.mediaUrl}
+            poster={videoThumbnail} // Use custom thumbnail as poster
             controls
             className={className}
             onError={(e) => {
@@ -460,6 +463,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                 isVideoUrl(post.mediaUrl) ? (
                   <video
                     src={post.mediaUrl}
+                    poster={(post as any).thumbnailUrl} // Use custom thumbnail for TikTok videos
                     controls
                     className="absolute inset-0 w-full h-full object-cover"
                     onError={(e) => {
@@ -505,6 +509,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                 isVideoUrl(post.mediaUrl) ? (
                   <video
                     src={post.mediaUrl}
+                    poster={(post as any).thumbnailUrl} // Use custom thumbnail for YouTube videos
                     controls
                     className="object-cover w-full h-full"
                     onError={(e) => {
@@ -525,7 +530,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                     }}
                   />
                 )
-              ) 
+              )
               : (
                 // <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
                 //   <span className="text-white text-2xl">▶</span>
@@ -591,7 +596,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
 
 
   return (
-    <div className="w-full mx-auto  rounded-2xl shadow-lg p-0">
+    <div className="preview w-full mx-auto  rounded-2xl shadow-lg p-0">
       <h2 className="text-3xl font-semibold theme-text-primary mb-1">
            Your AI-Generated Posts
          </h2>
