@@ -65,9 +65,15 @@ export const AuthOAuthCallback: React.FC<AuthOAuthCallbackProps> = ({
             result: result
           }, '*');
           
-          // Close the popup after a brief delay
+          // Close the popup after a brief delay with error handling
           setTimeout(() => {
-            window.close();
+            try {
+              window.close();
+            } catch (error) {
+              console.warn('Could not close popup window:', error);
+              // Fallback: show user message to close manually
+              setMessage('Authentication successful! You can close this window.');
+            }
           }, 1000);
         } else {
           // Fallback: store token and call success handler if not in popup
@@ -93,9 +99,15 @@ export const AuthOAuthCallback: React.FC<AuthOAuthCallbackProps> = ({
             error: errorMessage
           }, '*');
           
-          // Close the popup after a brief delay
+          // Close the popup after a brief delay with error handling
           setTimeout(() => {
-            window.close();
+            try {
+              window.close();
+            } catch (error) {
+              console.warn('Could not close popup window:', error);
+              // Fallback: show user message to close manually
+              setMessage('Authentication failed. You can close this window.');
+            }
           }, 2000);
         } else {
           // Fallback: redirect to login page after error

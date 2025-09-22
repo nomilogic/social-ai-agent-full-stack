@@ -1349,19 +1349,22 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
   return (
     <div className="w-full mx-auto  rounded-xl border border-white/10 p-2 m0 ">
-      {/* Header */}
-      <div className="text-left mb-4">
-        {/* <div className="w-12 h-12 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl flex items-center justify-center mx-auto ">
-          <Wand2 className="w-6 h-6 text-blue-400" />
-        </div> */}
-        <h2 className="text-3xl font-semibold theme-text-primary mb-1">
-          Create auto‑optimize social posts with AI
-        </h2>
-        <p className="text-sm theme-text-primary">
-          Generate on‑brand content, auto‑design visuals, and
-          publish everywhere in one click. Meet your new 24/7
-          content teammate.
-        </p>
+      {/* Hide the main form when template editor is open */}
+      {!showTemplateEditor && (
+        <>
+          {/* Header */}
+          <div className="text-left mb-4">
+            {/* <div className="w-12 h-12 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl flex items-center justify-center mx-auto ">
+              <Wand2 className="w-6 h-6 text-blue-400" />
+            </div> */}
+            <h2 className="text-3xl font-semibold theme-text-primary mb-1">
+              Create auto‑optimize social posts with AI
+            </h2>
+            <p className="text-sm theme-text-primary">
+              Generate on‑brand content, auto‑design visuals, and
+              publish everywhere in one click. Meet your new 24/7
+              content teammate.
+            </p>
 
         {/* Campaign Context Indicator */}
         {/* {loadingCampaign && (
@@ -2018,30 +2021,61 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                             </div>
                           </div>
                         ) : (
-                          /* Video preview */
+                          /* Video preview - Show thumbnail if available, otherwise video with controls */
                           <div className="relative">
-                            <video
-                              src={
-                                formData.mediaUrl
-                                  ?
-                                  formData.mediaUrl : formData.media ? URL.createObjectURL(formData.media) : undefined
-                              }
-                              className="max-h-40 mx-auto  shadow-sm"
-                              controls
-                              //preload="metadata"
-                              onError={(e) => {
-                                console.error('Video failed to load:', formData.mediaUrl || formData.media?.name);
-                              }}
-                              onLoadStart={() => {
-                                console.log('Video loading started:', formData.mediaUrl || formData.media?.name);
-                              }}
-                            >
-                              Your browser does not support the video tag.
-                            </video>
-                            <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs flex items-center">
-                              <Icon name="video-post" size={12} className="mr-1" />
-                              Video
-                            </div>
+                            {videoThumbnailUrl ? (
+                              /* Show thumbnail with play overlay */
+                              <>
+                                <img
+                                  src={videoThumbnailUrl}
+                                  alt="Video thumbnail"
+                                  className="max-h-40 mx-auto shadow-sm rounded"
+                                  onError={(e) => {
+                                    console.error('Video thumbnail failed to load:', videoThumbnailUrl);
+                                    // Hide thumbnail on error - will show video fallback
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                                {/* Play button overlay */}
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                  <div className="w-16 h-16 bg-black bg-opacity-60 rounded-full flex items-center justify-center backdrop-blur-sm">
+                                    <span className="text-white text-3xl ml-1">▶</span>
+                                  </div>
+                                </div>
+                                {/* Video type indicator */}
+                                <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs flex items-center">
+                                  <Icon name="video-post" size={12} className="mr-1" />
+                                  {videoAspectRatio && is9x16Video(videoAspectRatio) ? 'Vertical Video' : 
+                                   videoAspectRatio && is16x9Video(videoAspectRatio) ? 'Horizontal Video' : 'Video'}
+                                </div>
+                              </>
+                            ) : (
+                              /* Fallback: Show video with controls if no thumbnail */
+                              <>
+                                <video
+                                  src={
+                                    formData.mediaUrl
+                                      ?
+                                      formData.mediaUrl : formData.media ? URL.createObjectURL(formData.media) : undefined
+                                  }
+                                  className="max-h-40 mx-auto shadow-sm rounded"
+                                  controls
+                                  preload="metadata"
+                                  onError={(e) => {
+                                    console.error('Video failed to load:', formData.mediaUrl || formData.media?.name);
+                                  }}
+                                  onLoadStart={() => {
+                                    console.log('Video loading started:', formData.mediaUrl || formData.media?.name);
+                                  }}
+                                >
+                                  Your browser does not support the video tag.
+                                </video>
+                                <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs flex items-center">
+                                  <Icon name="video-post" size={12} className="mr-1" />
+                                  Video (No Thumbnail)
+                                </div>
+                              </>
+                            )}
                           </div>
                         )}
                       </div>
@@ -2353,8 +2387,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
             </div>
           </button>
         </div>
-      </form>
-
+          </form>
+        </>
+      )}
 
       {/* Template Selector Modal */}
       {showTemplateSelector && (

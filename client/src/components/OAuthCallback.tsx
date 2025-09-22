@@ -64,7 +64,16 @@ export const OAuthCallback: React.FC = () => {
             },
             "*",
           );
-         // window.close();
+          // Add small delay to ensure message is sent before closing
+          setTimeout(() => {
+            try {
+              window.close();
+            } catch (error) {
+              console.warn('Could not close popup window:', error);
+              // Fallback: show user message to close manually
+              setMessage('Authentication successful! You can close this window.');
+            }
+          }, 100);
         } else {
           // Redirect to settings page after successful connection
           setTimeout(() => {
@@ -90,7 +99,16 @@ export const OAuthCallback: React.FC = () => {
             },
             "*",
           );
-          window.close();
+          // Add small delay to ensure message is sent before closing
+          setTimeout(() => {
+            try {
+              window.close();
+            } catch (error) {
+              console.warn('Could not close popup window:', error);
+              // Fallback: show user message to close manually
+              setMessage('Authentication failed. You can close this window.');
+            }
+          }, 100);
         } else {
           // Redirect to settings page after error
           setTimeout(() => {

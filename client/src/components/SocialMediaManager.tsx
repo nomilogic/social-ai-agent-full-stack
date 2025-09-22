@@ -181,10 +181,22 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
           event.data.platform === platform
         ) {
           console.log("OAuth success for", platform);
+          // Close popup from parent window for better browser compatibility
+          try {
+            authWindow?.close();
+          } catch (error) {
+            console.warn('Could not close popup from parent:', error);
+          }
           setTimeout(checkPlatformStatuses, 1000);
           window.removeEventListener("message", messageListener);
           onCredentialsUpdate?.();
         } else if (event.data.type === "oauth_error") {
+          // Close popup from parent window for better browser compatibility
+          try {
+            authWindow?.close();
+          } catch (error) {
+            console.warn('Could not close popup from parent:', error);
+          }
           setPlatformStatuses((prev) =>
             prev.map((status) =>
               status.platform === platform
