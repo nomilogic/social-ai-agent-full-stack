@@ -407,7 +407,7 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
                   {/* Platform Selection Checkbox and Status */}
                   <div className="flex items-center gap-3">
                     {/* Connection Status Icon */}
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                    {/* <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
                       isConnected ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
                     }`}>
                       {isConnected ? (
@@ -419,7 +419,7 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8 9.414l-1.707 1.707a1 1 0 101.414 1.414L9 11.828l1.293 1.293a1 1 0 001.414-1.414L10.414 10.414l1.293-1.293a1 1 0 00-1.414-1.414L9 9.414 7.707 8.121a1 1 0 00-1.414 1.414L7.586 10.414 6.293 11.707a1 1 0 101.414 1.414L9 11.828l1.293 1.293z" clipRule="evenodd" />
                         </svg>
                       )}
-                    </div>
+                    </div> */}
 
                     {/* Platform Selection and Connect Controls */}
                     <div className="flex items-center gap-2">
@@ -427,7 +427,7 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
                       {isConnected && (
                         <label className="flex items-center cursor-pointer" htmlFor={`platform-${post.platform}`}>
                           <div className="relative">
-                            <input
+                            <input className="text-green-500 focus:ring-green-400"
                               type="checkbox"
                               checked={selectedPlatforms.includes(post.platform)}
                               onChange={e => {
@@ -452,9 +452,9 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
                               )}
                             </div>
                           </div>
-                          <span className="ml-2 text-sm text-gray-600">
+                          {/* <span className="ml-2 text-sm text-gray-600">
                             {selectedPlatforms.includes(post.platform) ? 'Selected' : 'Select'}
-                          </span>
+                          </span> */}
                         </label>
                       )}
                       
