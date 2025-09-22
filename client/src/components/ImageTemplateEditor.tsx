@@ -1012,11 +1012,11 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-white z-50 flex flex-col md:flex-row-reverse">
+    <div className="fixed inset-0 bg-white z-50 flex flex-col-reverse md:flex-row">
       {/* Tools Panel - Top Row on Mobile, Left Column on Desktop - Fixed Height/Width with Scroll */}
       <div className="w-full md:w-80 md:min-w-80 md:max-w-80 h-80 md:h-full bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-col">
         {/* Tools Header - Fixed */}
-        <div className="flex-shrink-0 p-3 md:p-4 border-b border-gray-200 bg-white">
+        {/* <div className="flex-shrink-0 p-3 md:p-4 border-b border-gray-200 bg-white">
           <div className="flex items-center justify-between">
             <h3 className="text-base md:text-lg font-semibold text-gray-900">Template Editor</h3>
             <button
@@ -1026,7 +1026,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
               ×
             </button>
           </div>
-        </div>
+        </div> */}
         
         {/* Tools Content - Scrollable */}
         <div className="flex-1 overflow-y-auto p-3 md:p-4 min-h-0">
@@ -1479,32 +1479,32 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
         
         {/* Tools Actions - Fixed at bottom of tools panel */}
         <div className="flex-shrink-0 p-3 md:p-4 border-t border-gray-200 bg-white">
-          <div className="flex md:flex-col space-x-2 md:space-x-0 md:space-y-2.5">
+          <div className="flex flex-col justify-center space-x-2 md:space-x-0 md:space-y-2.5">
             <button
               onClick={exportImage}
               disabled={isSaving}
-              className="flex-1 md:w-full bg-green-600 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-1.5 md:space-x-2 font-medium text-xs md:text-sm"
+              className="btn-success w-full py-4 px-8"
             >
               {isSaving ? (
                 <>
                   <Loader className="w-3 h-3 md:w-4 md:h-4 animate-spin" />
-                  <span className="hidden sm:inline">Saving Template...</span>
+                  <span className="hidden sm:inline">Saving Image...</span>
                   <span className="sm:hidden">Saving...</span>
                 </>
               ) : (
                 <>
-                  <Download className="w-3 h-3 md:w-4 md:h-4" />
-                  <span className="hidden sm:inline">Save & Apply Template</span>
-                  <span className="sm:hidden">Save</span>
+                  {/* <Download className="w-3 h-3 md:w-4 md:h-4" /> */}
+                  <span className="sm:inline">Continue with the Image</span>
+                  {/* <span className="sm:hidden">Save</span> */}
                 </>
               )}
             </button>
-            
+             or 
             <button
               onClick={onCancel}
-              className="flex-1 md:w-full bg-gray-100 text-gray-700 px-3 md:px-4 py-2 md:py-2.5 rounded-lg hover:bg-gray-200 transition-colors font-medium text-xs md:text-sm"
+              className="btn-primary w-full py-4 px-8"
             >
-              Cancel
+              Back to Upload Image
             </button>
           </div>
         </div>

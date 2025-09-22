@@ -733,7 +733,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
             mediaUrl: finalMediaUrl,
             imageUrl: finalMediaUrl,
             videoUrl: isVideoContent ? finalMediaUrl : undefined, // Add explicit videoUrl for video content
-            thumbnailUrl: videoThumbnailUrl || (currentFormData as any).thumbnailUrl, // Use videoThumbnailUrl for video preview
+            thumbnailUrl: templatedImageUrl || (currentFormData as any).thumbnailUrl, // Use templated image as poster for videos
             isVideoContent: isVideoContent,
             videoAspectRatio: videoAspectRatio,
             engagement: Math.floor(Math.random() * 1000),
@@ -1543,7 +1543,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                   type="button"
                   onClick={() => {
                     setSelectedPostType('video');
-                    setShowVideoMenu((prev) => !prev);
+                    setShowVideoMenu(!showVideoMenu);
                   }}
                   className={`relative border transition-all duration-200 text-center p-0  ${selectedPostType === 'video'
                       ? 'theme-bg-trinary theme-text-light shadow-lg'
@@ -1566,7 +1566,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                       </h3>
                     </div>
                   </div>
-                  <div className="absolute w-full left-0 mt-3 z-10">
+                  <div className={`absolute w-full left-0 mt-3 z-10 ${showVideoMenu ? '' : 'hidden'}`}>
                     <div className={`grid grid-cols-1 gap-0 ${showVideoMenu ? '' : 'hidden'}`}>
                       <button
                         type="button"
@@ -1779,6 +1779,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                       Generate Image with AI
                     </h4>
 
+
                     {/* Image Generation Form */}
                     <div className={`space-y-4 ${generateImageWithPost ? 'hidden' : 'hidden'}`}>
                       {/* Combined Generation Checkbox */}
@@ -1963,12 +1964,11 @@ export const ContentInput: React.FC<ContentInputProps> = ({
               <>
                 <label className="block text-sm font-medium theme-text-primary mb-2 flex items-center">
                   Upload Video
-                  <span className="ml-2 text-xs theme-text-secondary">
-                    (Optional)
-                  </span>
+                 
                 </label>
+               <div className="mb-4 theme-bg-primary py-10">
                 <div
-                  className={` border-2 border-dashed  p-6 text-center transition-all duration-200 ${dragActive
+                  className={` border-2 border-dashed p-0 text-center transition-all duration-200 ${dragActive
                       ? "border-blue-400/50 bg-blue-500/10"
                       : "border-white/20 hover:border-white/30"
                     }`}
@@ -1984,6 +1984,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                     onChange={handleFileChange}
                     className="hidden"
                   />
+                  </div>
 
                   {/* Debug Info - Enhanced debugging */}
                   {/* <div className="mb-2 p-2 bg-yellow-500/10 border border-yellow-400/20 rounded text-xs text-yellow-200 space-y-1">
@@ -2021,61 +2022,30 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                             </div>
                           </div>
                         ) : (
-                          /* Video preview - Show thumbnail if available, otherwise video with controls */
+                          /* Video preview - Show video player with controls */
                           <div className="relative">
-                            {videoThumbnailUrl ? (
-                              /* Show thumbnail with play overlay */
-                              <>
-                                <img
-                                  src={videoThumbnailUrl}
-                                  alt="Video thumbnail"
-                                  className="max-h-40 mx-auto shadow-sm rounded"
-                                  onError={(e) => {
-                                    console.error('Video thumbnail failed to load:', videoThumbnailUrl);
-                                    // Hide thumbnail on error - will show video fallback
-                                    e.currentTarget.style.display = 'none';
-                                  }}
-                                />
-                                {/* Play button overlay */}
-                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                  <div className="w-16 h-16 bg-black bg-opacity-60 rounded-full flex items-center justify-center backdrop-blur-sm">
-                                    <span className="text-white text-3xl ml-1">▶</span>
-                                  </div>
-                                </div>
-                                {/* Video type indicator */}
-                                <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs flex items-center">
-                                  <Icon name="video-post" size={12} className="mr-1" />
-                                  {videoAspectRatio && is9x16Video(videoAspectRatio) ? 'Vertical Video' : 
-                                   videoAspectRatio && is16x9Video(videoAspectRatio) ? 'Horizontal Video' : 'Video'}
-                                </div>
-                              </>
-                            ) : (
-                              /* Fallback: Show video with controls if no thumbnail */
-                              <>
-                                <video
-                                  src={
-                                    formData.mediaUrl
-                                      ?
-                                      formData.mediaUrl : formData.media ? URL.createObjectURL(formData.media) : undefined
-                                  }
-                                  className="max-h-40 mx-auto shadow-sm rounded"
-                                  controls
-                                  preload="metadata"
-                                  onError={(e) => {
-                                    console.error('Video failed to load:', formData.mediaUrl || formData.media?.name);
-                                  }}
-                                  onLoadStart={() => {
-                                    console.log('Video loading started:', formData.mediaUrl || formData.media?.name);
-                                  }}
-                                >
-                                  Your browser does not support the video tag.
-                                </video>
-                                <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs flex items-center">
-                                  <Icon name="video-post" size={12} className="mr-1" />
-                                  Video (No Thumbnail)
-                                </div>
-                              </>
-                            )}
+                            <video
+                              src={
+                                formData.mediaUrl
+                                  ? formData.mediaUrl : formData.media ? URL.createObjectURL(formData.media) : undefined
+                              }
+                              className="max-h-40 mx-auto shadow-sm rounded"
+                              controls
+                              preload="metadata"
+                              onError={(e) => {
+                                console.error('Video failed to load:', formData.mediaUrl || formData.media?.name);
+                              }}
+                              onLoadStart={() => {
+                                console.log('Video loading started:', formData.mediaUrl || formData.media?.name);
+                              }}
+                            >
+                              Your browser does not support the video tag.
+                            </video>
+                            <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs flex items-center">
+                              <Icon name="video-post" size={12} className="mr-1" />
+                              {videoAspectRatio && is9x16Video(videoAspectRatio) ? 'Vertical Video' : 
+                               videoAspectRatio && is16x9Video(videoAspectRatio) ? 'Horizontal Video' : 'Video'}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -2244,28 +2214,27 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <Upload className="w-8 h-8 theme-text-secondary mx-auto" />
-                      <div>
-                        <p className="font-medium theme-text-primary text-sm">
-                          Drop files here
-                        </p>
-                        <p className="theme-text-secondary text-xs mt-1">
-                          or click to browse
-                        </p>
-                      </div>
+                     
                       <div className="flex gap-2 justify-center">
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="bg-blue-500/80 text-white px-4 py-2 rounded text-xs hover:bg-blue-600/80 transition-colors duration-200 flex items-center space-x-1"
+                          className="bg-transparent"
                         >
-                          <Upload className="w-3 h-3" />
-                          <span>Choose Files</span>
+                          <div className="">
+                              <Icon name="upload" size={44} />
+                            <div>
+                              <p className="font-medium theme-text-primary text-sm mb-1">
+                                Click to browse video
+                              </p>
+                              <p className="theme-text-secondary text-xs">
+
+                              </p>
+                            </div>
+                          </div>
                         </button>
                       </div>
-                      <p className="text-xs theme-text-secondary">
-                        Images, videos up to 50MB
-                      </p>
+                     
                     </div>
                   )}
                 </div>
@@ -2317,6 +2286,38 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                 Be specific about your message and call-to-action
               </p>
             </div>
+
+            {/* Aspect Ratio Selection - Only show for text-to-image mode */}
+            {selectedPostType === 'image' && selectedImageMode === 'textToImage' && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium theme-text-primary mb-2">
+                  Image Dimensions
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { label: 'Square\n1:1', value: '1:1', icon: '⬜' },
+                    { label: 'Horizontal\n16:9', value: '16:9', icon: '▬' },
+                    { label: 'Vertical\n9:16', value: '9:16', icon: '▫' }
+                  ].map((ratio) => (
+                    <button
+                      key={ratio.value}
+                      type="button"
+                      onClick={() => handleAspectRatioChange(ratio.value)}
+                      className={`p-3 border transition-all duration-200 text-center ${
+                        aspectRatio === ratio.value
+                          ? 'theme-bg-trinary text-white shadow-lg'
+                          : 'theme-bg-primary theme-text-secondary hover:theme-bg-primary/50'
+                      }`}
+                    >
+                      <div className="text-lg mb-1">{ratio.icon}</div>
+                      <div className="text-xs font-medium whitespace-pre-line">
+                        {ratio.label}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
           </div>
           <div className="hidden">
