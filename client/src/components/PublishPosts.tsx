@@ -167,10 +167,22 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
           event.data.platform === platform
         ) {
           console.log("OAuth success for", platform);
+          // Close popup from parent window for better browser compatibility
+          try {
+            authWindow?.close();
+          } catch (error) {
+            console.warn('Could not close popup from parent:', error);
+          }
           setTimeout(checkConnectedPlatforms, 1000);
           window.removeEventListener("message", messageListener);
         } else if (event.data.type === "oauth_error") {
           console.error("OAuth error:", event.data.error);
+          // Close popup from parent window for better browser compatibility
+          try {
+            authWindow?.close();
+          } catch (error) {
+            console.warn('Could not close popup from parent:', error);
+          }
           setError(`Failed to connect ${platform}: ${event.data.error || "OAuth failed"}`);
           window.removeEventListener("message", messageListener);
         }
