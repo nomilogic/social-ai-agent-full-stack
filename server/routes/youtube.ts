@@ -3,6 +3,7 @@ import axios from 'axios'
 import { db } from '../db'
 import { oauth_tokens } from '../../shared/schema'
 import { eq, and } from 'drizzle-orm'
+import { downloadMediaFromStorage } from '../lib/supabaseStorage'
 
 const router = express.Router()
 
@@ -118,52 +119,83 @@ router.post('/post', async (req: Request, res: Response) => {
     })
   }
   
-  // Check if URL is accessible before proceeding
-  try {
-    const headResponse = await axios.head(fullVideoUrl, { timeout: 10000 });
-    const contentType = headResponse.headers['content-type'];
-    
-    // Validate content type is video
-    if (!contentType || !contentType.startsWith('video/')) {
-      return res.status(400).json({
-        error: 'Invalid video file type',
-        details: `Expected video file, but received content type: ${contentType || 'unknown'}`
-      })
-    }
-    
-    // Check file size (YouTube limit is 256GB, but we'll set a reasonable limit)
-    const contentLength = headResponse.headers['content-length'];
-    if (contentLength) {
-      const fileSizeGB = parseInt(contentLength) / (1024 * 1024 * 1024);
-      if (fileSizeGB > 15) { // 15GB limit for reasonable upload times
+  // Skip validation for Supabase URLs as they may not support HEAD requests
+  if (!fullVideoUrl.includes('supabase.co')) {
+    // Check if URL is accessible before proceeding (only for non-Supabase URLs)
+    try {
+      const headResponse = await axios.head(fullVideoUrl, { timeout: 10000 });
+      const contentType = headResponse.headers['content-type'];
+      
+      // Validate content type is video
+      if (contentType && !contentType.startsWith('video/') && !contentType.startsWith('application/octet-stream')) {
         return res.status(400).json({
-          error: 'Video file too large',
-          details: `Video file size (${fileSizeGB.toFixed(2)}GB) exceeds the 15GB limit for uploads`
+          error: 'Invalid video file type',
+          details: `Expected video file, but received content type: ${contentType}`
         })
       }
-    }
-  } catch (error: any) {
-    if (error.response?.status === 404) {
-      return res.status(400).json({
-        error: 'Video file not found',
-        details: 'The specified video URL could not be accessed or does not exist'
-      })
-    } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
-      return res.status(400).json({
-        error: 'Video URL not accessible',
-        details: 'Unable to connect to the video URL. Please check the URL and try again'
-      })
-    } else {
+      
+      // Check file size (YouTube limit is 256GB, but we'll set a reasonable limit)
+      const contentLength = headResponse.headers['content-length'];
+      if (contentLength) {
+        const fileSizeGB = parseInt(contentLength) / (1024 * 1024 * 1024);
+        const fileSizeMB = parseInt(contentLength) / (1024 * 1024);
+        
+        if (fileSizeGB > 15) { // 15GB limit for reasonable upload times
+          return res.status(400).json({
+            error: 'Video file too large',
+            details: `Video file size (${fileSizeGB.toFixed(2)}GB) exceeds the 15GB limit for uploads`
+          })
+        }
+        
+        console.log(`Video size: ${fileSizeMB.toFixed(2)}MB (${fileSizeGB.toFixed(3)}GB)`)
+      }
+    } catch (error: any) {
       console.warn('Video URL validation warning:', error.message);
-      // Continue with upload attempt even if HEAD request fails
+      // Continue with upload attempt even if HEAD request fails for non-Supabase URLs
     }
+  } else {
+    console.log('Skipping URL validation for Supabase storage URL');
   }
   
   console.log('YouTube video URL (original):', videoUrlToUse);
   console.log('YouTube video URL (full):', fullVideoUrl);
 
   try {
-    // Step 1: Initialize upload
+    // Step 1: Download and prepare video data first
+    console.log('Downloading video for YouTube upload...')
+    const videoBuffer = await downloadMediaFromStorage(fullVideoUrl)
+    
+    if (!videoBuffer) {
+      throw new Error('Failed to download video from storage')
+    }
+    
+    console.log('Video downloaded successfully, size:', videoBuffer.length, 'bytes')
+    
+    // Check minimum file size (YouTube requires at least a few bytes)
+    if (videoBuffer.length < 1000) {
+      throw new Error('Video file is too small to be valid')
+    }
+    
+    // Detect content type from buffer if possible
+    let contentType = 'video/mp4';
+    const firstBytes = videoBuffer.slice(0, 12);
+    
+    // MP4 detection
+    if (firstBytes.includes(Buffer.from('ftyp'))) {
+      contentType = 'video/mp4';
+    }
+    // WebM detection
+    else if (firstBytes[0] === 0x1A && firstBytes[1] === 0x45 && firstBytes[2] === 0xDF && firstBytes[3] === 0xA3) {
+      contentType = 'video/webm';
+    }
+    // AVI detection
+    else if (firstBytes.includes(Buffer.from('AVI '))) {
+      contentType = 'video/avi';
+    }
+    
+    console.log('Detected video content type:', contentType)
+
+    // Step 2: Initialize upload with proper content length
     const metadata = {
       snippet: {
         title: post.caption ? post.caption.slice(0, 100) : 'YouTube Video',
@@ -186,7 +218,8 @@ router.post('/post', async (req: Request, res: Response) => {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
-          'X-Upload-Content-Type': 'video/*'
+          'X-Upload-Content-Type': contentType,
+          'X-Upload-Content-Length': videoBuffer.length.toString()
         }
       }
     )
@@ -196,25 +229,34 @@ router.post('/post', async (req: Request, res: Response) => {
       throw new Error('Failed to get upload URL from YouTube')
     }
 
-    // Step 2: Upload video
-    const videoResponse = await axios.get(fullVideoUrl, {
-      responseType: 'stream'
-    })
-
+    // Step 3: Upload the video buffer to YouTube
     const uploadHeaders: any = {
       'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'video/*'
+      'Content-Type': contentType,
+      'Content-Length': videoBuffer.length.toString()
     }
 
-    if (videoResponse.headers['content-length']) {
-      uploadHeaders['Content-Length'] = videoResponse.headers['content-length']
-    }
-
-    const uploadResponse = await axios.put(uploadUrl, videoResponse.data, {
+    console.log('Uploading video buffer to YouTube...', {
+      size: `${(videoBuffer.length / 1024 / 1024).toFixed(2)}MB`,
+      uploadUrl: uploadUrl.substring(0, 100) + '...'
+    })
+    
+    const uploadResponse = await axios.put(uploadUrl, videoBuffer, {
       headers: uploadHeaders,
       maxContentLength: Infinity,
-      maxBodyLength: Infinity
+      maxBodyLength: Infinity,
+      timeout: 300000, // 5 minute timeout for large video uploads
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total) {
+          const percentage = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+          if (percentage % 10 === 0) { // Log every 10%
+            console.log(`YouTube upload progress: ${percentage}%`)
+          }
+        }
+      }
     })
+    
+    console.log('YouTube video upload completed successfully!')
 
     res.json({
       success: true,
@@ -225,7 +267,9 @@ router.post('/post', async (req: Request, res: Response) => {
     })
 
   } catch (error: any) {
-    console.error('YouTube post error:', error.response?.data || error.message)
+    console.error('YouTube post error:', error.message)
+    console.error('YouTube error response:', error.response?.data)
+    console.error('YouTube error status:', error.response?.status)
     
     // Enhanced error handling with specific YouTube error codes
     const errorData = error.response?.data
@@ -251,12 +295,17 @@ router.post('/post', async (req: Request, res: Response) => {
           statusCode = 403
         }
       } else if (ytError.code === 400) {
-        if (ytError.errors?.some((e: any) => e.reason === 'invalidVideoData')) {
+        // Check for specific upload quota errors
+        if (ytError.message?.includes('exceeded the number of videos') || ytError.errors?.some((e: any) => e.reason === 'uploadLimitExceeded')) {
+          errorMessage = 'YouTube daily upload limit exceeded. You can upload more videos tomorrow (quota resets at midnight PT).'
+          statusCode = 429 // Rate limit exceeded
+        } else if (ytError.errors?.some((e: any) => e.reason === 'invalidVideoData')) {
           errorMessage = 'Invalid video data. Please check your video file format and size.'
+          statusCode = 400
         } else {
           errorMessage = 'Invalid YouTube API request. Please check your video and metadata.'
+          statusCode = 400
         }
-        statusCode = 400
       } else {
         errorMessage = ytError.message || 'YouTube API error'
         statusCode = error.response?.status || 500
@@ -269,9 +318,16 @@ router.post('/post', async (req: Request, res: Response) => {
       statusCode = 408
     }
     
+    // Create a safe error response without circular references
+    const safeErrorDetails = errorData ? {
+      error: errorData.error,
+      message: errorData.message,
+      code: errorData.code
+    } : (error.message || 'Unknown error')
+    
     res.status(statusCode).json({
       error: errorMessage,
-      details: errorData || error.message,
+      details: safeErrorDetails,
       platform: 'youtube',
       retryable: statusCode >= 500 || statusCode === 429 || statusCode === 408
     })

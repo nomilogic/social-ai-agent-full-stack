@@ -16,7 +16,8 @@ import postsRouter from './routes/posts'
 import campaignsRouter from './routes/campaigns'
 import scheduleRouter from './routes/schedule'
 import notificationsRouter from './routes/notifications'
-import mediaRouter from './routes/media'
+import mediaRoutes from './routes/media.js'
+import cleanupRoutes from './routes/cleanup.js'
 import aiContentRouter from './routes/ai-content'
 import api from "@/lib/api";
 
@@ -40,7 +41,8 @@ app.use('/api/posts', postsRouter)
 app.use('/api/campaigns', campaignsRouter)
 app.use('/api/schedule', scheduleRouter)
 app.use('/api/notifications', notificationsRouter)
-app.use('/api/media', mediaRouter)
+app.use('/api/media', mediaRoutes)
+  app.use('/api/cleanup', cleanupRoutes)
 app.use('/api/ai-content', aiContentRouter)
 
 // Legacy routes for backwards compatibility

@@ -16,7 +16,7 @@ const router = express.Router()
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 50 * 1024 * 1024, // 50MB limit
   },
   fileFilter: (req, file, cb) => {
     // Only allow images and videos
@@ -197,6 +197,116 @@ router.delete('/:userId/:fileName', async (req: Request, res: Response) => {
   } catch (err: any) {
     console.error('❌ Server error deleting media:', err)
     res.status(500).json({ error: 'Internal server error', details: err.message })
+  }
+})
+
+// POST /api/media/generate-thumbnail - Generate thumbnail for video URL (JWT protected)
+router.post('/generate-thumbnail', authenticateJWT, async (req: Request, res: Response) => {
+  const { videoUrl } = req.body
+  const userId = req.user?.id
+
+  if (!userId) {
+    return res.status(401).json({ error: 'User authentication required' })
+  }
+
+  if (!videoUrl) {
+    return res.status(400).json({ error: 'Video URL is required' })
+  }
+
+  try {
+    console.log('📹 Generating thumbnail for video:', videoUrl)
+    
+    // Download video from storage
+    const videoBuffer = await supabaseStorage.downloadMediaFromStorage(videoUrl)
+    
+    if (!videoBuffer) {
+      return res.status(400).json({ error: 'Could not download video from storage' })
+    }
+    
+    // For now, we'll return a placeholder thumbnail URL
+    // In a full implementation, you'd use ffmpeg or similar to extract frame
+    const thumbnailFileName = `${userId}_thumbnail_${Date.now()}.jpg`
+    
+    // Upload placeholder thumbnail (in real implementation, extract actual frame)
+    const placeholderThumbnail = Buffer.from(
+      'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k='
+    )
+    
+    const uploadResult = await supabaseStorage.uploadImageBuffer(
+      placeholderThumbnail,
+      'image/jpeg',
+      {
+        bucket: 'images',
+        folder: 'thumbnails',
+        fileName: thumbnailFileName,
+        makePublic: true
+      }
+    )
+    
+    if (!uploadResult.success) {
+      return res.status(500).json({ error: 'Failed to upload thumbnail' })
+    }
+    
+    res.json({
+      success: true,
+      thumbnailUrl: uploadResult.publicUrl || uploadResult.url
+    })
+    
+  } catch (error: any) {
+    console.error('Error generating thumbnail:', error)
+    res.status(500).json({ error: 'Failed to generate thumbnail', details: error.message })
+  }
+})
+
+// GET /api/media/proxy/:bucketName/* - Proxy Supabase storage files with authentication
+router.get('/proxy/:bucketName/*', async (req: Request, res: Response) => {
+  const bucketName = req.params.bucketName
+  const filePath = req.params[0] // Everything after the bucket name
+  
+  try {
+    console.log(`📥 Proxying media from bucket: ${bucketName}, path: ${filePath}`)
+    
+    // Download from Supabase using service role
+    const { data, error } = await serverSupabase.storage
+      .from(bucketName)
+      .download(filePath)
+    
+    if (error) {
+      console.error('Supabase download error:', error)
+      return res.status(404).json({ error: 'File not found' })
+    }
+    
+    if (!data) {
+      return res.status(404).json({ error: 'No data received' })
+    }
+    
+    // Convert blob to buffer
+    const arrayBuffer = await data.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    
+    // Determine content type based on file extension
+    const ext = filePath.split('.').pop()?.toLowerCase()
+    let contentType = 'application/octet-stream'
+    
+    if (ext === 'jpg' || ext === 'jpeg') contentType = 'image/jpeg'
+    else if (ext === 'png') contentType = 'image/png'
+    else if (ext === 'gif') contentType = 'image/gif'
+    else if (ext === 'webp') contentType = 'image/webp'
+    else if (ext === 'mp4') contentType = 'video/mp4'
+    else if (ext === 'webm') contentType = 'video/webm'
+    else if (ext === 'mov') contentType = 'video/quicktime'
+    
+    // Set headers
+    res.setHeader('Content-Type', contentType)
+    res.setHeader('Content-Length', buffer.length)
+    res.setHeader('Cache-Control', 'public, max-age=31536000') // Cache for 1 year
+    
+    // Send the file
+    res.send(buffer)
+    
+  } catch (error: any) {
+    console.error('Error proxying media:', error)
+    res.status(500).json({ error: 'Failed to proxy media file' })
   }
 })
 

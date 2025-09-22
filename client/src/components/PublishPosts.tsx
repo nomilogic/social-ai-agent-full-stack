@@ -93,8 +93,8 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
       
       if (tokenResponse.ok) {
         const tokenData = await tokenResponse.json();
-        if (tokenData.access_token) {
-          const pagesResponse = await fetch(`/api/facebook/pages?access_token=${tokenData.access_token}`);
+        if (tokenData.connected && tokenData.token?.access_token) {
+          const pagesResponse = await fetch(`/api/facebook/pages?access_token=${tokenData.token.access_token}`);
           if (pagesResponse.ok) {
             const pagesData = await pagesResponse.json();
             setFacebookPages(pagesData.pages || []);
@@ -123,8 +123,8 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
       
       if (tokenResponse.ok) {
         const tokenData = await tokenResponse.json();
-        if (tokenData.access_token) {
-          const channelsResponse = await fetch(`/api/youtube/channels?access_token=${tokenData.access_token}`);
+        if (tokenData.connected && tokenData.token?.access_token) {
+          const channelsResponse = await fetch(`/api/youtube/channels?access_token=${tokenData.token.access_token}`);
           if (channelsResponse.ok) {
             const channelsData = await channelsResponse.json();
             setYoutubeChannels(channelsData.channels || []);
@@ -289,10 +289,39 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
 
         {/* Platforms Section */}
         <div className="mb-8">
-          <h2 className="font-semibold text-gray-900 mb-1">Select Platforms to Publish:</h2>
-          <p className="text-sm text-gray-600 mb-6">
-            Connect your social media accounts to enable direct publishing across all platforms.
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="font-semibold text-gray-900 mb-1">Select Platforms to Publish:</h2>
+              <p className="text-sm text-gray-600">
+                Connect your social media accounts to enable direct publishing across all platforms.
+              </p>
+            </div>
+            {connectedPlatforms.length > 0 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSelectedPlatforms(connectedPlatforms)}
+                  className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                >
+                  Select All
+                </button>
+                <button
+                  onClick={() => setSelectedPlatforms([])}
+                  className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                >
+                  Deselect All
+                </button>
+              </div>
+            )}
+          </div>
+          
+          {/* Selection Summary */}
+          {connectedPlatforms.length > 0 && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <span className="font-medium">{selectedPlatforms.filter(p => connectedPlatforms.includes(p)).length}</span> of <span className="font-medium">{connectedPlatforms.length}</span> connected platforms selected for publishing
+              </p>
+            </div>
+          )}
 
           <div className="space-y-3">
             {posts.map(post => {
@@ -363,53 +392,76 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
                     </div>
                   </div>
 
-                  {/* Action Button or Status */}
+                  {/* Platform Selection Checkbox and Status */}
                   <div className="flex items-center gap-3">
-                    {isConnected && (
-                      <div className="w-5 h-5 text-green-600">
-                        <svg fill="currentColor" viewBox="0 0 20 20">
+                    {/* Connection Status Icon */}
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                      isConnected ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
+                    }`}>
+                      {isConnected ? (
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
-                      </div>
-                    )}
-                    <div>
-                      <input
-                        type="checkbox"
-                        checked={selectedPlatforms.includes(post.platform)}
-                        disabled={!isConnected}
-                        onChange={e => {
-                          setSelectedPlatforms(prev =>
-                            e.target.checked
-                              ? [...prev, post.platform]
-                              : prev.filter(p => p !== post.platform)
-                          );
-                        }}
-                        className="sr-only"
-                        id={`platform-${post.platform}`}
-                      />
+                      ) : (
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8 9.414l-1.707 1.707a1 1 0 101.414 1.414L9 11.828l1.293 1.293a1 1 0 001.414-1.414L10.414 10.414l1.293-1.293a1 1 0 00-1.414-1.414L9 9.414 7.707 8.121a1 1 0 00-1.414 1.414L7.586 10.414 6.293 11.707a1 1 0 101.414 1.414L9 11.828l1.293 1.293z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+
+                    {/* Platform Selection and Connect Controls */}
+                    <div className="flex items-center gap-2">
+                      {/* Checkbox - Only show if connected */}
+                      {isConnected && (
+                        <label className="flex items-center cursor-pointer" htmlFor={`platform-${post.platform}`}>
+                          <div className="relative">
+                            <input
+                              type="checkbox"
+                              checked={selectedPlatforms.includes(post.platform)}
+                              onChange={e => {
+                                setSelectedPlatforms(prev =>
+                                  e.target.checked
+                                    ? [...prev, post.platform]
+                                    : prev.filter(p => p !== post.platform)
+                                );
+                              }}
+                              className="sr-only"
+                              id={`platform-${post.platform}`}
+                            />
+                            <div className={`w-6 h-6 rounded border-2 transition-all duration-200 flex items-center justify-center ${
+                              selectedPlatforms.includes(post.platform)
+                                ? 'bg-blue-600 border-blue-600 text-white'
+                                : 'bg-white border-gray-300 hover:border-blue-500'
+                            }`}>
+                              {selectedPlatforms.includes(post.platform) && (
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+                          <span className="ml-2 text-sm text-gray-600">
+                            {selectedPlatforms.includes(post.platform) ? 'Selected' : 'Select'}
+                          </span>
+                        </label>
+                      )}
+                      
+                      {/* Connect/Reconnect Button - Always show */}
                       <button
-                        onClick={() => {
-                          if (!isConnected || isConnecting) {
-                            // Trigger connection flow for this platform
-                            handleConnect(post.platform);
-                            return;
-                          }
-                          // For connected platforms, this could be a reconnect or toggle selection
-                          handleConnect(post.platform); // Reconnect
-                        }}
+                        onClick={() => handleConnect(post.platform)}
                         disabled={isConnecting}
-                        className={` flex-inline rounded-full py-2 px-4 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm  ${
+                        className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
                           isConnected
-                            ? 'theme-bg-success theme-text-light'
+                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
                             : 'theme-bg-quaternary theme-text-secondary hover:theme-bg-tertiary'
                         }`}
                       >
-                        {!isConnected ? <Icon name="connect-accounts"  size={16} className="inline mr-1" />:""}
+                        {!isConnecting && <Icon name="connect-accounts" size={14} className="" />}
                         {isConnecting ? (
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                          <>
+                            <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                             <span>CONNECTING...</span>
-                          </div>
+                          </>
                         ) : (
                           isConnected ? 'RECONNECT' : 'CONNECT'
                         )}

@@ -249,10 +249,15 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
     // Create immediate preview URL from the file
     const previewUrl = URL.createObjectURL(file);
-    console.log('📷 Created preview URL:', previewUrl.substring(0, 50) + '...');
+    console.log('📷 Created preview URL:', previewUrl);
 
     setFormData((prev) => {
       console.log('Previous formData:', { media: !!prev.media, mediaUrl: !!prev.mediaUrl });
+      // Clean up previous blob URL if it exists
+      if (prev.mediaUrl && prev.mediaUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(prev.mediaUrl);
+        console.log('🗑️ Cleaned up previous blob URL during upload');
+      }
       const newData = { ...prev, media: file, mediaUrl: previewUrl };
       console.log('New formData after setting file:', { media: !!newData.media, mediaUrl: !!newData.mediaUrl });
       return newData;
@@ -260,7 +265,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
     // Handle video files - generate thumbnail and detect aspect ratio
     if (isVideoFile(file)) {
-      console.log('🎥 Video file detected, generating thumbnail and analyzing aspect ratio...');
+      console.log('🎥 Video file detected, analyzing aspect ratio...');
       try {
         setIsGeneratingThumbnail(true);
         
@@ -272,19 +277,27 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         setVideoAspectRatio(aspectRatio);
         console.log('📐 Video aspect ratio:', aspectRatio);
         
-        // Log video format detection
+        // Generate thumbnails for all videos for preview purposes
+        // But only 16:9 and other aspect ratios will use template editor
         if (is16x9Video(aspectRatio)) {
-          console.log('📺 16:9 video detected - will open template editor on Generate Post');
+          console.log('📺 16:9 video detected - generating thumbnail for template editor');
+          // Generate thumbnail from video for horizontal videos (will open template editor)
+          const thumbnailUrl = await createVideoThumbnailUrl(file, 1);
+          setVideoThumbnailUrl(thumbnailUrl);
+          console.log('🖼️ Video thumbnail generated successfully for template editor');
         } else if (is9x16Video(aspectRatio)) {
-          console.log('📱 9:16 vertical video detected - will open template editor on Generate Post');
+          console.log('📱 9:16 vertical video detected - generating thumbnail for preview only (no template editor)');
+          // Generate thumbnail for preview but won't open template editor (stories/shorts format)
+          const thumbnailUrl = await createVideoThumbnailUrl(file, 1);
+          setVideoThumbnailUrl(thumbnailUrl);
+          console.log('🖼️ Video thumbnail generated successfully for preview (no template editing)');
         } else {
-          console.log('📽️ Other aspect ratio video detected:', aspectRatio);
+          console.log('📽️ Other aspect ratio video detected:', aspectRatio, '- generating thumbnail');
+          // Generate thumbnail for other aspect ratios (user might want custom thumbnail)
+          const thumbnailUrl = await createVideoThumbnailUrl(file, 1);
+          setVideoThumbnailUrl(thumbnailUrl);
+          console.log('🖼️ Video thumbnail generated successfully');
         }
-        
-        // Generate thumbnail from video
-        const thumbnailUrl = await createVideoThumbnailUrl(file, 1);
-        setVideoThumbnailUrl(thumbnailUrl);
-        console.log('🖼️ Video thumbnail generated successfully');
         
       } catch (error) {
         console.error('❌ Error processing video:', error);
@@ -321,7 +334,8 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         }
 
         // Always use server URL for media (for publishing compatibility)
-        const newData = { ...prev, media: file, mediaUrl, serverUrl: mediaUrl };
+        // Use server URL as both mediaUrl and serverUrl for consistent publishing
+        const newData = { ...prev, media: file, mediaUrl: mediaUrl, serverUrl: mediaUrl };
         console.log('Final formData with server URL:', { media: !!newData.media, mediaUrl: !!newData.mediaUrl, serverUrl: !!newData.serverUrl });
         return newData;
       });
@@ -558,8 +572,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         }
       }
       
-      // NEW: For uploaded videos, open template editor with video thumbnail
-      if (selectedPostType === 'video' && (selectedVideoMode === 'upload' || selectedVideoMode === 'uploadShorts') && originalVideoFile && videoThumbnailUrl) {
+      // NEW: For uploaded videos with thumbnails, open template editor
+      // Only for 16:9 and other aspect ratios that support thumbnails (not 9:16 stories)
+      if (selectedPostType === 'video' && (selectedVideoMode === 'upload' || selectedVideoMode === 'uploadShorts') && originalVideoFile && !is9x16Video(videoAspectRatio || 0) && videoThumbnailUrl) {
         console.log('🎥 Opening template editor for video thumbnail with blank template...');
         
         // Get blank template
@@ -587,7 +602,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
             isVideoContent: true, // Flag to indicate this is video content
             campaignInfo: currentCampaignInfo,
             selectedPlatforms: formData.selectedPlatforms,
-            imageAnalysis: `Video thumbnail generated from uploaded ${is16x9Video(videoAspectRatio || 0) ? '16:9' : is9x16Video(videoAspectRatio || 0) ? '9:16' : 'aspect ratio'} video`,
+            imageAnalysis: `Video thumbnail generated from uploaded ${is16x9Video(videoAspectRatio || 0) ? '16:9 horizontal' : 'custom aspect ratio'} video`,
             formData
           };
           
@@ -616,14 +631,44 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       });
 
       // Use the current form data (which should include the generated image)
-      const mediaAssets = currentFormData.mediaUrl
-        ? [{ url: currentFormData.mediaUrl, type: currentFormData.media?.type || "image" }]
+      // For videos, ensure we use the server URL if available, not blob URLs
+      const isVideoContent = !!(originalVideoFile || (currentFormData.media && isVideoFile(currentFormData.media)))
+      
+      console.log('🔍 Media URL determination debug:', {
+        isVideoContent,
+        hasServerUrl: !!currentFormData.serverUrl,
+        hasMediaUrl: !!currentFormData.mediaUrl,
+        serverUrl: currentFormData.serverUrl?.substring(0, 80) + '...',
+        mediaUrl: currentFormData.mediaUrl?.substring(0, 80) + '...',
+        shouldUseServerUrl: isVideoContent && currentFormData.serverUrl
+      })
+      
+      const finalMediaUrlForAssets = isVideoContent && currentFormData.serverUrl 
+        ? currentFormData.serverUrl 
+        : currentFormData.mediaUrl
+        
+      const mediaAssets = finalMediaUrlForAssets
+        ? [{ url: finalMediaUrlForAssets, type: isVideoContent ? "video" : (currentFormData.media?.type || "image") }]
         : [];
 
-      console.log('📋 Final media assets for post data:', mediaAssets);
+      console.log('📋 Final media assets for post data:', {
+        mediaAssets,
+        finalUrl: finalMediaUrlForAssets?.startsWith('blob:') ? 'blob URL (WRONG!)' : 'server URL (CORRECT)',
+        fullUrl: finalMediaUrlForAssets?.substring(0, 80) + '...'
+      });
 
+      // For video content, ensure we override the mediaUrl with the server URL
+      const finalPostData = isVideoContent && currentFormData.serverUrl 
+        ? {
+            ...currentFormData,
+            mediaUrl: currentFormData.serverUrl, // Override with server URL for videos
+            imageUrl: currentFormData.serverUrl, // Also set imageUrl for compatibility
+            videoUrl: currentFormData.serverUrl  // Also set videoUrl for video posts
+          }
+        : currentFormData;
+        
       const postData = {
-        ...currentFormData, // Use the updated form data
+        ...finalPostData, // Use the updated form data with proper URLs
         prompt: formData.prompt,
         selectedPlatforms: formData.selectedPlatforms,
         platforms: formData.selectedPlatforms,
@@ -643,6 +688,14 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         keywords: currentCampaignInfo.keywords,
         hashtags: currentCampaignInfo.hashtags,
       };
+      
+      console.log('📤 Final postData debug:', {
+        mediaUrl: postData.mediaUrl?.startsWith('blob:') ? 'blob URL (WRONG!)' : 'server URL (CORRECT)',
+        imageUrl: postData.imageUrl?.startsWith('blob:') ? 'blob URL (WRONG!)' : 'server URL (CORRECT)',
+        videoUrl: postData.videoUrl?.startsWith('blob:') ? 'blob URL (WRONG!)' : 'server URL (CORRECT)',
+        mediaUrlFull: postData.mediaUrl?.substring(0, 80) + '...',
+        hasMediaAssets: mediaAssets.length > 0
+      });
 
       console.log('📤 Final post data being sent:', {
         hasMediaAssets: mediaAssets.length > 0,
@@ -655,12 +708,34 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         onNext(postData);
       } else {
         // Otherwise, simulate generation for preview
+        // For videos, ensure we use the server URL if available, not blob URLs
+        const isVideoContent = !!(originalVideoFile || (currentFormData.media && isVideoFile(currentFormData.media)))
+        const finalMediaUrl = isVideoContent && currentFormData.serverUrl 
+          ? currentFormData.serverUrl 
+          : currentFormData.mediaUrl
+        
+        console.log('🎬 Video preview generation:', {
+          isVideoContent,
+          hasServerUrl: !!currentFormData.serverUrl,
+          hasMediaUrl: !!currentFormData.mediaUrl,
+          serverUrl: currentFormData.serverUrl?.substring(0, 50) + '...',
+          mediaUrl: currentFormData.mediaUrl?.substring(0, 50) + '...',
+          finalUrl: finalMediaUrl?.startsWith('blob:') ? 'blob URL (WRONG)' : 'server URL (CORRECT)',
+          videoAspectRatio
+        })
+        
         const simulatedGeneratedPosts = [
           {
             platform: (formData.selectedPlatforms && formData.selectedPlatforms[0]) || "linkedin",
             content: formData.prompt,
             caption: formData.prompt,
             hashtags: formData.tags,
+            mediaUrl: finalMediaUrl,
+            imageUrl: finalMediaUrl,
+            videoUrl: isVideoContent ? finalMediaUrl : undefined, // Add explicit videoUrl for video content
+            thumbnailUrl: videoThumbnailUrl || (currentFormData as any).thumbnailUrl, // Use videoThumbnailUrl for video preview
+            isVideoContent: isVideoContent,
+            videoAspectRatio: videoAspectRatio,
             engagement: Math.floor(Math.random() * 1000),
           },
         ];
@@ -1899,21 +1974,13 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                   onDragOver={handleDrag}
                   onDrop={handleDrop}
                 >
-                  {/* Set accept value based on selectedPostType to avoid type comparison error */}
-                  {(() => {
-                    let acceptValue: string = 'image/*,video/*';
-                    if (selectedPostType === 'image') acceptValue = 'image/*';
-                    if (selectedPostType === 'video') acceptValue = 'video/*';
-                    return (
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept={acceptValue}
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                    );
-                  })()}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={selectedPostType === 'image' ? 'image/*' : selectedPostType === 'video' ? 'video/*' : 'image/*,video/*'}
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
 
                   {/* Debug Info - Enhanced debugging */}
                   {/* <div className="mb-2 p-2 bg-yellow-500/10 border border-yellow-400/20 rounded text-xs text-yellow-200 space-y-1">
@@ -1969,13 +2036,6 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                                 console.log('Video loading started:', formData.mediaUrl || formData.media?.name);
                               }}
                             >
-                              <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept={acceptValue}
-                                onChange={handleFileChange}
-                                className="hidden"
-                              />
                               Your browser does not support the video tag.
                             </video>
                             <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs flex items-center">
@@ -2055,11 +2115,13 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                             <span className="text-purple-300">Generating video thumbnail...</span>
                           </div>
                         )}
-                        {videoThumbnailUrl && videoAspectRatio && (
+                        {videoAspectRatio && (
                           <div className="flex items-center justify-center p-2 bg-green-500/10 border border-green-400/20 rounded text-xs">
                             <CheckCircle className="w-3 h-3 mr-2 text-green-400" />
                             <span className="text-green-300">
-                              {is16x9Video(videoAspectRatio) ? '16:9 video' : is9x16Video(videoAspectRatio) ? '9:16 video' : 'Video'} thumbnail ready - will open template editor on Generate Post
+                              {is16x9Video(videoAspectRatio) && videoThumbnailUrl ? '16:9 video thumbnail ready - will open template editor on Generate Post' : 
+                               is9x16Video(videoAspectRatio) ? '9:16 vertical video ready - stories format (no thumbnail needed)' : 
+                               videoThumbnailUrl ? 'Video thumbnail ready - will open template editor on Generate Post' : 'Video processed and ready'}
                             </span>
                           </div>
                         )}

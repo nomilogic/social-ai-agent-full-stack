@@ -289,7 +289,7 @@ class OAuthManager {
           headers['Authorization'] = `Bearer ${accessToken}`;
           break;
         case 'youtube':
-          profileUrl = 'https://www.googleapis.com/oauth2/v2/userinfo';
+          profileUrl = 'https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true';
           headers['Authorization'] = `Bearer ${accessToken}`;
           break;
         case 'tiktok':
@@ -304,6 +304,19 @@ class OAuthManager {
       
       // Normalize profile data
       const profileData = response.data;
+      
+      // Handle YouTube channel response format
+      if (platform === 'youtube' && profileData.items && profileData.items.length > 0) {
+        const channel = profileData.items[0];
+        return {
+          id: channel.id,
+          name: channel.snippet.title,
+          username: channel.snippet.customUrl || channel.snippet.title,
+          profile_picture_url: channel.snippet.thumbnails?.default?.url
+        };
+      }
+      
+      // Default normalization for other platforms
       return {
         id: profileData.id,
         name: profileData.name || profileData.display_name,

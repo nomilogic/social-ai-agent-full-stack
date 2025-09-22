@@ -153,29 +153,69 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
            /\.(mp4|webm|ogg|mov|avi|mkv|flv|wmv|3gp)(\?.*)?$/i.test(url);
   }, []);
 
+  // Helper to detect video even when URL has no extension (e.g., blob: URLs)
+  const isVideoMedia = useCallback((p: any, url?: string) => {
+    const mUrl = url ?? p?.mediaUrl;
+    const typeFlag = !!(p?.isVideoContent || (p?.media?.type && p.media.type.startsWith('video/')) || p?.mediaType === 'video');
+    return (mUrl ? isVideoUrl(mUrl) : false) || typeFlag;
+  }, [isVideoUrl]);
+
   // Render media for platforms that need general media placement (Facebook, Twitter, LinkedIn)
   const renderMedia = useCallback((post: GeneratedPost, className = "rounded-lg max-h-80 object-contain", containerClass = "w-full flex justify-center my-3") => {
-//    alert('Rendering media'+ post.imageUrl);
+    console.log('renderMedia called with mediaUrl:', post.mediaUrl, 'isVideoContent:', (post as any).isVideoContent, 'videoAspectRatio:', (post as any).videoAspectRatio);
     if (!post.mediaUrl) return null;
     
-    if (isVideoUrl(post.mediaUrl)) {
+    if (isVideoMedia(post, post.mediaUrl)) {
       // For videos, use custom thumbnail if available
       const videoThumbnail = (post as any).thumbnailUrl;
+      const videoAspectRatio = (post as any).videoAspectRatio;
+      
+      // Determine aspect ratio class for video container
+      let aspectRatioClass = "";
+      let isPortraitVideo = false;
+      if (videoAspectRatio) {
+        const ratio = videoAspectRatio;
+        if (ratio >= 1.6 && ratio <= 1.9) {
+          // 16:9 or similar horizontal
+          aspectRatioClass = "aspect-video";
+        } else if (ratio >= 0.5 && ratio <= 0.65) {
+          // 9:16 or similar vertical
+          aspectRatioClass = "aspect-[9/16]";
+          isPortraitVideo = true;
+        }
+      }
+      
       return (
-        <div className={containerClass}>
+        <div className={`${containerClass} ${aspectRatioClass} relative`}>
           <video
             src={post.mediaUrl}
-            poster={videoThumbnail} // Use custom thumbnail as poster
+            poster={videoThumbnail || undefined} // Use custom thumbnail as poster or let video show first frame
             controls
-            className={className}
+            preload="metadata" // Load video metadata to show first frame
+            className={`${className} ${aspectRatioClass ? 'object-cover w-full h-full' : ''}`}
             onError={(e) => {
               console.error('Media (video) failed to load:', post.mediaUrl);
-              //e.currentTarget.style.display = 'none';
+              // Don't hide the video element, let the fallback overlay show
             }}
             onLoadStart={() => console.log('Media (video) loading started:', post.mediaUrl)}
+            onLoadedData={() => console.log('Media (video) data loaded:', post.mediaUrl)}
           >
             Your browser does not support the video tag.
           </video>
+          {/* Enhanced fallback overlay for videos without thumbnails */}
+          {!videoThumbnail && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-60 pointer-events-none rounded-lg">
+              <div className="text-white text-center">
+                <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-3 mx-auto backdrop-blur-sm">
+                  <span className="text-3xl">▶</span>
+                </div>
+                <p className="text-base font-medium opacity-90">
+                  {isPortraitVideo ? 'Vertical Video' : 'Video Content'}
+                </p>
+                <p className="text-xs opacity-70 mt-1">Click to play</p>
+              </div>
+            </div>
+          )}
         </div>
       );
     } else {
@@ -194,12 +234,13 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
         </div>
       );
     }
-  }, [isVideoUrl]);
+  }, [isVideoUrl, isVideoMedia]);
 
   const renderPlatformPreview = (post: GeneratedPost) => {
     console.log('DEBUG: Pre-fallback - imageUrl:', post.imageUrl, 'mediaUrl:', post.mediaUrl);
-    post.mediaUrl = post.imageUrl?? post.mediaUrl; // Fallback to imageUrl if mediaUrl not set
-    console.log('DEBUG: Post-fallback - mediaUrl:', post.mediaUrl);
+    // Ensure we have media URL - use mediaUrl first, then fallback to imageUrl
+    const mediaUrl = post.mediaUrl || post.imageUrl;
+    console.log('DEBUG: Final mediaUrl:', mediaUrl, 'isVideo:', isVideoUrl(mediaUrl || ''));
     switch (post.platform) {
       case "facebook":
         return (
@@ -225,7 +266,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
               >
                 {post.caption}
               </p>
-              {renderMedia(post)}
+              {renderMedia({...post, mediaUrl})}
               <div className="mt-3">
                 <div 
                   className={`text-blue-600 text-sm ${editingMode ? 'border border-blue-300 rounded p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent' : ''}`}
@@ -274,28 +315,55 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                 </div>
               </div>
             </div>
-            <div className="aspect-square bg-gray-100 flex items-center justify-center">
-              {post.mediaUrl ? (
-                isVideoUrl(post.mediaUrl) ? (
-                  <video
-                  
-                    src={post.mediaUrl}
-                    controls
-                    className="object-cover w-full h-full"
-                    onError={(e) => {
-                      console.error('Instagram media (video) failed to load:', post.mediaUrl);
-                      e.currentTarget.style.display = 'none';
-                    }} 
-                  >
-                    Your browser does not support the video tag.
-                  </video>
+            <div className={`bg-gray-100 flex items-center justify-center relative ${
+              mediaUrl && isVideoMedia(post, mediaUrl) ? (() => {
+                const videoAspectRatio = (post as any).videoAspectRatio;
+                if (videoAspectRatio) {
+                  const ratio = videoAspectRatio;
+                  if (ratio >= 1.6 && ratio <= 1.9) {
+                    return 'aspect-video'; // 16:9 horizontal
+                  } else if (ratio >= 0.5 && ratio <= 0.65) {
+                    return 'aspect-[9/16]'; // 9:16 vertical
+                  }
+                }
+                return 'aspect-[9/16]'; // default for videos
+              })() : 'aspect-square'
+            }`}>
+              {mediaUrl ? (
+                isVideoMedia(post, mediaUrl) ? (
+                  <>
+                    <video
+                      src={mediaUrl}
+                      poster={(post as any).thumbnailUrl} // Use custom thumbnail for Instagram videos
+                      controls
+                      preload="metadata" // Load video metadata to show first frame
+                      className="object-cover w-full h-full"
+                      onError={(e) => {
+                        console.error('Instagram media (video) failed to load:', mediaUrl);
+                        e.currentTarget.style.display = 'none';
+                      }} 
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                    {/* Fallback overlay for videos without thumbnails */}
+                    {!(post as any).thumbnailUrl && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-30 pointer-events-none">
+                        <div className="text-white text-center">
+                          <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-2 mx-auto">
+                            <span className="text-3xl">▶</span>
+                          </div>
+                          <p className="text-sm opacity-75">Video Content</p>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <img
-                    src={post.mediaUrl}
+                    src={mediaUrl}
                     alt="Instagram media"
                     className="object-cover w-full h-full"
                     onError={(e) => {
-                      console.error('Instagram media (image) failed to load:', post.mediaUrl);
+                      console.error('Instagram media (image) failed to load:', mediaUrl);
                       e.currentTarget.style.display = 'none';
                     }}
                   />
@@ -377,7 +445,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                       {post.hashtags.join(' ')}
                     </div>
                   </div>
-                  {renderMedia(post)}
+                  {renderMedia({...post, mediaUrl})}
                   <div className="flex items-center justify-between mt-3 max-w-md">
                     <button className="flex items-center space-x-2 text-gray-500 hover:text-blue-500">
                       <MessageCircle className="w-4 h-4" />
@@ -436,7 +504,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                   {post.hashtags.join(' ')}
                 </div>
               </div>
-              {renderMedia(post)}
+              {renderMedia({...post, mediaUrl})}
               <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                 <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-600">
                   <ThumbsUp className="w-4 h-4" />
@@ -459,27 +527,41 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
         return (
           <div className="bg-black rounded-lg overflow-hidden max-w-sm shadow-sm">
             <div className="aspect-[9/16] bg-gray-900 relative">
-              {post.mediaUrl && (
-                isVideoUrl(post.mediaUrl) ? (
-                  <video
-                    src={post.mediaUrl}
-                    poster={(post as any).thumbnailUrl} // Use custom thumbnail for TikTok videos
-                    controls
-                    className="absolute inset-0 w-full h-full object-cover"
-                    onError={(e) => {
-                      console.error('TikTok media (video) failed to load:', post.mediaUrl);
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  >
-                    Your browser does not support the video tag.
-                  </video>
+              {mediaUrl && (
+                isVideoMedia(post, mediaUrl) ? (
+                  <>
+                    <video
+                      src={mediaUrl}
+                      poster={(post as any).thumbnailUrl} // Use custom thumbnail for TikTok videos
+                      controls
+                      preload="metadata" // Load video metadata to show first frame
+                      className="absolute inset-0 w-full h-full object-cover"
+                      onError={(e) => {
+                        console.error('TikTok media (video) failed to load:', mediaUrl);
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                    {/* Fallback overlay for videos without thumbnails */}
+                    {!(post as any).thumbnailUrl && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 pointer-events-none">
+                        <div className="text-white text-center">
+                          <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-3 mx-auto">
+                            <span className="text-4xl">▶</span>
+                          </div>
+                          <p className="text-base opacity-75">Vertical Video</p>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <img
-                    src={post.mediaUrl}
+                    src={mediaUrl}
                     alt="TikTok media"
                     className="absolute inset-0 w-full h-full object-cover"
                     onError={(e) => {
-                      console.error('TikTok media (image) failed to load:', post.mediaUrl);
+                      console.error('TikTok media (image) failed to load:', mediaUrl);
                       e.currentTarget.style.display = 'none';
                     }}
                   />
@@ -504,38 +586,52 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
       case "youtube":
         return (
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm max-w-lg">
-            <div className="aspect-video bg-gray-900 flex items-center justify-center">
-              {post.mediaUrl ? (
-                isVideoUrl(post.mediaUrl) ? (
-                  <video
-                    src={post.mediaUrl}
-                    poster={(post as any).thumbnailUrl} // Use custom thumbnail for YouTube videos
-                    controls
-                    className="object-cover w-full h-full"
-                    onError={(e) => {
-                      console.error('YouTube media (video) failed to load:', post.mediaUrl);
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  >
-                    Your browser does not support the video tag.
-                  </video>
+            <div className="aspect-video bg-gray-900 flex items-center justify-center relative">
+              {mediaUrl ? (
+                isVideoMedia(post, mediaUrl) ? (
+                  <>
+                    <video
+                      src={mediaUrl}
+                      poster={(post as any).thumbnailUrl || undefined} // Use custom thumbnail for YouTube videos
+                      controls
+                      preload="metadata"
+                      className="object-cover w-full h-full"
+                      onError={(e) => {
+                        console.error('YouTube media (video) failed to load:', mediaUrl);
+                        // Don't hide the video element, let the fallback overlay show
+                      }}
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                    {/* Fallback overlay for videos without thumbnails */}
+                    {!(post as any).thumbnailUrl && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-red-900 bg-opacity-60 pointer-events-none">
+                        <div className="text-white text-center">
+                          <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-3 mx-auto backdrop-blur-sm">
+                            <span className="text-4xl">▶</span>
+                          </div>
+                          <p className="text-lg font-medium opacity-90">YouTube Video</p>
+                          <p className="text-sm opacity-70 mt-1">Click to play</p>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <img
-                    src={post.mediaUrl}
+                    src={mediaUrl}
                     alt="YouTube media"
                     className="object-cover w-full h-full"
                     onError={(e) => {
-                      console.error('YouTube media (image) failed to load:', post.mediaUrl);
+                      console.error('YouTube media (image) failed to load:', mediaUrl);
                       e.currentTarget.style.display = 'none';
                     }}
                   />
                 )
               )
               : (
-                // <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
-                //   <span className="text-white text-2xl">▶</span>
-                // </div>
-                <></>
+                <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-3xl">▶</span>
+                </div>
               )
               }
             </div>
