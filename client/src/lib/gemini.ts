@@ -301,11 +301,16 @@ export async function generateSinglePlatformPost(
         hashtags = [`#${campaignInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`, '#socialmedia'];
       }
 
+      // Use server URL if available, fallback to mediaUrl
+      const serverMediaUrl = (contentData as any).serverUrl || contentData.mediaUrl;
+      
       return {
         platform,
         caption: caption,
         hashtags: hashtags,
-        imageUrl: contentData.mediaUrl || null,
+        imageUrl: serverMediaUrl || null,
+        mediaUrl: serverMediaUrl || null,
+        thumbnailUrl: (contentData as any).thumbnailUrl || null,
         success: true
       };
     } else {
@@ -314,12 +319,17 @@ export async function generateSinglePlatformPost(
   } catch (error) {
     console.error(`Error generating for ${platform}:`, error);
     
+    // Use server URL if available, fallback to mediaUrl
+    const serverMediaUrl = (contentData as any).serverUrl || contentData.mediaUrl;
+    
     // Return fallback post for this platform
     return {
       platform,
       caption: contentData.prompt || 'Check out our latest updates!',
       hashtags: [`#${campaignInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`, '#update'],
-      imageUrl: contentData.mediaUrl || null,
+      imageUrl: serverMediaUrl || null,
+      mediaUrl: serverMediaUrl || null,
+      thumbnailUrl: (contentData as any).thumbnailUrl || null,
       success: false,
       error: error instanceof Error ? error.message : 'Generation failed'
     };
@@ -411,11 +421,16 @@ export async function generateAllPosts(
             hashtags = [`#${campaignInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`, '#socialmedia'];
           }
 
+          // Use server URL if available, fallback to mediaUrl
+          const serverMediaUrl = (contentData as any).serverUrl || contentData.mediaUrl;
+          
           posts.push({
             platform,
             caption: caption,
             hashtags: hashtags,
-            imageUrl: contentData.mediaUrl || null,
+            imageUrl: serverMediaUrl || null,
+            mediaUrl: serverMediaUrl || null,
+            thumbnailUrl: (contentData as any).thumbnailUrl || null,
             success: true
           });
         } else {
@@ -424,12 +439,17 @@ export async function generateAllPosts(
       } catch (platformError) {
         console.error(`Error generating for ${platform}:`, platformError);
         
+        // Use server URL if available, fallback to mediaUrl
+        const serverMediaUrl = (contentData as any).serverUrl || contentData.mediaUrl;
+        
         // Add fallback post for this platform
         posts.push({
           platform,
           caption: contentData.prompt || 'Check out our latest updates!',
           hashtags: [`#${campaignInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`, '#update'],
-          imageUrl: contentData.mediaUrl || null,
+          imageUrl: serverMediaUrl || null,
+          mediaUrl: serverMediaUrl || null,
+          thumbnailUrl: (contentData as any).thumbnailUrl || null,
           success: false,
           error: platformError instanceof Error ? platformError.message : 'Generation failed'
         });
@@ -453,12 +473,17 @@ export async function generateAllPosts(
   } catch (error: any) {
     console.error('Error in generateAllPosts:', error);
     
+    // Use server URL if available, fallback to mediaUrl
+    const serverMediaUrl = (contentData as any).serverUrl || contentData.mediaUrl;
+    
     // Return fallback posts for all platforms
     return platforms.map((platform: Platform) => ({
       platform,
       caption: contentData.prompt || 'Check out our latest updates!',
       hashtags: [`#${campaignInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`],
-      imageUrl: contentData.mediaUrl || null,
+      imageUrl: serverMediaUrl || null,
+      mediaUrl: serverMediaUrl || null,
+      thumbnailUrl: (contentData as any).thumbnailUrl || null,
       success: false,
       error: error.message || 'AI generation failed'
     }));

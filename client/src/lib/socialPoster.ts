@@ -98,7 +98,14 @@ export async function postToYouTubeFromServer(accessToken: string, post: Generat
     
     return response.data;
   } catch (error: any) {
-    throw new Error(error.response?.data?.error || error.message);
+    // Improve error message for quota limits
+    const errorMessage = error.response?.data?.error || error.message;
+    
+    if (errorMessage.includes('upload limit exceeded') || errorMessage.includes('exceeded the number of videos')) {
+      throw new Error('YouTube daily upload limit exceeded. Try again tomorrow after midnight PT.');
+    }
+    
+    throw new Error(errorMessage);
   }
 }
 export async function postToLinkedInPersonal(accessToken: string, post: GeneratedPost) {
@@ -339,8 +346,8 @@ export async function postToAllPlatforms(
       // Try to get real OAuth tokens using authenticated endpoint
       let realPostResult = null;
       try {
-        // Use platform-specific OAuth token endpoint with authentication
-        const tokenResponse = await fetch(`/api/${post.platform}/oauth_tokens`, {
+        // Use the centralized OAuth token endpoint with JWT authentication
+        const tokenResponse = await fetch(`/api/oauth/tokens/${post.platform}`, {
           headers: authHeaders
         });
         console.log(`Token response status for ${post.platform}:`, tokenResponse.status);
@@ -377,8 +384,11 @@ export async function postToAllPlatforms(
         successes.push(post.platform);
         onProgress?.(post.platform, 'success');
         console.log(`Successfully posted to ${post.platform} via real OAuth`);
+      } else if (realPostResult && !realPostResult.success) {
+        // Real OAuth attempt failed - propagate the actual error message
+        throw new Error(realPostResult.message || `Failed to post to ${post.platform}`);
       } else {
-        // No mock fallback - real OAuth required
+        // No result at all - OAuth token issue
         throw new Error(`No valid OAuth token found for ${post.platform}. Please connect your account.`);
       }
       

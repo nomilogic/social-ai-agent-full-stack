@@ -291,6 +291,112 @@ export class SupabaseStorageManager {
   }
   
   /**
+   * Download media from Supabase storage using authenticated access
+   */
+  async downloadMediaFromStorage(mediaUrl: string): Promise<Buffer | null> {
+    try {
+      console.log('Downloading media from Supabase storage:', mediaUrl)
+      
+      // Check if this is a Supabase storage URL
+      if (!mediaUrl.includes('supabase.co/storage/v1/object/public/')) {
+        console.log('Not a Supabase storage URL, using direct download')
+        const response = await axios.get(mediaUrl, {
+          responseType: 'arraybuffer',
+          timeout: 120000, // 2 minutes timeout
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        })
+        return Buffer.from(response.data)
+      }
+      
+      // Extract bucket and path from Supabase URL
+      const supabasePattern = /\/storage\/v1\/object\/public\/([^/]+)\/(.+)/
+      const match = mediaUrl.match(supabasePattern)
+      
+      if (!match || !match[1] || !match[2]) {
+        throw new Error('Could not parse Supabase storage URL')
+      }
+      
+      const bucket = match[1]
+      const path = match[2]
+      
+      console.log(`Downloading from bucket: ${bucket}, path: ${path}`)
+      
+      // Try multiple approaches for maximum compatibility
+      let buffer: Buffer | null = null
+      
+      // Method 1: Try downloading with service role (preferred)
+      try {
+        const { data, error } = await serverSupabase.storage
+          .from(bucket)
+          .download(path)
+        
+        if (!error && data) {
+          const arrayBuffer = await data.arrayBuffer()
+          buffer = Buffer.from(arrayBuffer)
+          console.log('Successfully downloaded via service role, size:', buffer.length, 'bytes')
+          return buffer
+        } else {
+          console.warn('Service role download failed:', error?.message || 'No data')
+        }
+      } catch (serviceError: any) {
+        console.warn('Service role download error:', serviceError.message)
+      }
+      
+      // Method 2: Fallback to direct HTTP download (for public files)
+      try {
+        console.log('Trying direct HTTP download as fallback...')
+        const response = await axios.get(mediaUrl, {
+          responseType: 'arraybuffer',
+          timeout: 120000,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': '*/*'
+          }
+        })
+        
+        buffer = Buffer.from(response.data)
+        console.log('Successfully downloaded via direct HTTP, size:', buffer.length, 'bytes')
+        return buffer
+        
+      } catch (httpError: any) {
+        console.error('Direct HTTP download also failed:', httpError.message)
+      }
+      
+      // Method 3: Try creating a signed URL and downloading from that
+      try {
+        console.log('Trying signed URL approach...')
+        const { data: signedData, error: signedError } = await serverSupabase.storage
+          .from(bucket)
+          .createSignedUrl(path, 3600) // 1 hour expiry
+        
+        if (!signedError && signedData?.signedUrl) {
+          const response = await axios.get(signedData.signedUrl, {
+            responseType: 'arraybuffer',
+            timeout: 120000,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+          })
+          
+          buffer = Buffer.from(response.data)
+          console.log('Successfully downloaded via signed URL, size:', buffer.length, 'bytes')
+          return buffer
+        }
+      } catch (signedError: any) {
+        console.warn('Signed URL download failed:', signedError.message)
+      }
+      
+      throw new Error('All download methods failed')
+      
+    } catch (error: any) {
+      console.error('Error downloading media from storage:', error.message)
+      return null
+    }
+  }
+
+  /**
    * Get file extension from content type or URL
    */
   private getFileExtension(contentType: string, url?: string): string {
@@ -301,7 +407,10 @@ export class SupabaseStorageManager {
       'image/png': '.png',
       'image/gif': '.gif',
       'image/webp': '.webp',
-      'image/svg+xml': '.svg'
+      'image/svg+xml': '.svg',
+      'video/mp4': '.mp4',
+      'video/webm': '.webm',
+      'video/quicktime': '.mov'
     }
     
     if (typeMap[contentType]) {
@@ -335,6 +444,10 @@ export async function uploadImageBuffer(buffer: Buffer, contentType: string, opt
 
 export async function ensureStorageSetup(): Promise<boolean> {
   return supabaseStorage.ensureBucketExists()
+}
+
+export async function downloadMediaFromStorage(mediaUrl: string): Promise<Buffer | null> {
+  return supabaseStorage.downloadMediaFromStorage(mediaUrl)
 }
 
 // Helper function to delete image by URL path

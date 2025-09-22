@@ -82,13 +82,16 @@ console.log("OUAAAAUT")
       state as string
     );
 
+    const username = (connectionData.userProfile.username || connectionData.userProfile.name || '').replace(/'/g, "\\'");
+    const profilePicture = (connectionData.userProfile.profile_picture_url || '').replace(/'/g, "\\'");
+    
     res.send(`
       <script>
         window.opener.postMessage({
-          type: 'OAUTH_SUCCESS', 
+          type: 'oauth_success', 
           platform: '${platform}',
-          username: '${connectionData.userProfile.username || connectionData.userProfile.name}',
-          profilePicture: '${connectionData.userProfile.profile_picture_url || ''}',
+          username: '${username}',
+          profilePicture: '${profilePicture}',
           connectedAt: ${connectionData.connectedAt}
         }, '*'); 
         //window.close();
@@ -96,12 +99,12 @@ console.log("OUAAAAUT")
     `);
   } catch (error) {
     console.error(`OAuth callback error for ${platform}:`, error);
-    const errorMessage = error instanceof Error ? error.message : 'OAuth failed';
+    const errorMessage = (error instanceof Error ? error.message : 'OAuth failed').replace(/'/g, "\\'");
     
     res.send(`
       <script>
         window.opener.postMessage({
-          type: 'OAUTH_ERROR', 
+          type: 'oauth_error', 
           platform: '${platform}', 
           error: '${errorMessage}'
         }, '*'); 
@@ -187,13 +190,45 @@ router.get('/tokens/:platform', authenticateJWT, async (req: Request, res: Respo
   const userId = req.user!.id; // Extract from authenticated JWT token
 
   try {
+    // Get both connection status and access token
+    const connections = await oauthManager.getConnectionStatus(userId);
+    const connection = connections[platform];
+    
+    if (!connection || !connection.connected) {
+      return res.json({ 
+        connected: false, 
+        expired: false,
+        token: null 
+      });
+    }
+    
+    if (connection.expired) {
+      return res.json({ 
+        connected: false, 
+        expired: true,
+        token: null 
+      });
+    }
+    
+    // Get the actual access token (this handles refresh if needed)
     const accessToken = await oauthManager.getAccessToken(userId, platform);
-    res.json({ access_token: accessToken });
+    
+    res.json({ 
+      connected: true,
+      expired: false,
+      token: {
+        access_token: accessToken
+      }
+    });
   } catch (error) {
     console.error(`Failed to get access token for ${platform}:`, error);
     
     if (error instanceof Error && error.message.includes('No connection found')) {
-      res.status(404).json({ error: `No ${platform} connection found for user` });
+      res.json({ 
+        connected: false, 
+        expired: false,
+        token: null 
+      });
     } else {
       res.status(500).json({ 
         error: `Failed to get access token for ${platform}`,

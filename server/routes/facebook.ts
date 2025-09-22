@@ -3,7 +3,7 @@ import axios from 'axios'
 import { db } from '../db'
 import { oauth_tokens } from '../../shared/schema'
 import { eq, and } from 'drizzle-orm'
-import { deleteImageByUrl } from '../lib/supabaseStorage.js'
+import { deleteImageByUrl, downloadMediaFromStorage } from '../lib/supabaseStorage.js'
 import { authenticateJWT } from '../middleware/auth'
 
 const router = express.Router()
@@ -147,16 +147,19 @@ router.post('/post', async (req: Request, res: Response) => {
 
     if (resolvedMediaUrl) {
       if (isVideo) {
-        // Use videos endpoint for video uploads
+        // For videos, try video endpoint first, but have fallback options
         url = `https://graph.facebook.com/v19.0/${targetId}/videos`
+        
+        // Try to use file_url first (requires video publishing permissions)
         postData = {
           file_url: resolvedMediaUrl,
           description: message,
           access_token: finalAccessToken
         }
         console.log('Posting video to URL:', url)
+        console.log('Note: Video posting requires special Facebook permissions. If this fails, we\'ll fall back to link sharing.')
       } else {
-        // Use photos endpoint for images to avoid (#100) error
+        // Use photos endpoint for images
         url = `https://graph.facebook.com/v19.0/${targetId}/photos`
         postData = {
           url: resolvedMediaUrl,
@@ -174,7 +177,31 @@ router.post('/post', async (req: Request, res: Response) => {
       console.log('Posting feed (text) to URL:', url)
     }
 
-    const response = await axios.post(url, postData)
+    let response
+    
+    try {
+      response = await axios.post(url, postData)
+    } catch (videoError: any) {
+      // If video posting failed due to permissions, fall back to link sharing
+      if (isVideo && resolvedMediaUrl && videoError.response?.data?.error?.code === 100) {
+        console.log('Video posting failed due to permissions. Falling back to link sharing...')
+        
+        // Fall back to sharing the video as a link in a text post
+        url = `https://graph.facebook.com/v19.0/${targetId}/feed`
+        postData = {
+          message: `${message}\n\n🎥 Video: ${resolvedMediaUrl}`,
+          link: resolvedMediaUrl,
+          access_token: finalAccessToken
+        }
+        
+        console.log('Attempting video link sharing fallback...')
+        response = await axios.post(url, postData)
+        console.log('Successfully posted video as link share')
+      } else {
+        // Re-throw other errors
+        throw videoError
+      }
+    }
 
     // Construct proper Facebook post URL
     let postUrl = '';
@@ -190,20 +217,9 @@ router.post('/post', async (req: Request, res: Response) => {
       }
     }
 
-    // Clean up uploaded media after successful posting (optional)
-    if (resolvedMediaUrl && resolvedMediaUrl.includes('supabase.co/storage/v1/object/public/')) {
-      // Only clean up Supabase media, leave other URLs alone
-      try {
-        const cleanupSuccess = await deleteImageByUrl(resolvedMediaUrl)
-        if (cleanupSuccess) {
-          console.log(`✅ Successfully cleaned up uploaded ${isVideo ? 'video' : 'image'} after Facebook post`)
-        } else {
-          console.warn(`⚠️ Failed to clean up uploaded ${isVideo ? 'video' : 'image'} (non-critical)`)
-        }
-      } catch (cleanupError) {
-        console.warn(`⚠️ Error during ${isVideo ? 'video' : 'image'} cleanup (non-critical):`, cleanupError)
-      }
-    }
+    // NOTE: Don't clean up media here - other platforms may need it!
+    // Media cleanup should happen after ALL platforms have posted
+    console.log('ℹ️ Skipping media cleanup - other platforms may need this file')
 
     // Standardize response format to match other platforms
     res.json({

@@ -4,6 +4,7 @@ import { db } from '../db';
 import { oauth_tokens } from '../../shared/schema';
 import { eq, and } from 'drizzle-orm';
 import { authenticateJWT } from '../middleware/auth';
+import { downloadMediaFromStorage } from '../lib/supabaseStorage';
 
 const router = express.Router();
 
@@ -105,7 +106,7 @@ router.post("/post", async (req: Request, res: Response) => {
       console.log("LinkedIn upload URL obtained:", uploadUrl);
       console.log("LinkedIn asset ID:", asset);
 
-      // Step 2b: Download the media from the provided URL
+      // Step 2b: Download the media using our storage helper
       console.log(`Downloading ${isVideo ? 'video' : 'image'} from URL:`, mediaUrl);
       
       // Convert relative URL to full URL if needed
@@ -118,18 +119,18 @@ router.post("/post", async (req: Request, res: Response) => {
       }
       
       console.log(`Full ${isVideo ? 'video' : 'image'} URL:`, fullMediaUrl);
-      const mediaResponse = await axios.get(fullMediaUrl, {
-        responseType: "arraybuffer",
-        timeout: isVideo ? 60000 : 30000, // Longer timeout for videos
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        },
-      });
-      console.log(`${isVideo ? 'Video' : 'Image'} downloaded, size:`, mediaResponse.data.length);
+      
+      // Download media using our authenticated storage helper
+      const mediaBuffer = await downloadMediaFromStorage(fullMediaUrl);
+      
+      if (!mediaBuffer) {
+        throw new Error(`Could not download ${isVideo ? 'video' : 'image'} file from storage`);
+      }
+      
+      console.log(`${isVideo ? 'Video' : 'Image'} downloaded successfully, size:`, mediaBuffer.length, 'bytes');
 
       // Step 2c: Upload the media binary data to LinkedIn
-      await axios.put(uploadUrl, mediaResponse.data, {
+      await axios.put(uploadUrl, mediaBuffer, {
         headers: {
           "Content-Type": "application/octet-stream",
         },
