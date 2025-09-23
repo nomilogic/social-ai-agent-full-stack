@@ -2290,27 +2290,39 @@ export const ContentInput: React.FC<ContentInputProps> = ({
             {/* Aspect Ratio Selection - Only show for text-to-image mode */}
             {selectedPostType === 'image' && selectedImageMode === 'textToImage' && (
               <div className="mb-4">
-                <label className="block text-sm font-medium theme-text-primary mb-2">
+                <label className="block text-md font-medium theme-text-primary mb-2">
                   Image Dimensions
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { label: 'Square\n1:1', value: '1:1', icon: '⬜' },
-                    { label: 'Horizontal\n16:9', value: '16:9', icon: '▬' },
-                    { label: 'Vertical\n9:16', value: '9:16', icon: '▫' }
+                    { label: '1:1', value: '1:1', icon: '⬜' },
+                    { label: '16:9', value: '16:9', icon: '▬' },
+                    { label: '9:16', value: '9:16', icon: '▫' }
                   ].map((ratio) => (
                     <button
                       key={ratio.value}
                       type="button"
                       onClick={() => handleAspectRatioChange(ratio.value)}
-                      className={`p-3 border transition-all duration-200 text-center ${
+                      className={`p-3 border transition-all duration-200 flex flex-col items-center justify-center ${
                         aspectRatio === ratio.value
-                          ? 'theme-bg-trinary text-white shadow-lg'
-                          : 'theme-bg-primary theme-text-secondary hover:theme-bg-primary/50'
+                          ? 'theme-bg-quaternary shadow-lg theme-text-secondary'
+                          : 'theme-bg-primary hover:theme-bg-primary/50'
                       }`}
                     >
-                      <div className="text-lg mb-1">{ratio.icon}</div>
-                      <div className="text-xs font-medium whitespace-pre-line">
+                             <div className={`border mx-aut  mb-2 ${ratio.value === "1:1"
+                                ? 'w-8 h-8 border-1 theme-border-secondary'
+                                : ratio.value === "16:9"
+                                  ? 'w-10 h-6 border-1'
+                                  : ratio.value === "9:16"
+                                    ? 'w-6 h-10 border-1'
+                                    : 'w-8 h-8 border-1'
+                              } ${aspectRatio === ratio.value
+                                ? 'theme-border-secondary border-2'
+                                :'theme-border-dark border-1'
+                               
+                              }`}>
+                          </div>
+                      <div className="text-md font-medium whitespace-pre-line">
                         {ratio.label}
                       </div>
                     </button>
