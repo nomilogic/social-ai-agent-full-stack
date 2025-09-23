@@ -370,6 +370,13 @@ body.modal-open .modal-content {
 body.modal-open .modal-content * {
   overflow: visible !important;
 }
+.bg-overlay {
+  background-image: url('./assets/bg-overlay.png');
+  /* filter: brightness(0.7); */
+  mix-blend-mode: luminosity;
+  opacity: 0.05;
+  background-size: contain
+}
 
 /* Theme-aware CSS variables for data attributes - used by components that need data-theme approach */
 :root {

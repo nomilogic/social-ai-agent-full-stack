@@ -15,7 +15,7 @@ export const LandingPage: React.FC = () => {
 
   const handleAuthSuccess = (user: any) => {
     dispatch({ type: "SET_USER", payload: user });
-    navigate("/pricing");
+    navigate("/content");
   };
 
   const handleBackToCarousel = () => {

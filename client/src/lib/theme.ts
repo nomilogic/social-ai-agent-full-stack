@@ -45,7 +45,7 @@ export const themes: Record<string, ThemeColors> = {
     text: {
       primary: "#000",
       secondary: "#7650e3",
-      light: "rgba(255, 255, 255, 0.7)",
+      light: "rgba(255, 255, 255, 0.99)",
       dark: "rgba(0, 0, 0, 0.7)",
     },
     background: {
@@ -53,7 +53,7 @@ export const themes: Record<string, ThemeColors> = {
       secondary: "rgb(168 85 247 / 0.2)",
       trinary: "#7650e3",
       card: "#fafafa",
-      light: "rgba(255, 255, 255, 0.95)",
+      light: "rgba(255, 255, 255, 0.99)",
       dark: "rgba(0, 0, 0, 0.95)",
     },
     border: {
