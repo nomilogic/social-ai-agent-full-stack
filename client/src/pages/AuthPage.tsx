@@ -22,10 +22,19 @@ export const AuthPage: React.FC = () => {
     // Set user plan and business account status based on login response
     if (user.plan) {
       dispatch({ type: 'SET_USER_PLAN', payload: user.plan });
+    } else {
+      // Auto-set new users to free plan and skip onboarding
+      dispatch({ type: 'SET_USER_PLAN', payload: 'free' });
     }
+    
     if (user.profile_type === 'business') {
       dispatch({ type: 'SET_BUSINESS_ACCOUNT', payload: true });
     }
+    
+    // Auto-complete onboarding for all users
+    dispatch({ type: 'SET_TIER_SELECTED', payload: true });
+    dispatch({ type: 'SET_PROFILE_SETUP', payload: true });
+    dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: true });
     
     const from = (location.state as any)?.from?.pathname || '/content';
     navigate(from, { replace: true });

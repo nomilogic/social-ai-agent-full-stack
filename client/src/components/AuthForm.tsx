@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Mail, Lock, User, Sparkles } from "lucide-react";
 import { initiateGoogleOAuth, initiateFacebookOAuth, isOAuthConfigured } from "../utils/authOAuth";
+import Icon from "./Icon";
 
 interface AuthFormProps {
   onAuthSuccess: (user: any) => void;
@@ -127,9 +128,9 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
     
     <div className="w-full max-w-md mx-auto">
         {/* Animated Background */}
-      <div className={`absolute inset-0 theme-bg-primary transition-all duration-1000`}>
+      <div className={`absolute inset-0 theme-bg-trinary transition-all duration-1000`}>
         <div className="absolute inset-0 bg-black/20"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
+        <div className="absolute inset-0 theme-bg-trinary from-black/30 via-transparent to-transparent bg-overlay "></div>
       </div>
 
       {/* Floating Elements */}
@@ -138,14 +139,15 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
         <div className="absolute top-40 right-20 w-16 h-16 bg-white/20 rounded-full animate-bounce"></div>
         <div className="absolute bottom-40 left-20 w-12 h-12 bg-white/15 rounded-full animate-ping"></div>
         <div className="absolute bottom-20 right-10 w-24 h-24 bg-white/10 rounded-full animate-pulse"></div>
-      </div>
+      </div>s
       <div className="theme-bg-card rounded-xl shadow-lg p-6 border" style={{ borderColor: "var(--theme-border)" }}>
         <div className="text-center mb-6">
-          <div className="w-12 h-12 theme-gradient rounded-lg flex items-center justify-center mx-auto mb-3">
-            <Sparkles className="w-6 h-6 theme-text-primary" />
+          <div className="w-12 h-12  flex items-center justify-center mx-auto mb-3">
+                       <Icon name="logo" size={50} className="ml-0 lg:ml-0" />
+           
           </div>
           <h1 className="text-xl font-bold theme-text-primary">
-            {isLogin ? "Welcome back" : "Get started"}
+            {"Welcome to OMNISHARE"}
           </h1>
         </div>
 
@@ -153,7 +155,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium theme-text-primary mb-1"
+              className="block text-sm font-medium theme-text-secondary mb-1"
             >
               Email Address
             </label>
@@ -220,7 +222,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 theme-text-secondary focus:ring-blue-500 border-gray-300 rounded"
               />
               <label htmlFor="rememberMe" className="ml-2 block text-sm theme-text-secondary">
                 Remember me for 30 days
@@ -240,14 +242,15 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full theme-button-primary py-2 px-4 rounded-lg hover:theme-button-hover focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="block text-sm font-medium theme-text-light theme-bg-trinary mb-1 w-full px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+          
           >
             {loading ? "Processing..." : isLogin ? "Sign In" : "Create Account"}
           </button>
         </form>
 
         {/* OAuth Login Buttons */}
-        <div className="mt-6">
+        <div className="mt-6 hidden">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t" style={{ borderColor: "var(--theme-border)" }}></div>

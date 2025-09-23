@@ -336,11 +336,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             console.log('Profile check failed, assuming new user:', error);
           }
 
-          // New user - no tier or profile setup
-          dispatch({ type: 'SET_TIER_SELECTED', payload: false });
-          dispatch({ type: 'SET_PROFILE_SETUP', payload: false });
-          dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: false });
-          console.log('New user - needs tier selection and profile setup');
+          // New user - automatically set to free plan and skip onboarding
+          dispatch({ type: 'SET_USER_PLAN', payload: 'free' });
+          dispatch({ type: 'SET_TIER_SELECTED', payload: true });
+          dispatch({ type: 'SET_PROFILE_SETUP', payload: true });
+          dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: true });
+          console.log('New user - automatically set to free plan, skipping onboarding');
         }
       } catch (error) {
         console.error('Error initializing auth:', error);

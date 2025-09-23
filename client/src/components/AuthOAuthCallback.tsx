@@ -168,7 +168,7 @@ export const AuthOAuthCallback: React.FC<AuthOAuthCallbackProps> = ({
 
         {status === "success" && (
           <div className="mt-4 text-sm theme-text-secondary">
-            Redirecting to dashboard...
+            Redirecting to create content...
           </div>
         )}
 

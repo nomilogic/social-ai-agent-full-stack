@@ -72,11 +72,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   };
 
   const navigation = [
-    { name: "Dashboard", path: "/dashboard", icon: Home },
-    { name: "Campaigns", path: "/campaigns", icon: Target },
     { name: "Create Content", path: "/content", icon: PenTool },
-    { name: "Schedule", path: "/schedule", icon: Calendar },
-    { name: "Settings", path: "/settings", icon: Settings },
+    // { name: "Dashboard", path: "/dashboard", icon: Home },
+    // { name: "Campaigns", path: "/campaigns", icon: Target },
+    
+    // { name: "Schedule", path: "/schedule", icon: Calendar },
+    // { name: "Settings", path: "/settings", icon: Settings },
   ];
 
   return (
@@ -92,7 +93,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-card bg-opacity-50 z-140 lg:hidden"
+          className="fixed inset-0 bg-card bg-opacity z-140 lg:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
@@ -101,20 +102,20 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
       <div className="lg:pl-100 relative z-10">
         <div
-          className={`fixed inset-y-0 left-0 z-50 w-64 bg-card backdrop-blur-lg border-r border-white/0 transform ${
+          className={`fixed inset-y-0 left-0 z-50 w-64 theme-bg-trinary border-r border-white/0 transform ${
             isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-          } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 lg:w-auto`}
+          } transition-transform duration-300 ease-in-out -lg:translate-x-0 -lg:static -lg:inset-0 -lg:w-auto`}
         >
-          <div className="flex items-center justify-between h-16 px-4 border-b border-white/20 lg:hidden">
+          <div className="flex items-center justify-between  px-1 border-b border-white/20 -lg:hidden">
             {/* <h1 className="text-xl font-bold theme-text-primary">Social AI</h1> */}
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-1 rounded-md theme-text-primary hover:theme-text-secondary lg:hidden"
+              className="rounded-md theme-text-light hover:theme-text-light -lg:hidden"
             >
-              <X className="w-6 h-6" />
+              <X className="w-6 h-6 " />
             </button>
           </div>
-          <nav className="mt-8 lg:mt-0 px-4 space-y-2 lg:space-y-0 lg:inline-flex">
+          <nav className="w-full space-y-2 lg:space-y-0 lg:inline-flex -lg:hidden mt-5">
             {navigation.map((item) => {
               const isActive = location.pathname === item.path;
               const Icon = item.icon;
@@ -122,10 +123,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 <Link
                   key={item.name}
                   to={item.path}
-                  className={`flex items-center px-3 py-1 text-sm font-medium transition-colors ${
+                  className={`w-full flex items-center px-3 py-1 text-sm font-medium transition-colors ${
                     isActive
-                      ? "theme-bg-primary theme-text-primary border-r-0"
-                      : "theme-text-secondary hover:theme-bg-primary hover:theme-text-primary"
+                      ? "theme-bg-primary theme-text-secondary border-r-0"
+                      : "theme-text-light hover:theme-secondary hover:theme-text-secondary border-r-0"
                   }`}
                 >
                   <Icon className="mr-3 h-5 w-5" />
@@ -141,7 +142,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             <div className="flex items-center">
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="p-1 rounded-md theme-text-primary hover:theme-text-secondary lg:hidden"
+                className="p-1 rounded-md theme-text-primary hover:theme-text-secondary -lg:hidden"
               >
                 <Menu className="w-6 h-6" />
               </button>

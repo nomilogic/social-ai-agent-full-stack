@@ -40,7 +40,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   // Check if user needs to complete onboarding
   if (!state.hasCompletedOnboarding && !location.pathname.includes('/pricing')) {
-    return <Navigate to="/pricing" replace />;
+   // return <Navigate to="/pricing" replace />;
   }
 
   return <>{children}</>;

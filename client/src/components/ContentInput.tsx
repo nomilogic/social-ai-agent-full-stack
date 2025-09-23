@@ -1699,7 +1699,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                                   );
                                 })()}
                                 {/* Remove button overlay */}
-                                <button
+                                {/* <button
                                   type="button"
                                   onClick={() => {
                                     setFormData((prev) => ({
@@ -1716,9 +1716,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                                   title="Remove image"
                                 >
                                   <X className="w-3 h-3" />
-                                </button>
+                                </button> */}
                               </div>
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center justify-center flex-col space-y-1">
                                 <p className="text-xs theme-text-secondary">
                                   {formData.media?.name || "Uploaded Image"}
                                 </p>
@@ -2041,15 +2041,15 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                             >
                               Your browser does not support the video tag.
                             </video>
-                            <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs flex items-center">
+                            {/* <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs flex items-center">
                               <Icon name="video-post" size={12} className="mr-1" />
                               {videoAspectRatio && is9x16Video(videoAspectRatio) ? 'Vertical Video' : 
                                videoAspectRatio && is16x9Video(videoAspectRatio) ? 'Horizontal Video' : 'Video'}
-                            </div>
+                            </div> */}
                           </div>
                         )}
                       </div>
-                      <div className="text-sm theme-text-secondary space-y-2">
+                      <div className="text-sm theme-text-secondary space-y-2 text-center">
                         <div>
                           <p className="font-medium theme-text-primary text-sm">
                             {formData.media?.name || "Uploaded Media"}
@@ -2062,43 +2062,43 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                         </div>
 
                         {/* Compact checkboxes */}
-                        <div className="flex gap-2">
-                          <div className="flex items-center space-x-1 p-2 theme-bg-primary/20 rounded text-xs">
-                            <input
-                              type="checkbox"
-                              id="useForAI"
-                              checked={useForAIReference}
-                              onChange={(e) =>
-                                setUseForAIReference(e.target.checked)
-                              }
-                              className="w-3 h-3 text-blue-600"
-                            />
-                            <Brain className="w-3 h-3 text-blue-400" />
-                            <label
-                              htmlFor="useForAI"
-                              className="theme-text-secondary cursor-pointer"
-                            >
-                              AI Reference
-                            </label>
-                          </div>
+                          {/* <div className="flex gap-2">
+                            <div className="flex items-center space-x-1 p-2 theme-bg-primary/20 rounded text-xs">
+                              <input
+                                type="checkbox"
+                                id="useForAI"
+                                checked={useForAIReference}
+                                onChange={(e) =>
+                                  setUseForAIReference(e.target.checked)
+                                }
+                                className="w-3 h-3 text-blue-600"
+                              />
+                              <Brain className="w-3 h-3 text-blue-400" />
+                              <label
+                                htmlFor="useForAI"
+                                className="theme-text-secondary cursor-pointer"
+                              >
+                                AI Reference
+                              </label>
+                            </div>
 
-                          <div className="flex items-center space-x-1 p-2 theme-bg-primary/20 rounded text-xs">
-                            <input
-                              type="checkbox"
-                              id="useInPost"
-                              checked={useInPost}
-                              onChange={(e) => setUseInPost(e.target.checked)}
-                              className="w-3 h-3 text-green-600"
-                            />
-                            <Target className="w-3 h-3 text-green-400" />
-                            <label
-                              htmlFor="useInPost"
-                              className="theme-text-secondary cursor-pointer"
-                            >
-                              Use in Post
-                            </label>
-                          </div>
-                        </div>
+                            <div className="flex items-center space-x-1 p-2 theme-bg-primary/20 rounded text-xs">
+                              <input
+                                type="checkbox"
+                                id="useInPost"
+                                checked={useInPost}
+                                onChange={(e) => setUseInPost(e.target.checked)}
+                                className="w-3 h-3 text-green-600"
+                              />
+                              <Target className="w-3 h-3 text-green-400" />
+                              <label
+                                htmlFor="useInPost"
+                                className="theme-text-secondary cursor-pointer"
+                              >
+                                Use in Post
+                              </label>
+                            </div>
+                          </div> */}
 
                         {/* Status indicators */}
                         {analyzingImage && (
@@ -2134,34 +2134,34 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                         {(formData.media || formData.mediaUrl) &&
                           ((formData.media?.type.startsWith("image/")) ||
                             (formData.mediaUrl && !formData.media && !formData.mediaUrl.match(/\.(mp4|mov|avi|wmv|flv|webm|mkv|m4v)$/i))) &&
-                          !analyzingImage && (
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={performAIAnalysis}
-                                disabled={analyzingImage}
-                                className="flex-1 bg-gradient-to-r from-blue-500/80 to-indigo-500/80 text-white px-3 py-2 rounded text-xs hover:from-blue-600/80 hover:to-indigo-600/80 transition-all duration-200 flex items-center justify-center space-x-1 disabled:opacity-50"
-                              >
-                                <Eye className="w-3 h-3" />
-                                <span>AI Analysis</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const blankTemplate = getTemplateById('blank-template');
-                                  if (blankTemplate) {
-                                    setSelectedTemplate(blankTemplate);
-                                    setShowTemplateEditor(true);
-                                  } else {
-                                    console.error('❌ Blank template not found for Apply Template button');
-                                  }
-                                }}
-                                className="flex-1 bg-gradient-to-r from-purple-500/80 to-pink-500/80 text-white px-3 py-2 rounded text-xs hover:from-purple-600/80 hover:to-pink-600/80 transition-all duration-200 flex items-center justify-center space-x-1"
-                              >
-                                <Palette className="w-3 h-3" />
-                                <span>Apply Template</span>
-                              </button>
-                            </div>
+                          !analyzingImage && (<></>
+                            // <div className="flex gap-2">
+                            //   <button
+                            //     type="button"
+                            //     onClick={performAIAnalysis}
+                            //     disabled={analyzingImage}
+                            //     className="flex-1 bg-gradient-to-r from-blue-500/80 to-indigo-500/80 text-white px-3 py-2 rounded text-xs hover:from-blue-600/80 hover:to-indigo-600/80 transition-all duration-200 flex items-center justify-center space-x-1 disabled:opacity-50"
+                            //   >
+                            //     <Eye className="w-3 h-3" />
+                            //     <span>AI Analysis</span>
+                            //   </button>
+                            //   <button
+                            //     type="button"
+                            //     onClick={() => {
+                            //       const blankTemplate = getTemplateById('blank-template');
+                            //       if (blankTemplate) {
+                            //         setSelectedTemplate(blankTemplate);
+                            //         setShowTemplateEditor(true);
+                            //       } else {
+                            //         console.error('❌ Blank template not found for Apply Template button');
+                            //       }
+                            //     }}
+                            //     className="flex-1 bg-gradient-to-r from-purple-500/80 to-pink-500/80 text-white px-3 py-2 rounded text-xs hover:from-purple-600/80 hover:to-pink-600/80 transition-all duration-200 flex items-center justify-center space-x-1"
+                            //   >
+                            //     <Palette className="w-3 h-3" />
+                            //     <span>Apply Template</span>
+                            //   </button>
+                            // </div>
                           )}
 
                         {/* Template Applied UI */}
@@ -2170,7 +2170,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                             <div className="flex justify-between mb-2">
                               <h4 className="font-medium text-purple-300 flex  text-xs">
                                 <Palette className="w-3 h-3 mr-1" />
-                                Template Applied: {selectedTemplate.name}
+                                Image Updated: {selectedTemplate.name}
                               </h4>
                             </div>
                             <div className="flex gap-2">
@@ -2207,7 +2207,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           setSelectedTemplate(undefined);
                           setImageAnalysis("");
                         }}
-                        className="text-red-400 hover:text-red-300 text-xs font-medium"
+                        className="text-red-400 hover:text-red-300 text-xs font-medium text-center w-full flex items-center justify-center space-x-1  "
                       >
                         Remove
                       </button>
