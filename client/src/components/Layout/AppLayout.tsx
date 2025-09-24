@@ -15,11 +15,13 @@ import {
   Building2,
 } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
+import { useLoading } from "../../context/LoadingContext";
 import { NotificationCenter } from "../NotificationCenter";
 import { ThemeSelector } from "../ThemeSelector";
 import { useTheme } from "../../hooks/useTheme";
 import Icon from "../Icon";
 import { WalletBalance } from "../WalletBalance";
+import PreloaderOverlay from "../PreloaderOverlay";
 
 // Define the props for AppLayout
 interface AppLayoutProps {
@@ -28,6 +30,7 @@ interface AppLayoutProps {
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const { user, logout } = useAppContext();
+  const { loadingState } = useLoading();
   const { currentTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
@@ -272,6 +275,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           </div>
         </footer>
       </div>
+
+      {/* Global Preloader Overlay */}
+      <PreloaderOverlay loadingState={loadingState} />
     </div>
   );
 };

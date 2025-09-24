@@ -40,7 +40,9 @@ import {
   is16x9Video,
   is9x16Video 
 } from "../utils/videoUtils";
+import { useLoadingAPI } from "../hooks/useLoadingAPI";
 import { s } from "node_modules/vite/dist/node/types.d-aGj9QkWt";
+import { LoadingTest } from "./LoadingTest";
 
 // Helper function to convert file to base64
 const fileToBase64 = (file: File): Promise<string> => {
@@ -75,6 +77,14 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   editMode,
 }) => {
   const { state } = useAppContext();
+  const { 
+    executeVideoThumbnailGeneration, 
+    executeImageGeneration,
+    executeWithLoading,
+    executeFileUpload,
+    showLoading,
+    hideLoading 
+  } = useLoadingAPI();
   const [formData, setFormData] = useState<PostContent>({
     prompt: initialData?.prompt || "",
     tags: initialData?.tags || [],
@@ -235,8 +245,6 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     console.log('📁 File upload started:', file.name, file.type, file.size);
     console.log('Current formData state BEFORE:', { media: !!formData.media, mediaUrl: !!formData.mediaUrl });
 
-    setUploading(true);
-
     // Clear template-related state when uploading a new file
     setTemplatedImageUrl("");
     setSelectedTemplate(undefined);
@@ -291,29 +299,83 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
       if (!userResult || !userResult.user) {
         console.warn('⚠️ User not authenticated, keeping local file only');
-        setUploading(false);
         return;
       }
 
-      console.log('🌍 Uploading to server with userId:', userResult.user.id);
-      const mediaUrl = await uploadMedia(file, userResult.user.id);
-      console.log('✅ Upload successful, URL:', mediaUrl);
-
-      setFormData((prev) => {
-        console.log('Adding URL to existing file. Previous:', { media: !!prev.media, mediaUrl: !!prev.mediaUrl });
-
-        // Clean up the previous blob URL if it exists
-        if (prev.mediaUrl && prev.mediaUrl.startsWith('blob:')) {
-          URL.revokeObjectURL(prev.mediaUrl);
-          console.log('🗑️ Cleaned up previous blob URL');
+      console.log('🌍 Starting upload to server with enhanced preloader...');
+      
+      // Use the enhanced file upload preloader
+      const mediaUrl = await executeFileUpload(
+        async () => {
+          return await uploadMedia(file, userResult.user.id);
+        },
+        file.name,
+        file.size,
+        {
+          canCancel: true,
+          onCancel: () => {
+            console.log('🛑 File upload cancelled by user');
+            // Optionally clean up the preview if user cancels
+            setFormData((prev) => {
+              if (prev.mediaUrl && prev.mediaUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(prev.mediaUrl);
+              }
+              return { 
+                ...prev, 
+                media: undefined, 
+                mediaUrl: undefined, 
+                serverUrl: undefined 
+              };
+            });
+            // Clear related state
+            setTemplatedImageUrl("");
+            setSelectedTemplate(undefined);
+            setImageAnalysis("");
+            setVideoThumbnailUrl("");
+            setOriginalVideoFile(null);
+            setVideoAspectRatio(null);
+          }
         }
+      );
+      
+      if (mediaUrl) {
+        console.log('✅ Upload successful, URL:', mediaUrl);
 
-        // Always use server URL for media (for publishing compatibility)
-        // Use server URL as both mediaUrl and serverUrl for consistent publishing
-        const newData = { ...prev, media: file, mediaUrl: mediaUrl, serverUrl: mediaUrl };
-        console.log('Final formData with server URL:', { media: !!newData.media, mediaUrl: !!newData.mediaUrl, serverUrl: !!newData.serverUrl });
-        return newData;
-      });
+        setFormData((prev) => {
+          console.log('Adding URL to existing file. Previous:', { media: !!prev.media, mediaUrl: !!prev.mediaUrl });
+
+          // Clean up the previous blob URL if it exists
+          if (prev.mediaUrl && prev.mediaUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(prev.mediaUrl);
+            console.log('🗑️ Cleaned up previous blob URL');
+          }
+
+          // Always use server URL for media (for publishing compatibility)
+          // Use server URL as both mediaUrl and serverUrl for consistent publishing
+          const newData = { ...prev, media: file, mediaUrl: mediaUrl, serverUrl: mediaUrl };
+          console.log('Final formData with server URL:', { media: !!newData.media, mediaUrl: !!newData.mediaUrl, serverUrl: !!newData.serverUrl });
+          return newData;
+        });
+        
+        // Final state check
+        setTimeout(() => {
+          console.log('Final state after upload process:', {
+            media: !!formData.media,
+            mediaUrl: !!formData.mediaUrl,
+            templatedImageUrl: !!templatedImageUrl,
+            videoThumbnailUrl: !!videoThumbnailUrl,
+            isVideo: isVideoFile(file),
+            showPreview: !!(formData.media || formData.mediaUrl)
+          });
+          
+          // Note: Template editor will open when user clicks Generate Post
+          if (file.type.startsWith("image/")) {
+            console.log('🖼️ Image uploaded successfully, template editor will open on Generate Post');
+          } else if (isVideoFile(file)) {
+            console.log('🎥 Video uploaded successfully, thumbnail generated, template editor will open on Generate Post');
+          }
+        }, 100);
+      }
     } catch (error) {
       console.error("❌ Error uploading file:", error);
       if (error instanceof Error) {
@@ -321,27 +383,6 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       } else {
         console.log('📱 File should still be set for local preview, unknown error:', error);
       }
-    } finally {
-      setUploading(false);
-
-      // Final state check
-      setTimeout(() => {
-        console.log('Final state after upload process:', {
-          media: !!formData.media,
-          mediaUrl: !!formData.mediaUrl,
-          templatedImageUrl: !!templatedImageUrl,
-          videoThumbnailUrl: !!videoThumbnailUrl,
-          isVideo: isVideoFile(file),
-          showPreview: !!(formData.media || formData.mediaUrl)
-        });
-        
-        // Note: Template editor will open when user clicks Generate Post
-        if (file.type.startsWith("image/")) {
-          console.log('🖼️ Image uploaded successfully, template editor will open on Generate Post');
-        } else if (isVideoFile(file)) {
-          console.log('🎥 Video uploaded successfully, thumbnail generated, template editor will open on Generate Post');
-        }
-      }, 100);
     }
   };
 
@@ -623,14 +664,18 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         isVideoContent,
         hasServerUrl: !!currentFormData.serverUrl,
         hasMediaUrl: !!currentFormData.mediaUrl,
+        hasTemplatedImage: !!templatedImageUrl,
         serverUrl: currentFormData.serverUrl?.substring(0, 80) + '...',
         mediaUrl: currentFormData.mediaUrl?.substring(0, 80) + '...',
+        templatedImageUrl: templatedImageUrl?.substring(0, 80) + '...',
         shouldUseServerUrl: isVideoContent && currentFormData.serverUrl
       })
       
-      const finalMediaUrlForAssets = isVideoContent && currentFormData.serverUrl 
-        ? currentFormData.serverUrl 
-        : currentFormData.mediaUrl
+      // Prioritize templated image URL (from template editor) over other URLs
+      const finalMediaUrlForAssets = templatedImageUrl ||
+        (isVideoContent && currentFormData.serverUrl 
+          ? currentFormData.serverUrl 
+          : currentFormData.mediaUrl)
         
       const mediaAssets = finalMediaUrlForAssets
         ? [{ url: finalMediaUrlForAssets, type: isVideoContent ? "video" : (currentFormData.media?.type || "image") }]
@@ -643,14 +688,26 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       });
 
       // For video content, ensure we override the mediaUrl with the server URL
-      const finalPostData = isVideoContent && currentFormData.serverUrl 
-        ? {
-            ...currentFormData,
-            mediaUrl: currentFormData.serverUrl, // Override with server URL for videos
-            imageUrl: currentFormData.serverUrl, // Also set imageUrl for compatibility
-            videoUrl: currentFormData.serverUrl  // Also set videoUrl for video posts
-          }
-        : currentFormData;
+      // For template-edited content, prioritize the templated image URL
+      let finalPostData;
+      if (templatedImageUrl) {
+        // Use templated image URL (from template editor)
+        finalPostData = {
+          ...currentFormData,
+          mediaUrl: templatedImageUrl,
+          imageUrl: templatedImageUrl,
+          serverUrl: templatedImageUrl // Ensure compatibility with publishing
+        };
+      } else if (isVideoContent && currentFormData.serverUrl) {
+        finalPostData = {
+          ...currentFormData,
+          mediaUrl: currentFormData.serverUrl, // Override with server URL for videos
+          imageUrl: currentFormData.serverUrl, // Also set imageUrl for compatibility
+          videoUrl: currentFormData.serverUrl  // Also set videoUrl for video posts
+        };
+      } else {
+        finalPostData = currentFormData;
+      }
         
       const postData = {
         ...finalPostData, // Use the updated form data with proper URLs
@@ -694,10 +751,12 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       } else {
         // Otherwise, simulate generation for preview
         // For videos, ensure we use the server URL if available, not blob URLs
+        // For template-edited content, prioritize the templated image URL
         const isVideoContent = !!(originalVideoFile || (currentFormData.media && isVideoFile(currentFormData.media)))
-        const finalMediaUrl = isVideoContent && currentFormData.serverUrl 
-          ? currentFormData.serverUrl 
-          : currentFormData.mediaUrl
+        const finalMediaUrl = templatedImageUrl ||
+          (isVideoContent && currentFormData.serverUrl 
+            ? currentFormData.serverUrl 
+            : currentFormData.mediaUrl)
         
         console.log('🎬 Video preview generation:', {
           isVideoContent,
@@ -779,17 +838,18 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         console.log('✅ Upload successful, server URL:', mediaUrl);
         
         setFormData((prev) => {
-          console.log('🔄 Updating formData with server URL - before:', { 
-            hasMedia: !!prev.media, 
-            hasMediaUrl: !!prev.mediaUrl 
-          });
-          const newData = { ...prev, media: file, mediaUrl };
-          console.log('🔄 Updating formData with server URL - after:', { 
-            hasMedia: !!newData.media, 
-            hasMediaUrl: !!newData.mediaUrl,
-            mediaUrl: newData.mediaUrl?.substring(0, 50) + '...' 
-          });
-          return newData;
+        console.log('🔄 Updating formData with server URL - before:', { 
+          hasMedia: !!prev.media, 
+          hasMediaUrl: !!prev.mediaUrl 
+        });
+        const newData = { ...prev, media: file, mediaUrl, serverUrl: mediaUrl };
+        console.log('🔄 Updating formData with server URL - after:', { 
+          hasMedia: !!newData.media, 
+          hasMediaUrl: !!newData.mediaUrl,
+          hasServerUrl: !!newData.serverUrl,
+          mediaUrl: newData.mediaUrl?.substring(0, 50) + '...' 
+        });
+        return newData;
         });
         
         // Auto-open template editor with blank template only if requested
@@ -1151,12 +1211,12 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
   const [aspectRatio, setAspectRatio] = useState<string>('1:1');
   const [imageDescription, setImageDescription] = useState<string>('');
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [generateImageWithPost, setGenerateImageWithPost] = useState(true );
   const [isGeneratingBoth, setIsGeneratingBoth] = useState(false);
+  const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   
   // Video-related state
-  const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
   const [videoThumbnailUrl, setVideoThumbnailUrl] = useState<string>("");
   const [originalVideoFile, setOriginalVideoFile] = useState<File | null>(null);
   const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(null);
@@ -1167,113 +1227,83 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
   // Generate AI thumbnail for video when Generate Post is clicked
   const generateThumbnailForPost = async (contentDescription: string, aspectRatio: number | null): Promise<string | null> => {
+    setIsGeneratingThumbnail(true);
     try {
-      setIsGeneratingThumbnail(true);
-      console.log('🎨 Generating video thumbnail from content description:', contentDescription.substring(0, 100) + '...');
-      console.log('📐 Input video aspect ratio:', aspectRatio);
+      return await executeVideoThumbnailGeneration(
+        async () => {
+        console.log('🎨 Generating video thumbnail from content description:', contentDescription.substring(0, 100) + '...');
+        console.log('📐 Input video aspect ratio:', aspectRatio);
 
-      const apiUrl = import.meta.env.VITE_API_URL ||
-        (typeof window !== "undefined"
-          ? `${window.location.protocol}//${window.location.host}`
-          : "http://localhost:5000/api");
+        const apiUrl = import.meta.env.VITE_API_URL ||
+          (typeof window !== "undefined"
+            ? `${window.location.protocol}//${window.location.host}`
+            : "http://localhost:5000/api");
 
-      // Determine aspect ratio with better logic and inform AI about video dimensions
-      let targetAspectRatio = '16:9'; // Default
-      let aspectRatioDescription = '16:9 horizontal format';
-      
-      if (aspectRatio !== null && aspectRatio > 0) {
-        console.log('🔍 Analyzing aspect ratio:', aspectRatio);
+        // Force 16:9 thumbnails regardless of input aspect ratio
+        const targetAspectRatio = '16:9';
+        const aspectRatioDescription = '16:9 horizontal/landscape format (forced)';
+        console.log('📐 Forcing thumbnail aspect ratio to 16:9');
+
+        // Enhanced thumbnail prompt with content description and aspect ratio context
+        const thumbnailPrompt = `Create a compelling video thumbnail for ${aspectRatioDescription} video about: ${contentDescription.trim()}. Make it eye-catching, professional, and suitable for social media platforms. Include relevant visual elements that represent the content. Do not include any text, words, letters, numbers, captions, watermarks, logos, or typography. Pure imagery only.`;
+
+        console.log('📝 Thumbnail prompt:', thumbnailPrompt);
+        console.log('📐 Final target aspect ratio:', targetAspectRatio, '(' + aspectRatioDescription + ')');
+
+        const requestBody = {
+          prompt: thumbnailPrompt,
+          style: 'professional',
+          aspectRatio: targetAspectRatio,
+          quality: 'standard',
+          model: 'gemini-2.5-flash-image-preview'
+        };
         
-        if (is9x16Video(aspectRatio)) {
-          targetAspectRatio = '9:16';
-          aspectRatioDescription = '9:16 vertical/shorts format';
-          console.log('✅ Detected 9:16 vertical video');
-        } else if (is16x9Video(aspectRatio)) {
-          targetAspectRatio = '16:9';
-          aspectRatioDescription = '16:9 horizontal/landscape format';
-          console.log('✅ Detected 16:9 horizontal video');
-        } else {
-          // Custom aspect ratio - be more precise with detection
-          const aspectRatioValue = aspectRatio;
-          
-          if (aspectRatioValue < 0.7) {
-            // Very vertical (taller than 10:7)
-            targetAspectRatio = '9:16';
-            aspectRatioDescription = `${aspectRatioValue.toFixed(3)} custom vertical format (generating as 9:16)`;
-            console.log('📱 Custom vertical aspect ratio, using 9:16 for thumbnail');
-          } else if (aspectRatioValue > 1.4) {
-            // Very horizontal (wider than 7:5)
-            targetAspectRatio = '16:9';
-            aspectRatioDescription = `${aspectRatioValue.toFixed(3)} custom horizontal format (generating as 16:9)`;
-            console.log('🖥️ Custom horizontal aspect ratio, using 16:9 for thumbnail');
-          } else {
-            // Square-ish (between 0.7 and 1.4)
-            targetAspectRatio = '1:1';
-            aspectRatioDescription = `${aspectRatioValue.toFixed(3)} custom square format (generating as 1:1)`;
-            console.log('⬜ Custom square aspect ratio, using 1:1 for thumbnail');
+        console.log('📋 Request body for thumbnail generation:', requestBody);
+
+        const response = await fetch(`${apiUrl}/ai/generate-image`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Thumbnail generation API error:', errorText);
+          throw new Error(`Failed to generate video thumbnail: ${response.status}`);
+        }
+
+        const result = await response.json();
+        if (!result.success || !result.imageUrl) {
+          throw new Error(result.error || 'Video thumbnail generation failed');
+        }
+
+        console.log('✅ Video thumbnail generated successfully');
+
+        // Try to upload generated thumbnail to our storage for a stable URL
+        try {
+          const user = await getCurrentUser();
+          if (user?.user?.id) {
+            const imgResp = await fetch(result.imageUrl);
+            const blob = await imgResp.blob();
+            const file = new File([blob], `video-thumbnail-${Date.now()}.png`, { type: 'image/png' });
+            const uploadedUrl = await uploadMedia(file, user.user.id);
+            console.log('📤 Video thumbnail uploaded to storage:', uploadedUrl);
+            setVideoThumbnailUrl(uploadedUrl);
+            return uploadedUrl;
           }
+        } catch (uploadErr) {
+          console.warn('Failed to upload video thumbnail, using direct URL:', uploadErr);
         }
-      } else {
-        console.log('⚠️ No valid aspect ratio provided, defaulting to 16:9');
-      }
 
-      // Enhanced thumbnail prompt with content description and aspect ratio context
-      const thumbnailPrompt = `Create a compelling video thumbnail for ${aspectRatioDescription} video about: ${contentDescription.trim()}. Make it eye-catching, professional, and suitable for social media platforms. Include relevant visual elements that represent the content.`;
-
-      console.log('📝 Thumbnail prompt:', thumbnailPrompt);
-      console.log('📐 Final target aspect ratio:', targetAspectRatio, '(' + aspectRatioDescription + ')');
-
-      const requestBody = {
-        prompt: thumbnailPrompt,
-        style: 'professional',
-        aspectRatio: targetAspectRatio,
-        quality: 'standard',
-        model: 'gemini-2.5-flash-image-preview'
-      };
-      
-      console.log('📋 Request body for thumbnail generation:', requestBody);
-
-      const response = await fetch(`${apiUrl}/ai/generate-image`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Thumbnail generation API error:', errorText);
-        throw new Error(`Failed to generate video thumbnail: ${response.status}`);
-      }
-
-      const result = await response.json();
-      if (!result.success || !result.imageUrl) {
-        throw new Error(result.error || 'Video thumbnail generation failed');
-      }
-
-      console.log('✅ Video thumbnail generated successfully');
-
-      // Try to upload generated thumbnail to our storage for a stable URL
-      try {
-        const user = await getCurrentUser();
-        if (user?.user?.id) {
-          const imgResp = await fetch(result.imageUrl);
-          const blob = await imgResp.blob();
-          const file = new File([blob], `video-thumbnail-${Date.now()}.png`, { type: 'image/png' });
-          const uploadedUrl = await uploadMedia(file, user.user.id);
-          console.log('📤 Video thumbnail uploaded to storage:', uploadedUrl);
-          setVideoThumbnailUrl(uploadedUrl);
-          return uploadedUrl;
-        }
-      } catch (uploadErr) {
-        console.warn('Failed to upload video thumbnail, using direct URL:', uploadErr);
-      }
-
-      setVideoThumbnailUrl(result.imageUrl);
-      return result.imageUrl;
+        setVideoThumbnailUrl(result.imageUrl);
+        return result.imageUrl;
+      },
+      'Generating video thumbnail from content description'
+    );
     } catch (error) {
-      console.error('❌ Video thumbnail generation failed:', error);
+      console.error('❌ Error in generateThumbnailForPost:', error);
       return null;
     } finally {
       setIsGeneratingThumbnail(false);
@@ -1286,40 +1316,45 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     
     setIsGeneratingImage(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 
-        (typeof window !== "undefined" 
-          ? `${window.location.protocol}//${window.location.host}` 
-          : "http://localhost:5000/api");
-      
-      const response = await fetch(`${apiUrl}/ai/generate-image`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: imageDescription,
-          style: 'professional',
-          aspectRatio: aspectRatio,
-          quality: 'standard',
-          model: 'gemini-2.5-flash-image-preview'
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to generate image');
-      }
-      
-      const result = await response.json();
-      console.log('🎨 Image generation API response:', result);
-      if (result.success && result.imageUrl) {
-        await handleAIImageGenerated(result.imageUrl);
-        setImageDescription(''); // Clear the description field
-      } else {
-        throw new Error(result.error || 'Image generation failed');
-      }
+      const result = await executeImageGeneration(
+        async () => {
+        const apiUrl = import.meta.env.VITE_API_URL || 
+          (typeof window !== "undefined" 
+            ? `${window.location.protocol}//${window.location.host}` 
+            : "http://localhost:5000/api");
+        
+        const response = await fetch(`${apiUrl}/ai/generate-image`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            prompt: `${imageDescription.trim()}. Do not include any text, words, letters, numbers, captions, watermarks, logos, or typography. Pure imagery only.`,
+            style: 'professional',
+            aspectRatio: aspectRatio,
+            quality: 'standard',
+            model: 'gemini-2.5-flash-image-preview'
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to generate image');
+        }
+        
+        const result = await response.json();
+        console.log('🎨 Image generation API response:', result);
+        if (result.success && result.imageUrl) {
+          await handleAIImageGenerated(result.imageUrl);
+          setImageDescription(''); // Clear the description field
+          return result;
+        } else {
+          throw new Error(result.error || 'Image generation failed');
+        }
+      },
+      'Creating your custom image'
+    );
     } catch (error) {
-      console.error('Error generating image:', error);
-      // You might want to show an error message to the user here
+      console.error('❌ Error in handleGenerateImage:', error);
     } finally {
       setIsGeneratingImage(false);
     }
@@ -1327,64 +1362,58 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
   // Combined generation function - generates both post and image from main prompt
   const handleCombinedGeneration = async (prompt: string, shouldAutoOpenTemplate: boolean = true): Promise<string | null> => {
-    setIsGeneratingImage(true);
-    try {
-      console.log('🖼️ Combined generation started with prompt:', prompt.substring(0, 100) + '...');
-      
-      const apiUrl = import.meta.env.VITE_API_URL || 
-        (typeof window !== "undefined" 
-          ? `${window.location.protocol}//${window.location.host}` 
-          : "http://localhost:5000/api");
-      
-      console.log('🌍 API URL for image generation:', apiUrl);
-      
-      const requestBody = {
-        prompt: prompt,
-        style: 'professional',
-        aspectRatio: aspectRatio,
-        quality: 'standard',
-        model: 'gemini-2.5-flash-image-preview'
-      };
-      
-      console.log('📝 Request body:', requestBody);
-      
-      const response = await fetch(`${apiUrl}/ai/generate-image`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      });
-      
-      console.log('🚀 Response status:', response.status, response.statusText);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Response error:', errorText);
-        throw new Error(`Failed to generate image: ${response.status} ${errorText}`);
-      }
-      
-      const result = await response.json();
-      console.log('🎨 Image generation result:', result);
-      
-      if (result.success && result.imageUrl) {
-        console.log('✅ Image generated successfully, processing...', result.imageUrl);
-        await handleAIImageGenerated(result.imageUrl, shouldAutoOpenTemplate);
-        console.log('✅ Combined generation completed successfully!');
-        return result.imageUrl;
-      } else {
-        console.error('❌ Image generation result invalid:', result);
-        throw new Error(result.error || 'Image generation failed - no image URL in response');
-      }
-    } catch (error) {
-      console.error('❌ Error in combined generation:', error);
-      if (error instanceof Error) {
-        console.error('❌ Error details:', error.message, error.stack);
-      }
-      return null;
-    } finally {
-      setIsGeneratingImage(false);
-    }
+    return await executeImageGeneration(
+      async () => {
+        console.log('🖼️ Combined generation started with prompt:', prompt.substring(0, 100) + '...');
+        
+        const apiUrl = import.meta.env.VITE_API_URL || 
+          (typeof window !== "undefined" 
+            ? `${window.location.protocol}//${window.location.host}` 
+            : "http://localhost:5000/api");
+        
+        console.log('🌍 API URL for image generation:', apiUrl);
+        
+        const requestBody = {
+          prompt: `${prompt}. Do not include any text, words, letters, numbers, captions, watermarks, logos, or typography. Pure imagery only.`,
+          style: 'professional',
+          aspectRatio: aspectRatio,
+          quality: 'standard',
+          model: 'gemini-2.5-flash-image-preview'
+        };
+        
+        console.log('📝 Request body:', requestBody);
+        
+        const response = await fetch(`${apiUrl}/ai/generate-image`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody)
+        });
+        
+        console.log('🚀 Response status:', response.status, response.statusText);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Response error:', errorText);
+          throw new Error(`Failed to generate image: ${response.status} ${errorText}`);
+        }
+        
+        const result = await response.json();
+        console.log('🎨 Image generation result:', result);
+        
+        if (result.success && result.imageUrl) {
+          console.log('✅ Image generated successfully, processing...', result.imageUrl);
+          await handleAIImageGenerated(result.imageUrl, shouldAutoOpenTemplate);
+          console.log('✅ Combined generation completed successfully!');
+          return result.imageUrl;
+        } else {
+          console.error('❌ Image generation result invalid:', result);
+          throw new Error(result.error || 'Image generation failed - no image URL in response');
+        }
+      },
+      'Generating image from content'
+    );
   };
 
   // State to hold pending post generation data
@@ -1503,6 +1532,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           </div>
         )} */}
       </div>
+      
+      {/* TEMPORARY: Loading Test Section - Remove this after testing */}
+      {/* <LoadingTest /> */}
 
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="grid grid-cols-1 gap-0 ">
@@ -1884,14 +1916,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           </div>
                         )}
 
-                        {uploading && (
-                          <div className="absolute inset-0 bg-black/20  flex items-center justify-center">
-                            <div className="flex items-center space-x-2 text-blue-300">
-                              <Loader className="w-4 h-4 animate-spin" />
-                              <span className="text-xs">Uploading...</span>
-                            </div>
-                          </div>
-                        )}
+                        {/* Upload preloader is now handled by enhanced preloader overlay */}
                       </div>
                     </div>
 
@@ -2235,18 +2260,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                             <span className="text-blue-300">AI analyzing...</span>
                           </div>
                         )}
-                        {uploading && (
-                          <div className="flex items-center justify-center p-2 bg-amber-500/10 border border-amber-400/20 rounded text-xs">
-                            <Loader className="w-3 h-3 animate-spin mr-2 text-amber-400" />
-                            <span className="text-amber-300">Uploading...</span>
-                          </div>
-                        )}
-                        {isGeneratingThumbnail && (
-                          <div className="flex items-center justify-center p-2 bg-purple-500/10 border border-purple-400/20 rounded text-xs">
-                            <Loader className="w-3 h-3 animate-spin mr-2 text-purple-400" />
-                            <span className="text-purple-300">Generating video thumbnail...</span>
-                          </div>
-                        )}
+                        {/* Upload preloader is now handled by enhanced preloader overlay */}
                         {videoAspectRatio && (
                           <div className="flex items-center justify-center p-2 bg-green-500/10 border border-green-400/20 rounded text-xs">
                             <CheckCircle className="w-3 h-3 mr-2 text-green-400" />
@@ -2507,7 +2521,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           <button
             type="submit"
             disabled={
-              !formData.prompt.trim() || !formData.selectedPlatforms?.length || isGeneratingBoth || isGeneratingThumbnail
+              !formData.prompt.trim() || !formData.selectedPlatforms?.length || isGeneratingBoth
             }
             className="rounded-full flex-1 flex items-center justify-between theme-bg-trinary theme-text-light py-2 px-4 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm"
           >
