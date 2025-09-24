@@ -116,7 +116,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const [selectedVideoMode, setSelectedVideoMode] = useState<'upload' | 'uploadShorts' | ''>('');
 
   // Post type selection state
-  const [selectedPostType, setSelectedPostType] = useState<'text' | 'image' | 'video'>('text');
+  const [selectedPostType, setSelectedPostType] = useState<'text' | 'image' | 'video' | ''>('');
 
   // Image post sub-type selection state
   const [selectedImageMode, setSelectedImageMode] = useState<'upload' | 'textToImage' | ''>('');
@@ -752,18 +752,20 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         // Otherwise, simulate generation for preview
         // For videos, ensure we use the server URL if available, not blob URLs
         // For template-edited content, prioritize the templated image URL
-        const isVideoContent = !!(originalVideoFile || (currentFormData.media && isVideoFile(currentFormData.media)))
+        const isVideoContent = !!(originalVideoFile || (formData.media && isVideoFile(formData.media)))
         const finalMediaUrl = templatedImageUrl ||
-          (isVideoContent && currentFormData.serverUrl 
-            ? currentFormData.serverUrl 
-            : currentFormData.mediaUrl)
+          (isVideoContent && formData.serverUrl 
+            ? formData.serverUrl 
+            : formData.mediaUrl)
         
         console.log('🎬 Video preview generation:', {
           isVideoContent,
-          hasServerUrl: !!currentFormData.serverUrl,
-          hasMediaUrl: !!currentFormData.mediaUrl,
-          serverUrl: currentFormData.serverUrl?.substring(0, 50) + '...',
-          mediaUrl: currentFormData.mediaUrl?.substring(0, 50) + '...',
+          hasServerUrl: !!formData.serverUrl,
+          hasMediaUrl: !!formData.mediaUrl,
+          hasTemplatedImage: !!templatedImageUrl,
+          serverUrl: formData.serverUrl?.substring(0, 50) + '...',
+          mediaUrl: formData.mediaUrl?.substring(0, 50) + '...',
+          templatedImageUrl: templatedImageUrl?.substring(0, 50) + '...',
           finalUrl: finalMediaUrl?.startsWith('blob:') ? 'blob URL (WRONG)' : 'server URL (CORRECT)',
           videoAspectRatio
         })
@@ -955,8 +957,46 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
   const handleTemplateEditorSave = async (imageUrl: string) => {
     console.log('Template editor saved with image URL:', imageUrl);
-    setTemplatedImageUrl(imageUrl);
-    setFormData((prev) => ({ ...prev, mediaUrl: imageUrl }));
+
+    // Ensure templated image has a stable, publishable server URL
+    let finalTemplatedUrl = imageUrl;
+    try {
+      const needsUpload = !imageUrl || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:');
+      if (needsUpload) {
+        console.log('🆙 Templated image appears to be a local/data URL, uploading to storage...');
+        const user = await getCurrentUser();
+        if (user?.user?.id) {
+          // Fetch the image data and create a File for upload
+          const resp = await fetch(imageUrl);
+          const blob = await resp.blob();
+          const ext = (blob.type && blob.type.includes('png')) ? 'png' : (blob.type && blob.type.includes('jpeg')) ? 'jpg' : 'png';
+          const file = new File([blob], `templated-image-${Date.now()}.${ext}`, { type: blob.type || 'image/png' });
+          const uploadedUrl = await uploadMedia(file, user.user.id);
+          if (uploadedUrl) {
+            console.log('✅ Templated image uploaded. Server URL:', uploadedUrl);
+            finalTemplatedUrl = uploadedUrl;
+          } else {
+            console.warn('⚠️ Upload returned no URL, falling back to provided imageUrl');
+          }
+        } else {
+          console.warn('⚠️ No authenticated user; cannot upload templated image. Using provided URL as-is.');
+        }
+      } else {
+        console.log('🌐 Templated image already has a server URL. Skipping upload.');
+      }
+    } catch (uploadErr) {
+      console.error('❌ Failed to upload templated image, using provided URL:', uploadErr);
+      // Keep finalTemplatedUrl as the original imageUrl
+    }
+
+    // Persist the templated image URL in component state and form data
+    setTemplatedImageUrl(finalTemplatedUrl);
+    setFormData((prev) => ({ 
+      ...prev, 
+      mediaUrl: finalTemplatedUrl,
+      imageUrl: finalTemplatedUrl,
+      serverUrl: finalTemplatedUrl // Ensure publishing flows use this stable URL
+    }));
     setShowTemplateEditor(false);
     
     // Check if we have pending post generation (from combined generation workflow)
@@ -985,7 +1025,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         currentFormData = {
           ...originalFormData,
           mediaUrl: originalVideoUrl, // Keep original video URL for publishing
-          thumbnailUrl: imageUrl, // Store edited thumbnail separately
+          thumbnailUrl: finalTemplatedUrl, // Store edited thumbnail separately
           videoFile: originalVideoFile, // Keep original video file
           videoAspectRatio: videoAspectRatio
         };
@@ -995,14 +1035,14 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           { 
             url: originalVideoUrl, 
             type: "video",
-            thumbnailUrl: imageUrl, // Edited thumbnail
+            thumbnailUrl: finalTemplatedUrl, // Edited thumbnail
             aspectRatio: videoAspectRatio
           }
         ];
         
         console.log('📋 Video media assets prepared:', {
           videoUrl: originalVideoUrl?.substring(0, 50) + '...',
-          thumbnailUrl: imageUrl?.substring(0, 50) + '...',
+          thumbnailUrl: finalTemplatedUrl?.substring(0, 50) + '...',
           aspectRatio: videoAspectRatio
         });
       } else {
@@ -1010,10 +1050,12 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         // For image content, use the templated image
         currentFormData = {
           ...originalFormData,
-          mediaUrl: imageUrl // Use the templated image URL
+          mediaUrl: finalTemplatedUrl, // Use the templated image server URL
+          imageUrl: finalTemplatedUrl,
+          serverUrl: finalTemplatedUrl
         };
         
-        mediaAssets = [{ url: imageUrl, type: "image" }];
+        mediaAssets = [{ url: finalTemplatedUrl, type: "image" }];
       }
       
       console.log('📋 Preparing final post data:', {
@@ -1105,7 +1147,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           postData = {
             ...formData,
             mediaUrl: formData.mediaUrl, // Keep original video URL
-            thumbnailUrl: imageUrl, // Use edited thumbnail
+            thumbnailUrl: finalTemplatedUrl, // Use edited thumbnail
             videoFile: originalVideoFile,
             videoAspectRatio: videoAspectRatio,
             isVideoContent: true,
@@ -1114,7 +1156,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
             mediaAssets: [{ 
               url: formData.mediaUrl, 
               type: "video",
-              thumbnailUrl: imageUrl,
+              thumbnailUrl: finalTemplatedUrl,
               aspectRatio: videoAspectRatio
             }],
             industry: currentCampaignInfo.industry,
@@ -1132,10 +1174,12 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           // For image content, use templated image
           postData = {
             ...formData,
-            mediaUrl: imageUrl, // Use the templated image URL
+            mediaUrl: finalTemplatedUrl, // Use the templated image server URL
+            imageUrl: finalTemplatedUrl,
+            serverUrl: finalTemplatedUrl,
             campaignName: currentCampaignInfo.name,
             campaignInfo: currentCampaignInfo,
-            mediaAssets: [{ url: imageUrl, type: "image" }],
+            mediaAssets: [{ url: finalTemplatedUrl, type: "image" }],
             industry: currentCampaignInfo.industry,
             tone: currentCampaignInfo.brand_tone || currentCampaignInfo.brandTone,
             targetAudience: currentCampaignInfo.target_audience || currentCampaignInfo.targetAudience,
@@ -1549,7 +1593,12 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                 {/* Text Post */}
                 <button
                   type="button"
-                  onClick={() => setSelectedPostType('text')}
+                  onClick={() => 
+                    
+                    setSelectedPostType(selectedPostType === 'text' ? '' : 'text')
+
+
+                  }
                   disabled={(formData.media || formData.mediaUrl) && selectedPostType !== 'text'}
                   className={`  border transition-all duration-200 text-center p-3 ${
                     (formData.media || formData.mediaUrl) && selectedPostType !== 'text'
@@ -1785,6 +1834,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                       </button>
                     </div>
                   </div>
+
                 </button>
               </div>
             </div>
@@ -2116,7 +2166,12 @@ export const ContentInput: React.FC<ContentInputProps> = ({
             {selectedPostType === 'video' && (
               <>
                 <label className="block text-sm font-medium theme-text-primary mb-2 flex items-center">
-                  Upload Video
+                  {selectedPostType === 'video' && selectedVideoMode === 'uploadShorts' ? (
+                  <span>Upload Shorts Video (9:16)</span>)
+                  : (
+                    <span>Upload Video</span> 
+                  )
+                  }
                  
                 </label>
                <div className="mb-4 theme-bg-primary py-10">
@@ -2409,8 +2464,10 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           </div>
 
           {/* Right Column - Content Details */}
-          <div className="space-y-4">
-            <div className="flex-1">
+           {selectedPostType !== '' ?
+           (<>
+             <div className="space-y-4">
+           <div className="flex-1">
               <label className="block text-sm font-medium theme-text-primary mb-2">
                 <FileText className="w-4 h-4 inline mr-2" />
                 Content Description *
@@ -2426,8 +2483,8 @@ export const ContentInput: React.FC<ContentInputProps> = ({
               />
               <p className="text-xs theme-text-secondary mt-1">
                 Be specific about your message and call-to-action
-              </p>
-            </div>
+              </p></div>
+        
 
             {/* Aspect Ratio Selection - Only show for text-to-image mode */}
             {selectedPostType === 'image' && selectedImageMode === 'textToImage' && (
@@ -2509,8 +2566,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
               })}
             </div>
           </div>
-        </div>
-        <div className="flex gap-3 pt-4 border-t border-white/10">
+<div className="flex gap-3 pt-4 border-t border-white/10">
           <button
             type="button"
             onClick={onBack}
@@ -2547,6 +2603,19 @@ export const ContentInput: React.FC<ContentInputProps> = ({
             </div>
           </button>
         </div>
+
+        </>)
+              : (
+                <div className="flex-1 w-full max-h-[30vh]">
+                  <video autoPlay loop muted className="w-full rounded w-full h-[30vh] border-2 border-gray-200" poster="/src/assets/play-icon-01.svg">
+                    <source src="/select-post-type.mp4" type="video/mp4"  />
+                  </video>
+                  
+
+                </div>
+              )}
+        </div>
+        
           </form>
         </>
       )}
