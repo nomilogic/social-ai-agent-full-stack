@@ -263,12 +263,10 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       return newData;
     });
 
-    // Handle video files - generate thumbnail and detect aspect ratio
+    // Handle video files - analyze aspect ratio only (no thumbnail generation yet)
     if (isVideoFile(file)) {
       console.log('🎥 Video file detected, analyzing aspect ratio...');
       try {
-        setIsGeneratingThumbnail(true);
-        
         // Store the original video file
         setOriginalVideoFile(file);
         
@@ -276,16 +274,11 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         const aspectRatio = await getVideoAspectRatio(file);
         setVideoAspectRatio(aspectRatio);
         console.log('📐 Video aspect ratio:', aspectRatio);
-        
-        // Generate AI-based thumbnail instead of capturing a video frame
-        console.log('🧠 Generating AI thumbnail for video...');
-        await generateAIThumbnailForVideo();
+        console.log('📝 Video thumbnail will be generated when Generate Post is clicked');
         
       } catch (error) {
         console.error('❌ Error processing video:', error);
-        // Continue with video upload even if thumbnail generation fails
-      } finally {
-        setIsGeneratingThumbnail(false);
+        // Continue with video upload even if aspect ratio detection fails
       }
     }
 
@@ -554,44 +547,54 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         }
       }
       
-      // NEW: For uploaded videos with thumbnails, open template editor
+      // NEW: For uploaded videos, generate thumbnail first then open template editor
       // Only for 16:9 and other aspect ratios that support thumbnails (not 9:16 stories)
-      if (selectedPostType === 'video' && (selectedVideoMode === 'upload' || selectedVideoMode === 'uploadShorts') && originalVideoFile && !is9x16Video(videoAspectRatio || 0) && videoThumbnailUrl) {
-        console.log('🎥 Opening template editor for video thumbnail with blank template...');
+      if (selectedPostType === 'video' && (selectedVideoMode === 'upload' || selectedVideoMode === 'uploadShorts') && originalVideoFile && !is9x16Video(videoAspectRatio || 0)) {
+        console.log('🎥 Generating video thumbnail from content description, then opening template editor...');
         
-        // Get blank template
-        const blankTemplate = getTemplateById('blank-template');
-        if (blankTemplate) {
-          console.log('📋 Setting blank template and opening editor for video thumbnail');
-          setSelectedTemplate(blankTemplate);
-          setShowTemplateEditor(true);
+        // Generate thumbnail using content description and aspect ratio
+        const generatedThumbnailUrl = await generateThumbnailForPost(formData.prompt, videoAspectRatio);
+        
+        if (generatedThumbnailUrl) {
+          console.log('✅ Video thumbnail generated successfully, opening template editor');
           
-          // Store post generation data for later use, including original video file
-          const currentCampaignInfo = campaignInfo || {
-            name: "Default Campaign",
-            industry: "General",
-            brand_tone: "professional",
-            target_audience: "General",
-            description: "General content generation without specific campaign context",
-          };
-          
-          const postGenerationData = {
-            prompt: formData.prompt,
-            originalImageUrl: videoThumbnailUrl, // Use thumbnail for template editor
-            originalVideoUrl: formData.mediaUrl, // Store original video URL
-            originalVideoFile: originalVideoFile, // Store original video file
-            videoAspectRatio: videoAspectRatio,
-            isVideoContent: true, // Flag to indicate this is video content
-            campaignInfo: currentCampaignInfo,
-            selectedPlatforms: formData.selectedPlatforms,
-            imageAnalysis: `Video thumbnail generated from uploaded ${is16x9Video(videoAspectRatio || 0) ? '16:9 horizontal' : 'custom aspect ratio'} video`,
-            formData
-          };
-          
-          setPendingPostGeneration(postGenerationData);
-          return; // Exit here to wait for template editor completion
+          // Get blank template
+          const blankTemplate = getTemplateById('blank-template');
+          if (blankTemplate) {
+            console.log('📋 Setting blank template and opening editor for generated video thumbnail');
+            setSelectedTemplate(blankTemplate);
+            setShowTemplateEditor(true);
+            
+            // Store post generation data for later use, including original video file
+            const currentCampaignInfo = campaignInfo || {
+              name: "Default Campaign",
+              industry: "General",
+              brand_tone: "professional",
+              target_audience: "General",
+              description: "General content generation without specific campaign context",
+            };
+            
+            const postGenerationData = {
+              prompt: formData.prompt,
+              originalImageUrl: generatedThumbnailUrl, // Use generated thumbnail for template editor
+              originalVideoUrl: formData.mediaUrl, // Store original video URL
+              originalVideoFile: originalVideoFile, // Store original video file
+              videoAspectRatio: videoAspectRatio,
+              isVideoContent: true, // Flag to indicate this is video content
+              campaignInfo: currentCampaignInfo,
+              selectedPlatforms: formData.selectedPlatforms,
+              imageAnalysis: `Video thumbnail generated from content description for ${is16x9Video(videoAspectRatio || 0) ? '16:9 horizontal' : 'custom aspect ratio'} video`,
+              formData
+            };
+            
+            setPendingPostGeneration(postGenerationData);
+            return; // Exit here to wait for template editor completion
+          } else {
+            console.error('❌ Blank template not found for video, proceeding with normal flow');
+          }
         } else {
-          console.error('❌ Blank template not found for video, proceeding with normal flow');
+          console.error('❌ Failed to generate video thumbnail, proceeding with normal flow without thumbnail');
+          // Continue with normal flow - video posts can work without thumbnails
         }
       }
       
@@ -1162,66 +1165,115 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     setAspectRatio(newAspectRatio);
   };
 
-  // Generate AI thumbnail for uploaded video
-  const generateAIThumbnailForVideo = async (): Promise<string | null> => {
+  // Generate AI thumbnail for video when Generate Post is clicked
+  const generateThumbnailForPost = async (contentDescription: string, aspectRatio: number | null): Promise<string | null> => {
     try {
       setIsGeneratingThumbnail(true);
+      console.log('🎨 Generating video thumbnail from content description:', contentDescription.substring(0, 100) + '...');
+      console.log('📐 Input video aspect ratio:', aspectRatio);
 
       const apiUrl = import.meta.env.VITE_API_URL ||
         (typeof window !== "undefined"
           ? `${window.location.protocol}//${window.location.host}`
           : "http://localhost:5000/api");
 
-      const aspect = videoAspectRatio
-        ? (is9x16Video(videoAspectRatio) ? '9:16' : (is16x9Video(videoAspectRatio) ? '16:9' : '16:9'))
-        : '16:9';
+      // Determine aspect ratio with better logic and inform AI about video dimensions
+      let targetAspectRatio = '16:9'; // Default
+      let aspectRatioDescription = '16:9 horizontal format';
+      
+      if (aspectRatio !== null && aspectRatio > 0) {
+        console.log('🔍 Analyzing aspect ratio:', aspectRatio);
+        
+        if (is9x16Video(aspectRatio)) {
+          targetAspectRatio = '9:16';
+          aspectRatioDescription = '9:16 vertical/shorts format';
+          console.log('✅ Detected 9:16 vertical video');
+        } else if (is16x9Video(aspectRatio)) {
+          targetAspectRatio = '16:9';
+          aspectRatioDescription = '16:9 horizontal/landscape format';
+          console.log('✅ Detected 16:9 horizontal video');
+        } else {
+          // Custom aspect ratio - be more precise with detection
+          const aspectRatioValue = aspectRatio;
+          
+          if (aspectRatioValue < 0.7) {
+            // Very vertical (taller than 10:7)
+            targetAspectRatio = '9:16';
+            aspectRatioDescription = `${aspectRatioValue.toFixed(3)} custom vertical format (generating as 9:16)`;
+            console.log('📱 Custom vertical aspect ratio, using 9:16 for thumbnail');
+          } else if (aspectRatioValue > 1.4) {
+            // Very horizontal (wider than 7:5)
+            targetAspectRatio = '16:9';
+            aspectRatioDescription = `${aspectRatioValue.toFixed(3)} custom horizontal format (generating as 16:9)`;
+            console.log('🖥️ Custom horizontal aspect ratio, using 16:9 for thumbnail');
+          } else {
+            // Square-ish (between 0.7 and 1.4)
+            targetAspectRatio = '1:1';
+            aspectRatioDescription = `${aspectRatioValue.toFixed(3)} custom square format (generating as 1:1)`;
+            console.log('⬜ Custom square aspect ratio, using 1:1 for thumbnail');
+          }
+        }
+      } else {
+        console.log('⚠️ No valid aspect ratio provided, defaulting to 16:9');
+      }
 
-      const thumbnailPrompt = (formData.prompt && formData.prompt.trim())
-        ? `Video thumbnail: ${formData.prompt}`
-        : 'Professional video thumbnail';
+      // Enhanced thumbnail prompt with content description and aspect ratio context
+      const thumbnailPrompt = `Create a compelling video thumbnail for ${aspectRatioDescription} video about: ${contentDescription.trim()}. Make it eye-catching, professional, and suitable for social media platforms. Include relevant visual elements that represent the content.`;
+
+      console.log('📝 Thumbnail prompt:', thumbnailPrompt);
+      console.log('📐 Final target aspect ratio:', targetAspectRatio, '(' + aspectRatioDescription + ')');
+
+      const requestBody = {
+        prompt: thumbnailPrompt,
+        style: 'professional',
+        aspectRatio: targetAspectRatio,
+        quality: 'standard',
+        model: 'gemini-2.5-flash-image-preview'
+      };
+      
+      console.log('📋 Request body for thumbnail generation:', requestBody);
 
       const response = await fetch(`${apiUrl}/ai/generate-image`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          prompt: thumbnailPrompt,
-          style: 'professional',
-          aspectRatio: aspect,
-          quality: 'standard',
-          model: 'gemini-2.5-flash-image-preview'
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate AI thumbnail');
+        const errorText = await response.text();
+        console.error('❌ Thumbnail generation API error:', errorText);
+        throw new Error(`Failed to generate video thumbnail: ${response.status}`);
       }
 
       const result = await response.json();
       if (!result.success || !result.imageUrl) {
-        throw new Error(result.error || 'AI thumbnail generation failed');
+        throw new Error(result.error || 'Video thumbnail generation failed');
       }
 
-      // Try to upload generated image to our storage for a stable URL
+      console.log('✅ Video thumbnail generated successfully');
+
+      // Try to upload generated thumbnail to our storage for a stable URL
       try {
         const user = await getCurrentUser();
         if (user?.user?.id) {
           const imgResp = await fetch(result.imageUrl);
           const blob = await imgResp.blob();
-          const file = new File([blob], `ai-thumbnail-${Date.now()}.png`, { type: 'image/png' });
+          const file = new File([blob], `video-thumbnail-${Date.now()}.png`, { type: 'image/png' });
           const uploadedUrl = await uploadMedia(file, user.user.id);
+          console.log('📤 Video thumbnail uploaded to storage:', uploadedUrl);
           setVideoThumbnailUrl(uploadedUrl);
           return uploadedUrl;
         }
       } catch (uploadErr) {
-        console.warn('Failed to upload AI thumbnail, using direct URL:', uploadErr);
+        console.warn('Failed to upload video thumbnail, using direct URL:', uploadErr);
       }
 
       setVideoThumbnailUrl(result.imageUrl);
       return result.imageUrl;
     } catch (error) {
-      console.error('AI thumbnail generation failed:', error);
+      console.error('❌ Video thumbnail generation failed:', error);
       return null;
     } finally {
       setIsGeneratingThumbnail(false);
@@ -2199,9 +2251,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           <div className="flex items-center justify-center p-2 bg-green-500/10 border border-green-400/20 rounded text-xs">
                             <CheckCircle className="w-3 h-3 mr-2 text-green-400" />
                             <span className="text-green-300">
-                              {is16x9Video(videoAspectRatio) && videoThumbnailUrl ? '16:9 video thumbnail ready - will open template editor on Generate Post' : 
-                               is9x16Video(videoAspectRatio) ? '9:16 vertical video ready - stories format (no thumbnail needed)' : 
-                               videoThumbnailUrl ? 'Video thumbnail ready - will open template editor on Generate Post' : 'Video processed and ready'}
+                              {is9x16Video(videoAspectRatio) ? '9:16 vertical video ready - stories format (no thumbnail needed)' : 
+                               is16x9Video(videoAspectRatio) ? '16:9 horizontal video ready - thumbnail will be generated when you click Generate Post' : 
+                               'Video processed and ready - thumbnail will be generated when you click Generate Post'}
                             </span>
                           </div>
                         )}
@@ -2455,7 +2507,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           <button
             type="submit"
             disabled={
-              !formData.prompt.trim() || !formData.selectedPlatforms?.length || isGeneratingBoth
+              !formData.prompt.trim() || !formData.selectedPlatforms?.length || isGeneratingBoth || isGeneratingThumbnail
             }
             className="rounded-full flex-1 flex items-center justify-between theme-bg-trinary theme-text-light py-2 px-4 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm"
           >
@@ -2463,6 +2515,11 @@ export const ContentInput: React.FC<ContentInputProps> = ({
               <div className="flex items-center">
                 <Loader className="w-5 h-5 mr-2 animate-spin" />
                 GENERATING POST & IMAGE...
+              </div>
+            ) : isGeneratingThumbnail ? (
+              <div className="flex items-center">
+                <Loader className="w-5 h-5 mr-2 animate-spin" />
+                GENERATING THUMBNAIL...
               </div>
             ) : (
               <div className="flex items-center">
