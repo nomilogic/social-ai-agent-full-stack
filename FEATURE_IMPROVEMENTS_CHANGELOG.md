@@ -1,6 +1,39 @@
 # 🚀 Feature Improvements Changelog
 
-## ✅ COMPLETED TASKS (August 20, 2025)
+## ✅ COMPLETED TASKS
+
+### December 2024 - Post Regeneration Feature ✅
+**Files:** `client/src/components/PostPreview.tsx`, `client/src/components/ContentPage.tsx`, `client/src/lib/gemini.ts`
+
+#### Fixed Post Text Regeneration with Custom Prompts
+- **Platform-specific regeneration prompts:** Each platform can now have individual regeneration prompts that users can edit
+- **Proper state management:** Fixed issue where regeneration prompt wasn't updating when switching between platforms
+- **ContentData fallback handling:** Fixed regeneration failures when contentData was missing by creating fallback data from existing posts
+- **Enhanced debugging:** Added comprehensive logging for regeneration flow troubleshooting
+
+#### Key Technical Improvements:
+- **PostPreview.tsx:** 
+  - Added `useEffect` to sync regeneration prompt with selected platform
+  - Fixed prompt initialization from individual post objects
+  - Enhanced regeneration UI with proper state binding
+- **ContentPage.tsx:**
+  - Improved `handleRegeneratePlatform` to handle missing contentData gracefully
+  - Added fallback contentData creation from existing posts and custom prompts
+  - Cleaned up redundant code in regeneration handler
+- **gemini.ts:**
+  - Updated `generateSinglePlatformPost` and `generateAllPosts` to include `generationPrompt` field
+  - Ensured all generated posts contain the original prompt for future regeneration
+
+#### User Experience:
+- ✅ Users can now edit regeneration prompts per platform
+- ✅ Regeneration works reliably without contentData dependency issues
+- ✅ Platform switching properly updates the regeneration textarea
+- ✅ Custom prompts are correctly passed to AI generation API
+- ✅ Generated content updates properly in the UI after regeneration
+
+**Status:** Fully implemented and tested ✅
+
+### August 20, 2025
 
 ### 1. Button Text Fix ✅
 **File:** `client/src/components/PostPreview.tsx`

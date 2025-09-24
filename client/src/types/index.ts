@@ -58,6 +58,7 @@ export interface GeneratedPost {
   imageUrl?: string;
   pageId?: string; // For Facebook/Instagram pages
   mediaUrl?: string; // URL of uploaded media
+  generationPrompt?: string; // Individual prompt for each platform
 }
 
 export type Platform = 'facebook' | 'instagram' | 'twitter' | 'linkedin' | 'tiktok' | 'youtube';

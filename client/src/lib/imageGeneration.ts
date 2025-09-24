@@ -62,8 +62,8 @@ export async function generateImage(request: ImageGenerationRequest): Promise<Ge
     // Convert aspect ratio to dimensions
     const dimensions = {
       '1:1': { width: 1024, height: 1024 },
-      '16:9': { width: 1792, height: 1024 },
-      '9:16': { width: 1024, height: 1792 },
+      '16:9': { width: 1280, height: 720 },
+      '9:16': { width: 720, height: 1280 },
       '4:3': { width: 1024, height: 768 }
     };
     const { width, height } = dimensions[request.aspectRatio as keyof typeof dimensions] || dimensions['1:1'];

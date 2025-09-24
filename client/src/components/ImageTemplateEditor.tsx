@@ -133,25 +133,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
           img.onerror = (error) => {
             console.error('Background image failed to load:', imageUrl, error);
             // Use template dimensions or fallback to square
-            const dimensions = selectedTemplate?.dimensions || { width: 1080, height: 1080 };
-            setImageDimensions(dimensions);
-            setCanvasDimensions(dimensions);
-            canvasElement.width = dimensions.width;
-            canvasElement.height = dimensions.height;
             
-            // Calculate zoom for fallback dimensions
-            const { zoom, maxZoom: maxZoomLevel } = calculateZoomLevel(dimensions.width, dimensions.height);
-            setZoomLevel(zoom);
-            setMaxZoom(maxZoomLevel);
-            
-            // Initialize canvas with fallback background
-            context.fillStyle = '#f3f4f6';
-            context.fillRect(0, 0, canvasElement.width, canvasElement.height);
-            
-            // Draw template elements immediately
-            elements.forEach(element => {
-              drawElement(context, element);
-            });
           };
           
           console.log('Attempting to load background image:', imageUrl);

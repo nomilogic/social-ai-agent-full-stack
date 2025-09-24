@@ -8,7 +8,7 @@ import { ProgressBar } from "../components/ProgressBar";
 import { useAppContext } from "../context/AppContext";
 import { savePost } from "../lib/database";
 import { generateSinglePlatformPost } from "../lib/gemini";
-import { Platform, GeneratedPost } from "../types";
+import { Platform, GeneratedPost, CampaignInfo } from "../types";
 
 export const ContentPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
@@ -83,7 +83,7 @@ export const ContentPage: React.FC = () => {
     document.documentElement.scrollTop = 0; // Scroll to top when modal opens
     document.body.scrollTop = 0;
     document.body.scrollTop = 0;  
-    let elemnt:any=document.querySelector(".preview");
+    const elemnt:HTMLElement=document.querySelector(".preview");
      
      // Adjust timeout as needed
     if(elemnt){
@@ -97,31 +97,57 @@ export const ContentPage: React.FC = () => {
   };
 
   // Handle individual platform regeneration
-  const handleRegeneratePlatform = async (platform: Platform) => {
-    console.log(`🔄 Regenerating content for ${platform}...`);
+  const handleRegeneratePlatform = async (platform: Platform, customPrompt?: string) => {
+    console.log(`🔄 Regenerating content for ${platform} with ${customPrompt ? 'custom prompt' : 'original prompt'}...`);
     
-    if (!state.contentData || !state.selectedProfile) {
-      console.error('Missing content data or profile for regeneration');
-      return;
+    // if (!state.selectedProfile) {
+    //   console.error('Missing profile for regeneration');
+    //   return;
+    // }
+
+    // Create or modify contentData with custom prompt
+    let contentDataForRegeneration;
+    if (!state.contentData) {
+      console.log('⚠️ No contentData found, creating fallback with custom prompt');
+      
+      // Get existing post data to preserve media and other info
+      const existingPost = state.generatedPosts?.find(p => p.platform === platform);
+      const promptToUse = customPrompt || existingPost?.generationPrompt || 'Create engaging social media content';
+      
+      contentDataForRegeneration = {
+        prompt: promptToUse,
+        contentType: 'general',
+        tone: state.selectedProfile?.tone || state.selectedProfile?.brandVoice || 'professional',
+        targetAudience: state.selectedProfile?.target_audience || 'General audience',
+        tags: existingPost?.hashtags?.map(tag => tag.replace('#', '')) || ['social', 'content'],
+        mediaUrl: existingPost?.mediaUrl || existingPost?.imageUrl || null,
+        serverUrl: existingPost?.mediaUrl || existingPost?.imageUrl || null
+      };
+    } else {
+      // Use existing contentData but update prompt if custom prompt provided
+      contentDataForRegeneration = customPrompt ? {
+        ...state.contentData,
+        prompt: customPrompt
+      } : state.contentData;
     }
 
     try {
       // Create campaign info from the selected profile
       const campaignInfo = {
-        name: state.selectedProfile.campaignName || state.selectedProfile.name || 'My Campaign',
-        industry: state.selectedProfile.industry || 'General',
-        description: state.selectedProfile.description || 'Campaign description',
-        targetAudience: state.selectedProfile.target_audience || 'General audience',
-        brandTone: state.selectedProfile.tone || state.selectedProfile.brandVoice || 'professional',
-        goals: state.selectedProfile.socialGoals || ['engagement'],
+        name: state.selectedProfile?.campaignName || state.selectedProfile?.name || '',
+        industry: state.selectedProfile?.industry || '',
+        description: state.selectedProfile?.description || '',
+        targetAudience: state.selectedProfile?.target_audience || 'General audience',
+        brandTone: state.selectedProfile?.tone || state.selectedProfile?.brandVoice || 'professional',
+        goals: state.selectedProfile?.socialGoals || ['engagement'],
         platforms: [platform] // Only regenerate for this platform
       };
 
       // Generate new post for the specific platform
       const regeneratedPost = await generateSinglePlatformPost(
         platform,
-        campaignInfo,
-        state.contentData
+        campaignInfo as CampaignInfo,
+        contentDataForRegeneration
       );
 
       console.log(`✅ Successfully regenerated ${platform} post:`, regeneratedPost);

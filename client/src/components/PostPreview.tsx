@@ -24,7 +24,7 @@ interface PostPreviewProps {
   onEdit: () => void;
   onPublish?: () => void;
   onPostsUpdate?: (updatedPosts: GeneratedPost[]) => void;
-  onRegeneratePlatform?: (platform: Platform) => void;
+  onRegeneratePlatform?: (platform: Platform, customPrompt?: string) => void;
   onConnectAccounts?: () => void;
 }
 
@@ -54,6 +54,13 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
         (post.caption?.length || 0) + (post.hashtags?.join(' ')?.length || 0)
     }));
     setPosts(postsWithCharacterCount);
+    
+    // Debug: Check if posts have generationPrompt
+    console.log('🔍 PostPreview received posts:', generatedPosts.map(post => ({
+      platform: post.platform,
+      hasGenerationPrompt: !!post.generationPrompt,
+      generationPrompt: post.generationPrompt?.substring(0, 50) + '...' || 'NONE'
+    })));
   }, [generatedPosts]);
 
   const copyToClipboard = async (text: string) => {
@@ -119,25 +126,68 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
   // Handle regeneration mode toggle
   const handleRegenerateClick = useCallback(() => {
     setIsRegeneratingMode(true);
-    setRegenerationPrompt('');
-  }, []);
+    // Initialize with the platform-specific prompt stored in the post object
+    const currentPost = posts.find((post) => post.platform === selectedPlatform);
+    const platformPrompt = currentPost?.generationPrompt || '';
+    setRegenerationPrompt(platformPrompt);
+  }, [posts, selectedPlatform]);
 
   // Handle regeneration submission
   const handleRegenerateSubmit = useCallback(() => {
     const currentPost = posts.find((post) => post.platform === selectedPlatform);
+    console.log('🚀 HandleRegenerateSubmit called:', {
+      selectedPlatform,
+      currentPost: currentPost ? { platform: currentPost.platform, hasGenerationPrompt: !!currentPost.generationPrompt } : null,
+      regenerationPrompt: regenerationPrompt.substring(0, 50) + '...',
+      onRegeneratePlatform: !!onRegeneratePlatform
+    });
+    
     if (onRegeneratePlatform && currentPost) {
-      onRegeneratePlatform(currentPost.platform);
+      // Update the post object with the new prompt before regenerating
+      const currentPostIndex = posts.findIndex(p => p.platform === selectedPlatform);
+      if (currentPostIndex !== -1) {
+        const updatedPosts = [...posts];
+        updatedPosts[currentPostIndex] = {
+          ...updatedPosts[currentPostIndex],
+          generationPrompt: regenerationPrompt
+        };
+        setPosts(updatedPosts);
+        
+        // Trigger save to parent if available
+        if (onPostsUpdate) {
+          onPostsUpdate(updatedPosts);
+        }
+      }
+      
+      console.log('🔥 Calling onRegeneratePlatform with:', { platform: currentPost.platform, prompt: regenerationPrompt.substring(0, 50) + '...' });
+      onRegeneratePlatform(currentPost.platform, regenerationPrompt);
+      
       // Reset regeneration mode after submitting
       setIsRegeneratingMode(false);
       setRegenerationPrompt('');
+    } else {
+      console.error('❌ Cannot regenerate:', { 
+        hasOnRegeneratePlatform: !!onRegeneratePlatform, 
+        hasCurrentPost: !!currentPost 
+      });
     }
-  }, [onRegeneratePlatform, posts, selectedPlatform]);
+  }, [onRegeneratePlatform, onPostsUpdate, posts, selectedPlatform, regenerationPrompt]);
 
   // Handle regeneration cancel
   const handleRegenerateCancel = useCallback(() => {
     setIsRegeneratingMode(false);
     setRegenerationPrompt('');
   }, []);
+
+  // Update regeneration prompt when platform changes (for when regeneration mode is already active)
+  useEffect(() => {
+    if (isRegeneratingMode) {
+      const currentPost = posts.find((post) => post.platform === selectedPlatform);
+      const platformPrompt = currentPost?.generationPrompt || '';
+      console.log(`🔄 Platform changed to ${selectedPlatform}, updating regeneration prompt:`, platformPrompt);
+      setRegenerationPrompt(platformPrompt);
+    }
+  }, [selectedPlatform, posts, isRegeneratingMode]);
 
 
 
