@@ -10,9 +10,10 @@ interface PublishProps {
   posts: GeneratedPost[];
   userId?: string;
   onBack: () => void;
+  onReset?: () => void;
 }
 
-export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) => {
+export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, onReset }) => {
   const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>(posts.map(p => p.platform));
   const [publishing, setPublishing] = useState(false);
   const [results, setResults] = useState<Record<string, any> | null>(null);
@@ -249,6 +250,18 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
       );
       
       setResults(publishResults);
+      
+      // Check if all posts were published successfully and trigger reset
+      if (publishResults._summary) {
+        const { successful, total, failed } = publishResults._summary;
+        if (successful === total && failed === 0 && onReset) {
+          console.log('All posts published successfully, triggering reset workflow');
+          // Delay reset to allow user to see the success message
+          setTimeout(() => {
+            onReset();
+          }, 3000);
+        }
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to publish posts.');
     } finally {
@@ -458,26 +471,24 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack }) 
                         </label>
                       )}
                       
-                      {/* Connect/Reconnect Button - Always show */}
-                      <button
-                        onClick={() => handleConnect(post.platform)}
-                        disabled={isConnecting}
-                        className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-                          isConnected
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                            : 'theme-bg-quaternary theme-text-secondary hover:theme-bg-tertiary'
-                        }`}
-                      >
-                        {!isConnecting && <Icon name="connect-accounts" size={14} className="" />}
-                        {isConnecting ? (
-                          <>
-                            <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                            <span>CONNECTING...</span>
-                          </>
-                        ) : (
-                          isConnected ? 'RECONNECT' : 'CONNECT'
-                        )}
-                      </button>
+                      {/* Connect Button - Only show when not connected */}
+                      {!isConnected && (
+                        <button
+                          onClick={() => handleConnect(post.platform)}
+                          disabled={isConnecting}
+                          className="flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed theme-bg-quaternary theme-text-secondary hover:theme-bg-tertiary"
+                        >
+                          {!isConnecting && <Icon name="connect-accounts" size={14} className="" />}
+                          {isConnecting ? (
+                            <>
+                              <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                              <span>CONNECTING...</span>
+                            </>
+                          ) : (
+                            'CONNECT'
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

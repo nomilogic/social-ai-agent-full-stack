@@ -902,23 +902,6 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                       </span>
                     </div>
                   </div>
-                  {selectedPost.hashtags.length > 0 && (
-                    <div className="mt-4">
-                      <h5 className="text-sm font-medium text-gray-900 mb-2">
-                        Hashtags
-                      </h5>
-                      <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                        {selectedPost.hashtags.map((tag: string, index: number) => (
-                          <span
-                            key={index}
-                            className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>

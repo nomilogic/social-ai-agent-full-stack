@@ -74,14 +74,14 @@ export const platformOptions = [
     bgColor: "bg-purple-50",
     borderColor: "border-purple-200",
   },
-  {
-    id: "twitter" as Platform,
-    name: "Twitter",
-    icon: Twitter,
-    color: "text-black",
-    bgColor: "bg-gray-50",
-    borderColor: "border-gray-200",
-  },
+  // {
+  //   id: "twitter" as Platform,
+  //   name: "Twitter",
+  //   icon: Twitter,
+  //   color: "text-black",
+  //   bgColor: "bg-gray-50",
+  //   borderColor: "border-gray-200",
+  // },
   {
     id: "linkedin" as Platform,
     name: "LinkedIn",
