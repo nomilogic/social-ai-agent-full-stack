@@ -311,6 +311,7 @@ export async function generateSinglePlatformPost(
         imageUrl: serverMediaUrl || null,
         mediaUrl: serverMediaUrl || null,
         thumbnailUrl: (contentData as any).thumbnailUrl || null,
+        generationPrompt: contentData.prompt, // Store the original prompt for regeneration
         success: true
       };
     } else {
@@ -318,21 +319,40 @@ export async function generateSinglePlatformPost(
     }
   } catch (error) {
     console.error(`Error generating for ${platform}:`, error);
-    
+
     // Use server URL if available, fallback to mediaUrl
     const serverMediaUrl = (contentData as any).serverUrl || contentData.mediaUrl;
-    
-    // Return fallback post for this platform
-    return {
-      platform,
-      caption: contentData.prompt || 'Check out our latest updates!',
-      hashtags: [`#${campaignInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`, '#update'],
-      imageUrl: serverMediaUrl || null,
-      mediaUrl: serverMediaUrl || null,
-      thumbnailUrl: (contentData as any).thumbnailUrl || null,
-      success: false,
-      error: error instanceof Error ? error.message : 'Generation failed'
-    };
+
+    // Generate a platform-appropriate fallback (not just the raw prompt)
+    try {
+      const config = platformConfigs[platform];
+      const fallback = generateFallbackContent(platform, campaignInfo, contentData, config);
+
+      return {
+        platform,
+        caption: fallback.caption,
+        hashtags: fallback.hashtags,
+        imageUrl: serverMediaUrl || null,
+        mediaUrl: serverMediaUrl || null,
+        thumbnailUrl: (contentData as unknown).thumbnailUrl || null,
+        generationPrompt: contentData.prompt, // Store the original prompt for regeneration
+        success: false,
+        error: error instanceof Error ? error.message : 'Generation failed (fallback used)'
+      };
+    } catch (fallbackError) {
+      // Absolute last resort
+      return {
+        platform,
+        caption: contentData.prompt || 'Check out our latest updates!',
+        hashtags: [`#${campaignInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`, '#update'],
+        imageUrl: serverMediaUrl || null,
+        mediaUrl: serverMediaUrl || null,
+        thumbnailUrl: (contentData as unknown).thumbnailUrl || null,
+        generationPrompt: contentData.prompt, // Store the original prompt for regeneration
+        success: false,
+        error: `Generation failed; fallback also failed: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}`
+      };
+    }
   }
 }
 
@@ -431,6 +451,7 @@ export async function generateAllPosts(
             imageUrl: serverMediaUrl || null,
             mediaUrl: serverMediaUrl || null,
             thumbnailUrl: (contentData as any).thumbnailUrl || null,
+            generationPrompt: contentData.prompt, // Store the original prompt for regeneration
             success: true
           });
         } else {
@@ -450,6 +471,7 @@ export async function generateAllPosts(
           imageUrl: serverMediaUrl || null,
           mediaUrl: serverMediaUrl || null,
           thumbnailUrl: (contentData as any).thumbnailUrl || null,
+          generationPrompt: contentData.prompt, // Store the original prompt for regeneration
           success: false,
           error: platformError instanceof Error ? platformError.message : 'Generation failed'
         });
@@ -484,6 +506,7 @@ export async function generateAllPosts(
       imageUrl: serverMediaUrl || null,
       mediaUrl: serverMediaUrl || null,
       thumbnailUrl: (contentData as any).thumbnailUrl || null,
+      generationPrompt: contentData.prompt, // Store the original prompt for regeneration
       success: false,
       error: error.message || 'AI generation failed'
     }));

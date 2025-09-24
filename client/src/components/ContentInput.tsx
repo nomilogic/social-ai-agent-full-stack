@@ -2650,6 +2650,15 @@ export const ContentInput: React.FC<ContentInputProps> = ({
             posts={generatedResults}
             onBack={() => setShowPreview(false)}
             onEdit={() => { }}
+            onPostsUpdate={(updatedPosts) => setGeneratedResults(updatedPosts)}
+            onRegeneratePlatform={(platform) => {
+              // Regenerate only the specified platform
+              //handleRegeneratePlatform(platform);
+              console.log('Regenerate platform clicked for:', platform);
+              // For now, just log - implement actual regeneration logic as needed
+              alert(`Regenerate for ${platform} clicked! (Functionality not yet implemented)`);
+              //setShowPreview(true); // Ensure preview stays visible
+            }}
           />
         </div>
       )}
