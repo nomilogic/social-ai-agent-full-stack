@@ -117,21 +117,21 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   const getAppropiatePlatforms = (postType: 'text' | 'image' | 'video', imageMode?: string, videoMode?: string): Platform[] => {
     switch (postType) {
       case 'text':
-        // Text post: all platforms except YouTube and TikTok
-        return ['facebook', 'instagram', 'twitter', 'linkedin'];
+        // Text post: all platforms except YouTube, TikTok, Instagram, and Twitter (disabled temporarily)
+        return ['facebook', 'linkedin'];
       case 'image':
-        // Image post: all platforms except TikTok and YouTube
-        return ['facebook', 'instagram', 'twitter', 'linkedin'];
+        // Image post: all platforms except TikTok, YouTube, and Twitter (disabled temporarily)
+        return ['facebook', 'instagram', 'linkedin'];
       case 'video':
         if (videoMode === 'uploadShorts') {
-          // 9:16 video (shorts): all platforms
-          return ['facebook', 'instagram', 'twitter', 'linkedin', 'tiktok', 'youtube'];
+          // 9:16 video (shorts): all platforms except Twitter (disabled temporarily)
+          return ['facebook', 'instagram', 'linkedin', 'tiktok', 'youtube'];
         } else if (videoMode === 'upload') {
-          // 16:9 video: all platforms except Instagram and TikTok
-          return ['facebook', 'twitter', 'linkedin', 'youtube'];
+          // 16:9 video: all platforms except Instagram, TikTok, and Twitter (disabled temporarily)
+          return ['facebook', 'linkedin', 'youtube'];
         }
-        // Default video: all platforms
-        return ['facebook', 'instagram', 'twitter', 'linkedin', 'tiktok', 'youtube'];
+        // Default video: all platforms except Twitter (disabled temporarily)
+        return ['facebook', 'instagram', 'linkedin', 'tiktok', 'youtube'];
       default:
         return ['linkedin']; // Default fallback
     }
@@ -277,27 +277,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         setVideoAspectRatio(aspectRatio);
         console.log('📐 Video aspect ratio:', aspectRatio);
         
-        // Generate thumbnails for all videos for preview purposes
-        // But only 16:9 and other aspect ratios will use template editor
-        if (is16x9Video(aspectRatio)) {
-          console.log('📺 16:9 video detected - generating thumbnail for template editor');
-          // Generate thumbnail from video for horizontal videos (will open template editor)
-          const thumbnailUrl = await createVideoThumbnailUrl(file, 1);
-          setVideoThumbnailUrl(thumbnailUrl);
-          console.log('🖼️ Video thumbnail generated successfully for template editor');
-        } else if (is9x16Video(aspectRatio)) {
-          console.log('📱 9:16 vertical video detected - generating thumbnail for preview only (no template editor)');
-          // Generate thumbnail for preview but won't open template editor (stories/shorts format)
-          const thumbnailUrl = await createVideoThumbnailUrl(file, 1);
-          setVideoThumbnailUrl(thumbnailUrl);
-          console.log('🖼️ Video thumbnail generated successfully for preview (no template editing)');
-        } else {
-          console.log('📽️ Other aspect ratio video detected:', aspectRatio, '- generating thumbnail');
-          // Generate thumbnail for other aspect ratios (user might want custom thumbnail)
-          const thumbnailUrl = await createVideoThumbnailUrl(file, 1);
-          setVideoThumbnailUrl(thumbnailUrl);
-          console.log('🖼️ Video thumbnail generated successfully');
-        }
+        // Generate AI-based thumbnail instead of capturing a video frame
+        console.log('🧠 Generating AI thumbnail for video...');
+        await generateAIThumbnailForVideo();
         
       } catch (error) {
         console.error('❌ Error processing video:', error);
@@ -1126,6 +1108,18 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       setPendingPostGeneration(null);
       setIsGeneratingBoth(false);
     }
+    
+    // If we were in video mode, return to video upload
+    if (selectedPostType === 'video') {
+      console.log('🎬 Returning to video upload mode after template editor cancel');
+      setSelectedVideoMode('upload');
+      // Clear any templated content and return to original video state
+      setTemplatedImageUrl("");
+      if (originalVideoFile && formData.mediaUrl) {
+        // Keep the original video file and URL
+        console.log('📹 Restoring original video state');
+      }
+    }
   };
 
   const handleTemplateSelectorCancel = () => {
@@ -1166,6 +1160,72 @@ export const ContentInput: React.FC<ContentInputProps> = ({
 
   const handleAspectRatioChange = (newAspectRatio: string) => {
     setAspectRatio(newAspectRatio);
+  };
+
+  // Generate AI thumbnail for uploaded video
+  const generateAIThumbnailForVideo = async (): Promise<string | null> => {
+    try {
+      setIsGeneratingThumbnail(true);
+
+      const apiUrl = import.meta.env.VITE_API_URL ||
+        (typeof window !== "undefined"
+          ? `${window.location.protocol}//${window.location.host}`
+          : "http://localhost:5000/api");
+
+      const aspect = videoAspectRatio
+        ? (is9x16Video(videoAspectRatio) ? '9:16' : (is16x9Video(videoAspectRatio) ? '16:9' : '16:9'))
+        : '16:9';
+
+      const thumbnailPrompt = (formData.prompt && formData.prompt.trim())
+        ? `Video thumbnail: ${formData.prompt}`
+        : 'Professional video thumbnail';
+
+      const response = await fetch(`${apiUrl}/ai/generate-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: thumbnailPrompt,
+          style: 'professional',
+          aspectRatio: aspect,
+          quality: 'standard',
+          model: 'gemini-2.5-flash-image-preview'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate AI thumbnail');
+      }
+
+      const result = await response.json();
+      if (!result.success || !result.imageUrl) {
+        throw new Error(result.error || 'AI thumbnail generation failed');
+      }
+
+      // Try to upload generated image to our storage for a stable URL
+      try {
+        const user = await getCurrentUser();
+        if (user?.user?.id) {
+          const imgResp = await fetch(result.imageUrl);
+          const blob = await imgResp.blob();
+          const file = new File([blob], `ai-thumbnail-${Date.now()}.png`, { type: 'image/png' });
+          const uploadedUrl = await uploadMedia(file, user.user.id);
+          setVideoThumbnailUrl(uploadedUrl);
+          return uploadedUrl;
+        }
+      } catch (uploadErr) {
+        console.warn('Failed to upload AI thumbnail, using direct URL:', uploadErr);
+      }
+
+      setVideoThumbnailUrl(result.imageUrl);
+      return result.imageUrl;
+    } catch (error) {
+      console.error('AI thumbnail generation failed:', error);
+      return null;
+    } finally {
+      setIsGeneratingThumbnail(false);
+    }
   };
 
   // Inline image generation function
@@ -1406,7 +1466,11 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedPostType('text')}
-                  className={`  border transition-all duration-200 text-center p-3 ${selectedPostType === 'text'
+                  disabled={(formData.media || formData.mediaUrl) && selectedPostType !== 'text'}
+                  className={`  border transition-all duration-200 text-center p-3 ${
+                    (formData.media || formData.mediaUrl) && selectedPostType !== 'text'
+                      ? 'theme-bg-primary opacity-50 cursor-not-allowed'
+                      : selectedPostType === 'text'
                       ? 'theme-bg-trinary theme-text-light shadow-lg'
                       : 'theme-bg-primary '
                     }`}
@@ -1435,10 +1499,16 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    setSelectedPostType('image')
-                    setShowImageMenu(!showImageMenu);
+                    if (!((formData.media || formData.mediaUrl) && selectedPostType !== 'image')) {
+                      setSelectedPostType('image')
+                      setShowImageMenu(!showImageMenu);
+                    }
                   }}
-                  className={` relative  border transition-all duration-200 text-center p-3 ${selectedPostType === 'image'
+                  disabled={(formData.media || formData.mediaUrl) && selectedPostType !== 'image' && !formData.media?.type?.startsWith('image/')}
+                  className={` relative  border transition-all duration-200 text-center p-3 ${
+                    (formData.media || formData.mediaUrl) && selectedPostType !== 'image' && !formData.media?.type?.startsWith('image/')
+                      ? 'theme-bg-primary opacity-50 cursor-not-allowed'
+                      : selectedPostType === 'image'
                       ? 'theme-bg-trinary theme-text-light shadow-lg'
                       : 'theme-bg-primary theme-text-primary'
                     }`}
@@ -1542,10 +1612,16 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    setSelectedPostType('video');
-                    setShowVideoMenu(!showVideoMenu);
+                    if (!((formData.media || formData.mediaUrl) && selectedPostType !== 'video')) {
+                      setSelectedPostType('video');
+                      setShowVideoMenu(!showVideoMenu);
+                    }
                   }}
-                  className={`relative border transition-all duration-200 text-center p-0  ${selectedPostType === 'video'
+                  disabled={(formData.media || formData.mediaUrl) && selectedPostType !== 'video' && !isVideoFile(formData.media)}
+                  className={`relative border transition-all duration-200 text-center p-3 ${
+                    (formData.media || formData.mediaUrl) && selectedPostType !== 'video' && !isVideoFile(formData.media)
+                      ? 'theme-bg-primary opacity-50 cursor-not-allowed'
+                      : selectedPostType === 'video'
                       ? 'theme-bg-trinary theme-text-light shadow-lg'
                       : 'theme-bg-primary theme-text-primary'
                     }`}
@@ -2423,6 +2499,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           selectedTemplate={selectedTemplate}
           onSave={handleTemplateEditorSave}
           onCancel={handleTemplateEditorCancel}
+          isVideoThumbnail={selectedPostType === 'video'}
         />
       )}
 

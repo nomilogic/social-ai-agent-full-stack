@@ -10,13 +10,15 @@ interface ImageTemplateEditorProps {
   selectedTemplate?: Template;
   onSave: (imageUrl: string) => void;
   onCancel: () => void;
+  isVideoThumbnail?: boolean;
 }
 
 export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   imageUrl,
   selectedTemplate,
   onSave,
-  onCancel
+  onCancel,
+  isVideoThumbnail = false
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -1504,7 +1506,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
               onClick={onCancel}
               className="btn-primary w-full py-4 px-8"
             >
-              Back to Upload Image
+              {isVideoThumbnail ? 'Back to Upload Video' : 'Back to Upload Image'}
             </button>
           </div>
         </div>
