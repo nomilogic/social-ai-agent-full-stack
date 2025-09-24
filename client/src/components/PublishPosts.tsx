@@ -25,6 +25,7 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
   const [youtubeChannels, setYoutubeChannels] = useState<any[]>([]);
   const [selectedFacebookPage, setSelectedFacebookPage] = useState<string>('');
   const [selectedYoutubeChannel, setSelectedYoutubeChannel] = useState<string>('');
+  const [publishedPlatforms, setPublishedPlatforms] = useState<Platform[]>([]);
 
   useEffect(() => {
     console.log('Publishing posts for user:', userId);
@@ -208,18 +209,14 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
   };
 
   const handlePublish = async () => {
-    // Filter to only connected platforms that are selected
-    const connectedSelectedPlatforms = selectedPlatforms.filter(p => connectedPlatforms.includes(p));
-    const unconnectedPlatforms = selectedPlatforms.filter(p => !connectedPlatforms.includes(p));
+    // Filter to only connected platforms that are selected and not already published
+    const availablePlatforms = selectedPlatforms.filter(p => 
+      connectedPlatforms.includes(p) && !publishedPlatforms.includes(p)
+    );
     
-    if (connectedSelectedPlatforms.length === 0) {
-      setError(`No connected platforms selected. Please connect and select at least one platform to publish.`);
+    if (availablePlatforms.length === 0) {
+      setError(`No available platforms to publish to. All connected platforms have been published or none are selected.`);
       return;
-    }
-    
-    // Show warning about unconnected platforms but continue with connected ones
-    if (unconnectedPlatforms.length > 0) {
-      console.warn(`Skipping unconnected platforms: ${unconnectedPlatforms.join(', ')}`);
     }
     
     setPublishing(true);
@@ -227,21 +224,23 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
     setPublishProgress({});
     
     try {
-      // Only process posts for connected platforms
+      // Only process posts for available platforms (connected and not published)
       const selectedPosts = posts.filter(post => 
-        selectedPlatforms.includes(post.platform) && connectedPlatforms.includes(post.platform)
+        availablePlatforms.includes(post.platform)
       );
       
-      // Show info about what we're doing
-      if (unconnectedPlatforms.length > 0) {
-        setError(`⚠️ Skipping ${unconnectedPlatforms.join(', ')} (not connected). Publishing to ${connectedSelectedPlatforms.join(', ')}...`);
-        setTimeout(() => setError(null), 3000); // Clear warning after 3 seconds
-      }
+      console.log(`Publishing to ${availablePlatforms.length} platforms: ${availablePlatforms.join(', ')}`);
       
       const publishResults = await postToAllPlatforms(
         selectedPosts,
         (platform, status) => {
           setPublishProgress(prev => ({ ...prev, [platform]: status }));
+          
+          // If successful, immediately disable and unselect the platform
+          if (status === 'success') {
+            setPublishedPlatforms(prev => [...prev, platform as Platform]);
+            setSelectedPlatforms(prev => prev.filter(p => p !== platform));
+          }
         },
         {
           facebookPageId: selectedFacebookPage || undefined,
@@ -251,23 +250,34 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
       
       setResults(publishResults);
       
-      // Check if all posts were published successfully and trigger reset
-      if (publishResults._summary) {
-        const { successful, total, failed } = publishResults._summary;
-        if (successful === total && failed === 0 && onReset) {
-          console.log('All posts published successfully, triggering reset workflow');
-          // Delay reset to allow user to see the success message
-          setTimeout(() => {
-            onReset();
-          }, 3000);
-        }
+      // Check if all originally selected connected platforms have been published
+      const originalConnectedPlatforms = posts
+        .map(p => p.platform)
+        .filter(p => connectedPlatforms.includes(p));
+      
+      const newlyPublished = Object.entries(publishResults)
+        .filter(([key, result]) => key !== '_summary' && result.success)
+        .map(([platform]) => platform as Platform);
+      
+      const allPublishedPlatforms = [...publishedPlatforms, ...newlyPublished];
+      
+      // Check if all connected platforms have been published
+      const allConnectedPlatformsPublished = originalConnectedPlatforms.every(p => 
+        allPublishedPlatforms.includes(p)
+      );
+      
+      if (allConnectedPlatformsPublished && onReset) {
+        console.log('All connected platforms published successfully, triggering reset workflow in 3 seconds...');
+        setTimeout(() => {
+          onReset();
+        }, 3000);
       }
+      
     } catch (err: any) {
       setError(err.message || 'Failed to publish posts.');
     } finally {
       setPublishing(false);
     }
-
   };
 
   return (
@@ -321,30 +331,35 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
                 Connect your social media accounts to enable direct publishing across all platforms.
               </p>
             </div>
-            {connectedPlatforms.length > 0 && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setSelectedPlatforms(connectedPlatforms)}
-                  className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
-                >
-                  Select All
-                </button>
-                <button
-                  onClick={() => setSelectedPlatforms([])}
-                  className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-                >
-                  Deselect All
-                </button>
-              </div>
-            )}
+          {connectedPlatforms.filter(p => !publishedPlatforms.includes(p)).length > 0 && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSelectedPlatforms(connectedPlatforms.filter(p => !publishedPlatforms.includes(p)))}
+                className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+              >
+                Select All
+              </button>
+              <button
+                onClick={() => setSelectedPlatforms([])}
+                className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+              >
+                Deselect All
+              </button>
+            </div>
+          )}
           </div>
           
           {/* Selection Summary */}
           {connectedPlatforms.length > 0 && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">
-                <span className="font-medium">{selectedPlatforms.filter(p => connectedPlatforms.includes(p)).length}</span> of <span className="font-medium">{connectedPlatforms.length}</span> connected platforms selected for publishing
+                <span className="font-medium">{selectedPlatforms.filter(p => connectedPlatforms.includes(p) && !publishedPlatforms.includes(p)).length}</span> of <span className="font-medium">{connectedPlatforms.filter(p => !publishedPlatforms.includes(p)).length}</span> available platforms selected for publishing
               </p>
+              {publishedPlatforms.length > 0 && (
+                <p className="text-sm text-green-800 mt-1">
+                  <span className="font-medium">{publishedPlatforms.length}</span> platforms already published: {publishedPlatforms.join(', ')}
+                </p>
+              )}
             </div>
           )}
 
@@ -436,8 +451,8 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
 
                     {/* Platform Selection and Connect Controls */}
                     <div className="flex items-center gap-2">
-                      {/* Checkbox - Only show if connected */}
-                      {isConnected && (
+                      {/* Checkbox - Only show if connected and not published */}
+                      {isConnected && !publishedPlatforms.includes(post.platform) && (
                         <label className="flex items-center cursor-pointer" htmlFor={`platform-${post.platform}`}>
                           <div className="relative">
                             <input className="text-green-500 focus:ring-green-400"
@@ -465,10 +480,17 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
                               )}
                             </div>
                           </div>
-                          {/* <span className="ml-2 text-sm text-gray-600">
-                            {selectedPlatforms.includes(post.platform) ? 'Selected' : 'Select'}
-                          </span> */}
                         </label>
+                      )}
+                      
+                      {/* Published indicator - Show when platform is published */}
+                      {isConnected && publishedPlatforms.includes(post.platform) && (
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 text-green-800 text-sm font-medium">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          <span>PUBLISHED</span>
+                        </div>
                       )}
                       
                       {/* Connect Button - Only show when not connected */}
@@ -551,9 +573,9 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
         {/* Main Publish Button */}
         <button
           onClick={handlePublish}
-          disabled={publishing || selectedPlatforms.length === 0 || selectedPlatforms.every(p => !connectedPlatforms.includes(p))}
+          disabled={publishing || selectedPlatforms.filter(p => connectedPlatforms.includes(p) && !publishedPlatforms.includes(p)).length === 0}
           className={`w-full rounded-full py-2 px-4 font-medium theme-text-light transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
-            selectedPlatforms.length === 0 || selectedPlatforms.every(p => !connectedPlatforms.includes(p))
+            selectedPlatforms.filter(p => connectedPlatforms.includes(p) && !publishedPlatforms.includes(p)).length === 0
               ? 'bg-gray-400'
               : publishing
               ? 'theme-bg-trinary'
@@ -571,11 +593,11 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
               <span>
-                {selectedPlatforms.length === 0 
-                  ? 'SELECT PLATFORMS TO PUBLISH'
-                  : selectedPlatforms.every(p => !connectedPlatforms.includes(p))
-                    ? 'CONNECT ACCOUNTS FIRST'
-                    : 'PUBLISH TO PLATFORMS'
+                {selectedPlatforms.filter(p => connectedPlatforms.includes(p) && !publishedPlatforms.includes(p)).length === 0
+                  ? publishedPlatforms.length > 0 
+                    ? 'ALL SELECTED PLATFORMS PUBLISHED'
+                    : 'SELECT PLATFORMS TO PUBLISH'
+                  : 'PUBLISH TO PLATFORMS'
                 }
               </span>
             </div>
@@ -583,15 +605,19 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
         </button>
         
         {/* Helper text */}
-        {selectedPlatforms.length === 0 && (
+        {selectedPlatforms.filter(p => connectedPlatforms.includes(p) && !publishedPlatforms.includes(p)).length === 0 && publishedPlatforms.length === 0 && (
           <p className="mt-3 text-sm text-gray-500 text-center">
             Please select at least one connected platform to publish.
           </p>
         )}
         
-        {selectedPlatforms.length > 0 && selectedPlatforms.every(p => !connectedPlatforms.includes(p)) && (
-          <p className="mt-3 text-sm text-gray-500 text-center">
-            Please connect to at least one selected platform to publish.
+        {publishedPlatforms.length > 0 && selectedPlatforms.filter(p => connectedPlatforms.includes(p) && !publishedPlatforms.includes(p)).length === 0 && (
+          <p className="mt-3 text-sm text-green-600 text-center font-medium">
+            All selected platforms have been published successfully! 
+            {connectedPlatforms.filter(p => !publishedPlatforms.includes(p)).length === 0 
+              ? 'Returning to content creation...' 
+              : `You can select from ${connectedPlatforms.filter(p => !publishedPlatforms.includes(p)).length} remaining platforms.`
+            }
           </p>
         )}
         

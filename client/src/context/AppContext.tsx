@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { getCurrentUser, signInAnonymously } from '../lib/database';
 import { Campaign } from '@shared/schema';
+import { LoadingProvider } from './LoadingContext';
 
 // Types
 export interface User {
@@ -355,9 +356,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   return (
-    <AppContext.Provider value={{ state, dispatch }}>
-      {children}
-    </AppContext.Provider>
+    <LoadingProvider>
+      <AppContext.Provider value={{ state, dispatch }}>
+        {children}
+      </AppContext.Provider>
+    </LoadingProvider>
   );
 };
 

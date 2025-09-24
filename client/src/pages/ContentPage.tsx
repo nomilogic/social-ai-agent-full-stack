@@ -138,6 +138,25 @@ export const ContentPage: React.FC = () => {
     }
   };
 
+  // Handle reset after successful publishing
+  const handlePublishReset = () => {
+    console.log('🔄 Resetting application state after successful publishing...');
+    
+    // Clear all generated posts and content data
+    dispatch({ type: 'SET_GENERATED_POSTS', payload: [] });
+    dispatch({ type: 'SET_CONTENT_DATA', payload: null });
+    
+    // Close the publish modal
+    setShowPublishModal(false);
+    
+    // Restore background scrolling
+    document.body.classList.remove('modal-open');
+    document.documentElement.classList.remove('modal-open');
+    
+    // Navigate back to content creation
+    navigate('/content');
+  };
+
   const stepLabels = ["Content Input", "AI Generation", "Preview", "Publish"];
   const getCurrentStep = () => {
     const path = location.pathname;
@@ -286,6 +305,7 @@ export const ContentPage: React.FC = () => {
                     document.body.classList.remove('modal-open');
                     document.documentElement.classList.remove('modal-open');
                   }}
+                  onReset={handlePublishReset}
                   userId={state.user?.id || ""}
                 />
               </div>
