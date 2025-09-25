@@ -1255,7 +1255,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     setFormData((prev) => ({ ...prev, mediaUrl: prev.media ? URL.createObjectURL(prev.media) : undefined }));
   };
 
-  const [aspectRatio, setAspectRatio] = useState<string>('1:1');
+  const [aspectRatio, setAspectRatio] = useState<string>('16:9');
   const [imageDescription, setImageDescription] = useState<string>('');
   const [generateImageWithPost, setGenerateImageWithPost] = useState(true );
   const [isGeneratingBoth, setIsGeneratingBoth] = useState(false);
@@ -2642,6 +2642,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
           onSave={handleTemplateEditorSave}
           onCancel={handleTemplateEditorCancel}
           isVideoThumbnail={selectedPostType === 'video'}
+          aspectRatio={aspectRatio}
         />
       )}
 

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Template, TemplateElement, TextElement, LogoElement, ShapeElement } from '../types/templates';
-import { Palette, Type, Upload, Square, Download, Undo, Redo, Loader, ArrowUp, ArrowDown, ChevronUp, ChevronDown, Trash, Lock, Unlock, Circle, Plus } from 'lucide-react';
+import { Palette, Type, Upload, Square, Download, Undo, Redo, Loader, ArrowUp, ArrowDown, ChevronUp, ChevronDown, Trash, Lock, Unlock, Circle, Plus, Monitor, Smartphone, Youtube, Instagram, Twitter } from 'lucide-react';
 import { uploadMedia, getCurrentUser } from '../lib/database';
 import '../styles/drag-prevention.css';
 import '../styles/template-editor.css';
@@ -11,6 +11,7 @@ interface ImageTemplateEditorProps {
   onSave: (imageUrl: string) => void;
   onCancel: () => void;
   isVideoThumbnail?: boolean;
+  aspectRatio?: string; // Aspect ratio from ContentInput (e.g., '1:1', '16:9', '9:16')
 }
 
 export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
@@ -18,7 +19,8 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   selectedTemplate,
   onSave,
   onCancel,
-  isVideoThumbnail = false
+  isVideoThumbnail = false,
+  aspectRatio = '16:9'
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -48,6 +50,17 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+  };
+
+  // Calculate canvas dimensions based on aspect ratio
+  const calculateCanvasDimensions = (aspectRatioString: string): { width: number, height: number } => {
+    const aspectRatioMap: { [key: string]: { width: number, height: number } } = {
+      '1:1': { width: 1024, height: 1024 },   // Square
+      '16:9': { width: 1280, height: 720 },   // Landscape
+      '9:16': { width: 720, height: 1280 }    // Portrait (vertical)
+    };
+    
+    return aspectRatioMap[aspectRatioString] || aspectRatioMap['1:1'];
   };
 
   // Calculate zoom level to fit canvas in container
@@ -111,17 +124,22 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
           img.onload = () => {
             console.log('Background image loaded successfully:', imageUrl);
             console.log('Image dimensions:', img.width, 'x', img.height);
+            console.log('Using aspect ratio:', aspectRatio);
             
-            // Store original image dimensions
+            // Store original image dimensions for reference
             setImageDimensions({ width: img.width, height: img.height });
             
-            // Set canvas to real image dimensions
-            setCanvasDimensions({ width: img.width, height: img.height });
-            canvasElement.width = img.width;
-            canvasElement.height = img.height;
+            // Calculate canvas dimensions based on aspect ratio instead of image dimensions
+            const targetDimensions = calculateCanvasDimensions(aspectRatio);
+            console.log('Target canvas dimensions based on aspect ratio:', targetDimensions);
             
-            // Calculate zoom level to fit in container
-            const { zoom, maxZoom: maxZoomLevel } = calculateZoomLevel(img.width, img.height);
+            // Set canvas to aspect ratio dimensions
+            setCanvasDimensions(targetDimensions);
+            canvasElement.width = targetDimensions.width;
+            canvasElement.height = targetDimensions.height;
+            
+            // Calculate zoom level to fit canvas in container
+            const { zoom, maxZoom: maxZoomLevel } = calculateZoomLevel(targetDimensions.width, targetDimensions.height);
             console.log('Calculated zoom level:', zoom, 'Max zoom:', maxZoomLevel);
             setZoomLevel(zoom);
             setMaxZoom(maxZoomLevel);
@@ -175,52 +193,80 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
     }
   }, [elements, ctx, backgroundImage, isLoading]);
 
-  const redrawCanvas = (context: CanvasRenderingContext2D, bgImage: HTMLImageElement, currentElements: TemplateElement[]) => {
+  const redrawCanvas = (context: CanvasRenderingContext2D, bgImage: HTMLImageElement, currentElements: TemplateElement[], showSelection: boolean = true) => {
     if (!canvas) return;
     
     // Clear canvas
     context.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Draw background image to fill the entire canvas while maintaining aspect ratio
-    // The canvas dimensions should already match the image aspect ratio from calculateCanvasDimensions
-    context.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+    // Draw background image using "cover" behavior (crop from all sides to fill canvas)
+    // Calculate scaling factor to cover the entire canvas
+    const canvasAspect = canvas.width / canvas.height;
+    const imageAspect = bgImage.width / bgImage.height;
+    
+    let drawWidth, drawHeight, sourceX, sourceY, sourceWidth, sourceHeight;
+    
+    if (imageAspect > canvasAspect) {
+      // Image is wider than canvas - crop left/right edges
+      drawWidth = canvas.width;
+      drawHeight = canvas.height;
+      sourceHeight = bgImage.height;
+      sourceWidth = bgImage.height * canvasAspect; // Maintain canvas aspect ratio
+      sourceX = (bgImage.width - sourceWidth) / 2; // Center horizontally
+      sourceY = 0;
+    } else {
+      // Image is taller than canvas - crop top/bottom edges
+      drawWidth = canvas.width;
+      drawHeight = canvas.height;
+      sourceWidth = bgImage.width;
+      sourceHeight = bgImage.width / canvasAspect; // Maintain canvas aspect ratio
+      sourceX = 0;
+      sourceY = (bgImage.height - sourceHeight) / 2; // Center vertically
+    }
+    
+    // Draw the cropped portion of the image to fill the entire canvas
+    context.drawImage(
+      bgImage,
+      sourceX, sourceY, sourceWidth, sourceHeight, // Source rectangle (from image)
+      0, 0, drawWidth, drawHeight // Destination rectangle (on canvas)
+    );
     
     // Draw elements sorted by zIndex
     const sortedElements = [...currentElements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
     
     sortedElements.forEach(element => {
-      drawElement(context, element);
+      drawElement(context, element, showSelection);
     });
   };
 
-  const redrawCanvasWithoutBackground = (context: CanvasRenderingContext2D, currentElements: TemplateElement[]) => {
+  const redrawCanvasWithoutBackground = (context: CanvasRenderingContext2D, currentElements: TemplateElement[], showSelection: boolean = true) => {
     if (!canvas) return;
     
     // Clear canvas
     context.clearRect(0, 0, canvas.width, canvas.height);
     
     // Draw a light gray background as fallback
-    context.fillStyle = '#f3f4f6';
+    context.fillStyle = '#f3f4f600';
     context.fillRect(0, 0, canvas.width, canvas.height);
     
     // Draw "Image Loading Failed" text
-    context.fillStyle = '#6b7280';
-    context.font = '24px Arial';
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-    context.fillText('Image Loading Failed', canvas.width / 2, canvas.height / 2 - 50);
-    context.font = '16px Arial';
-    context.fillText('Template elements still available below', canvas.width / 2, canvas.height / 2 - 20);
+    // context.fillStyle = '#6b7280';
+    // context.font = '24px Arial';
+    // context.textAlign = 'center';
+    // context.textBaseline = 'middle';
+    // context.fillText('Image Loading Failed', canvas.width / 2, canvas.height / 2 - 50);
+    // context.font = '16px Arial';
+    // context.fillText('Template elements still available below', canvas.width / 2, canvas.height / 2 - 20);
     
-    // Draw elements sorted by zIndex
-    const sortedElements = [...currentElements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+    // // Draw elements sorted by zIndex
+    // const sortedElements = [...currentElements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
     
-    sortedElements.forEach(element => {
-      drawElement(context, element);
-    });
+    // sortedElements.forEach(element => {
+    //   drawElement(context, element, showSelection);
+    // });
   };
 
-  const drawElement = (context: CanvasRenderingContext2D, element: TemplateElement) => {
+  const drawElement = (context: CanvasRenderingContext2D, element: TemplateElement, showSelection: boolean = true) => {
     context.save();
     
     // Apply rotation if specified
@@ -244,8 +290,8 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
     
     context.restore();
     
-    // Draw selection border if selected (after restore to avoid rotation)
-    if (selectedElement === element.id) {
+    // Draw selection border if selected (after restore to avoid rotation) - only if showSelection is true
+    if (showSelection && selectedElement === element.id) {
       context.save();
       
       // Apply same rotation for selection border
@@ -907,20 +953,19 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   };
 
   const exportImage = async () => {
-    if (!canvas) return;
+    if (!canvas || !ctx) return;
     
     setIsSaving(true);
     
-    // Store current selection to restore later
-    const currentSelection = selectedElement;
-    
     try {
-      // Temporarily clear selection to avoid border in exported image
-      setSelectedElement(null);
+      // Create a clean canvas for export by drawing without selection borders
+      if (backgroundImage) {
+        redrawCanvas(ctx, backgroundImage, elements, false); // false = don't show selection
+      } else {
+        redrawCanvasWithoutBackground(ctx, elements, false); // false = don't show selection
+      }
       
-      // Wait for the canvas to redraw without selection border
-      await new Promise(resolve => setTimeout(resolve, 50));
-      // First create blob URL for immediate use
+      // Create blob from the clean canvas
       const blob = await new Promise<Blob>((resolve) => {
         canvas.toBlob((blob) => {
           if (blob) resolve(blob);
@@ -929,6 +974,13 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
       
       if (!blob) {
         throw new Error('Failed to create image blob');
+      }
+      
+      // Restore canvas with selection borders for continued editing
+      if (backgroundImage) {
+        redrawCanvas(ctx, backgroundImage, elements, true); // true = show selection
+      } else {
+        redrawCanvasWithoutBackground(ctx, elements, true); // true = show selection
       }
       
       // Create local URL for immediate preview
@@ -964,10 +1016,6 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
       console.error('Error exporting template image:', error);
     } finally {
       setIsSaving(false);
-      // Restore the selection after export is complete
-      if (currentSelection) {
-        setSelectedElement(currentSelection);
-      }
     }
   };
 
