@@ -64,7 +64,7 @@ export async function analyzeImage(imageFile: File): Promise<string> {
     return 'Image analysis requires a valid Gemini API key. Please add a description manually.';
   }
 
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
   try {
     // Convert file to base64
@@ -118,7 +118,7 @@ export async function generatePostForPlatform(
   characterCount: number;
   engagement: 'high' | 'medium' | 'low';
 }> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   const config = platformConfigs[platform];
 
   const prompt = `
@@ -311,7 +311,6 @@ export async function generateSinglePlatformPost(
         imageUrl: serverMediaUrl || null,
         mediaUrl: serverMediaUrl || null,
         thumbnailUrl: (contentData as any).thumbnailUrl || null,
-        generationPrompt: contentData.prompt, // Store the original prompt for regeneration
         success: true
       };
     } else {
@@ -319,40 +318,21 @@ export async function generateSinglePlatformPost(
     }
   } catch (error) {
     console.error(`Error generating for ${platform}:`, error);
-
+    
     // Use server URL if available, fallback to mediaUrl
     const serverMediaUrl = (contentData as any).serverUrl || contentData.mediaUrl;
-
-    // Generate a platform-appropriate fallback (not just the raw prompt)
-    try {
-      const config = platformConfigs[platform];
-      const fallback = generateFallbackContent(platform, campaignInfo, contentData, config);
-
-      return {
-        platform,
-        caption: fallback.caption,
-        hashtags: fallback.hashtags,
-        imageUrl: serverMediaUrl || null,
-        mediaUrl: serverMediaUrl || null,
-        thumbnailUrl: (contentData as unknown).thumbnailUrl || null,
-        generationPrompt: contentData.prompt, // Store the original prompt for regeneration
-        success: false,
-        error: error instanceof Error ? error.message : 'Generation failed (fallback used)'
-      };
-    } catch (fallbackError) {
-      // Absolute last resort
-      return {
-        platform,
-        caption: contentData.prompt || 'Check out our latest updates!',
-        hashtags: [`#${campaignInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`, '#update'],
-        imageUrl: serverMediaUrl || null,
-        mediaUrl: serverMediaUrl || null,
-        thumbnailUrl: (contentData as unknown).thumbnailUrl || null,
-        generationPrompt: contentData.prompt, // Store the original prompt for regeneration
-        success: false,
-        error: `Generation failed; fallback also failed: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}`
-      };
-    }
+    
+    // Return fallback post for this platform
+    return {
+      platform,
+      caption: contentData.prompt || 'Check out our latest updates!',
+      hashtags: [`#${campaignInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`, '#update'],
+      imageUrl: serverMediaUrl || null,
+      mediaUrl: serverMediaUrl || null,
+      thumbnailUrl: (contentData as any).thumbnailUrl || null,
+      success: false,
+      error: error instanceof Error ? error.message : 'Generation failed'
+    };
   }
 }
 
@@ -396,16 +376,16 @@ export async function generateAllPosts(
           },
           body: JSON.stringify({
             campaign: {
-              name: campaignInfo.name,
-              industry: campaignInfo.industry,
-              description: campaignInfo.description,
-              targetAudience: campaignInfo.targetAudience,
-              brandTone: campaignInfo.brandTone
+              name: campaignInfo.name || '',
+              industry: campaignInfo.industry || '',
+              description: campaignInfo.description || '',
+              targetAudience: campaignInfo.targetAudience || 'everyone',
+              brandTone: campaignInfo.brandTone || 'cool and professional'
             },
             content: {
               topic: contentData.prompt,
               contentType: contentData.contentType || 'general',
-              tone: contentData.tone || campaignInfo.brandTone,
+              tone: contentData.tone || campaignInfo.brandTone || 'cool and professional',
               targetAudience: contentData.targetAudience || campaignInfo.targetAudience,
               tags: contentData.tags || []
             },
@@ -451,7 +431,6 @@ export async function generateAllPosts(
             imageUrl: serverMediaUrl || null,
             mediaUrl: serverMediaUrl || null,
             thumbnailUrl: (contentData as any).thumbnailUrl || null,
-            generationPrompt: contentData.prompt, // Store the original prompt for regeneration
             success: true
           });
         } else {
@@ -471,7 +450,6 @@ export async function generateAllPosts(
           imageUrl: serverMediaUrl || null,
           mediaUrl: serverMediaUrl || null,
           thumbnailUrl: (contentData as any).thumbnailUrl || null,
-          generationPrompt: contentData.prompt, // Store the original prompt for regeneration
           success: false,
           error: platformError instanceof Error ? platformError.message : 'Generation failed'
         });
@@ -506,7 +484,6 @@ export async function generateAllPosts(
       imageUrl: serverMediaUrl || null,
       mediaUrl: serverMediaUrl || null,
       thumbnailUrl: (contentData as any).thumbnailUrl || null,
-      generationPrompt: contentData.prompt, // Store the original prompt for regeneration
       success: false,
       error: error.message || 'AI generation failed'
     }));
@@ -534,7 +511,7 @@ export async function analyzeImageWithGemini(imageFile: File): Promise<string> {
   }
 
   const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
   try {
     // Convert file to base64
