@@ -293,7 +293,7 @@ export const themes: Record<string, ThemeColors> = {
 
 export class ThemeManager {
   private static instance: ThemeManager;
-  private currentTheme: string = "ai-revolution"; // Default to first onboarding theme
+  private currentTheme: string = "omni-share"; // Default to first onboarding theme
   private listeners: ((theme: ThemeColors) => void)[] = [];
 
   static getInstance(): ThemeManager {
