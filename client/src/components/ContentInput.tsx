@@ -723,6 +723,8 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         targetAudience: currentCampaignInfo.target_audience || currentCampaignInfo.targetAudience,
         description: currentCampaignInfo.description,
         imageAnalysis: imageAnalysis,
+        // Include thumbnailUrl for video posts
+        thumbnailUrl: templatedImageUrl || videoThumbnailUrl || finalPostData.thumbnailUrl,
         // Additional campaign fields if available
         website: currentCampaignInfo.website,
         objective: currentCampaignInfo.objective,

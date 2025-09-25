@@ -81,7 +81,7 @@ export async function postToFacebookFromServer(accessToken: string, post: Genera
   }
 }
 
-export async function postToYouTubeFromServer(accessToken: string, post: GeneratedPost, videoUrl?: string) {
+export async function postToYouTubeFromServer(accessToken: string, post: GeneratedPost, videoUrl?: string, thumbnailUrl?: string) {
   try {
     if (!videoUrl && !post.imageUrl) {
       throw new Error('YouTube requires a video file');
@@ -89,12 +89,53 @@ export async function postToYouTubeFromServer(accessToken: string, post: Generat
     
     const videoUrlToUse = videoUrl || post.imageUrl;
     
-    // Use the simpler YouTube post endpoint
+    console.log('📹 YouTube posting with:', {
+      videoUrl: videoUrlToUse?.substring(0, 50) + '...',
+      hasThumbnail: !!thumbnailUrl,
+      thumbnailUrl: thumbnailUrl?.substring(0, 50) + '...'
+    });
+    
+    // Step 1: Upload video to YouTube
     const response = await axios.post('/api/youtube/post', {
       accessToken,
       post,
       videoUrl: videoUrlToUse
     });
+    
+    const videoId = response.data?.videoId;
+    console.log('✅ YouTube video uploaded successfully, videoId:', videoId);
+    
+    // Step 2: Upload custom thumbnail if available
+    if (thumbnailUrl && videoId) {
+      console.log('🎨 Uploading custom thumbnail for YouTube video:', videoId);
+      try {
+        const thumbnailResponse = await axios.post('/api/youtube/set-thumbnail', {
+          accessToken,
+          videoId,
+          thumbnailUrl
+        });
+        
+        if (thumbnailResponse.data?.success) {
+          console.log('✅ YouTube thumbnail uploaded successfully');
+          // Add thumbnail info to response
+          response.data.thumbnailUploaded = true;
+          response.data.thumbnailMessage = thumbnailResponse.data.message;
+        } else {
+          console.warn('⚠️ YouTube thumbnail upload failed:', thumbnailResponse.data?.error);
+          response.data.thumbnailUploaded = false;
+          response.data.thumbnailError = thumbnailResponse.data?.error || 'Unknown thumbnail upload error';
+        }
+      } catch (thumbnailError: any) {
+        console.warn('⚠️ YouTube thumbnail upload failed:', thumbnailError.message);
+        // Don't fail the entire upload if thumbnail fails, just log it
+        response.data.thumbnailUploaded = false;
+        response.data.thumbnailError = thumbnailError.response?.data?.error || thumbnailError.message;
+      }
+    } else if (!thumbnailUrl) {
+      console.log('🎨 No thumbnail URL provided, skipping thumbnail upload');
+    } else if (!videoId) {
+      console.warn('⚠️ No video ID available for thumbnail upload');
+    }
     
     return response.data;
   } catch (error: any) {
@@ -319,7 +360,7 @@ export async function postToYouTube(params: { accessToken: string; post: Generat
 export async function postToAllPlatforms(
   posts: GeneratedPost[], 
   onProgress?: (platform: string, status: 'pending' | 'success' | 'error') => void,
-  context?: { facebookPageId?: string; youtubeChannelId?: string }
+  context?: { facebookPageId?: string; youtubeChannelId?: string; thumbnailUrl?: string }
 ): Promise<Record<string, any>> {
   const results: Record<string, any> = {};
   const errors: string[] = [];
@@ -434,7 +475,7 @@ export async function postToAllPlatforms(
 }
 
 // Function to handle real OAuth posting
-async function postWithRealOAuth(post: GeneratedPost, accessToken: string, context?: { facebookPageId?: string; youtubeChannelId?: string }): Promise<{ success: boolean; message: string; postId?: string }> {
+async function postWithRealOAuth(post: GeneratedPost, accessToken: string, context?: { facebookPageId?: string; youtubeChannelId?: string; thumbnailUrl?: string }): Promise<{ success: boolean; message: string; postId?: string }> {
   try {
     switch (post.platform) {
       case 'linkedin':
@@ -454,10 +495,20 @@ async function postWithRealOAuth(post: GeneratedPost, accessToken: string, conte
         };
       
       case 'youtube':
-        const ytResult = await postToYouTubeFromServer(accessToken, post);
+        // Get thumbnail URL from context if available (passed from video posting component)
+        const thumbnailUrl = context?.thumbnailUrl || (post as any).thumbnailUrl;
+        const ytResult = await postToYouTubeFromServer(accessToken, post, post.imageUrl, thumbnailUrl);
+        
+        let message = `Successfully posted to YouTube`;
+        if (ytResult.thumbnailUploaded) {
+          message += ` with custom thumbnail`;
+        } else if (ytResult.thumbnailError) {
+          message += ` (thumbnail upload failed: ${ytResult.thumbnailError})`;
+        }
+        
         return {
           success: true,
-          message: `Successfully posted to YouTube`,
+          message,
           postId: ytResult.videoId || ytResult.data?.id
         };
       

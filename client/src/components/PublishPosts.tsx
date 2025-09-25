@@ -231,6 +231,10 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
       
       console.log(`Publishing to ${availablePlatforms.length} platforms: ${availablePlatforms.join(', ')}`);
       
+      // Get thumbnail URL from YouTube post for context
+      const youtubePost = selectedPosts.find(post => post.platform === 'youtube');
+      const thumbnailUrl = youtubePost?.thumbnailUrl;
+      
       const publishResults = await postToAllPlatforms(
         selectedPosts,
         (platform, status) => {
@@ -244,7 +248,8 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
         },
         {
           facebookPageId: selectedFacebookPage || undefined,
-          youtubeChannelId: selectedYoutubeChannel || undefined
+          youtubeChannelId: selectedYoutubeChannel || undefined,
+          thumbnailUrl: thumbnailUrl || undefined
         }
       );
       

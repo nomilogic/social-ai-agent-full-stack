@@ -29,8 +29,8 @@ router.post('/generate-image', async (req: Request, res: Response) => {
     prompt, 
     style = 'realistic',
     userId,
-    width = 1024,
-    height = 1024,
+    width = req.body.width || 1024,
+    height = req.body.height || 1024,
     seed,
     saveToStorage = true 
   }: GenerateImageRequest = req.body
