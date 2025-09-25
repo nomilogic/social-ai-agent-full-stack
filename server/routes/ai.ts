@@ -957,11 +957,29 @@ router.post('/generate-image', async (req: Request, res: Response) => {
       prompt, 
       model = 'stabilityai/stable-diffusion-xl-base-1.0',
       style = 'realistic',
-      width = 1024,
-      height = 1024,
+      width,
+      height,
+      aspectRatio,
       seed,
       userId 
     } = req.body
+
+    // Convert aspect ratio to dimensions if width/height not provided
+    let finalWidth = width;
+    let finalHeight = height;
+    
+    if (!finalWidth || !finalHeight) {
+      const aspectRatioDimensions = {
+        '1:1': { width: 1024, height: 1024 },
+        '16:9': { width: 1280, height: 720 },
+        '9:16': { width: 720, height: 1280 },
+        '4:3': { width: 1024, height: 768 }
+      };
+      
+      const dimensions = aspectRatioDimensions[aspectRatio as keyof typeof aspectRatioDimensions] || aspectRatioDimensions['1:1'];
+      finalWidth = finalWidth || dimensions.width;
+      finalHeight = finalHeight || dimensions.height;
+    }
 
     console.log('AI Image generation request:', {
       userId,
@@ -979,7 +997,8 @@ router.post('/generate-image', async (req: Request, res: Response) => {
     console.log('AI image generation request:', {
       prompt: prompt.substring(0, 100) + '...',
       style,
-      dimensions: `${width}x${height}`
+      aspectRatio,
+      dimensions: `${finalWidth}x${finalHeight}`
     })
 
     // Always ensure storage bucket exists - we'll always upload to Supabase for social media compatibility
@@ -1004,31 +1023,33 @@ router.post('/generate-image', async (req: Request, res: Response) => {
     if (isGeminiModel) {
       console.log('🔮 Generating image with Gemini 2.5 Flash Image Preview:', model)
       try {
-        const geminiResult = await generateImageWithGemini(enhancedPrompt)
+        console.log('Generating image with Gemini API...', enhancedPrompt +`, style: ${style}, width: ${finalWidth}, height: ${finalHeight}`)
+        const geminiResult = await generateImageWithGemini(enhancedPrompt +`, style: ${style}, width: ${finalWidth}, height: ${finalHeight}`)
+        console.log('Gemini raw result:', geminiResult)
         imageUrl = geminiResult.imageData // This is a base64 data URL
         provider = 'gemini'
         console.log('✅ Gemini generation successful')
       } catch (geminiError: any) {
         console.warn('❌ Gemini failed, falling back to Pollinations:', geminiError.message)
         // Fallback to Pollinations if Gemini fails
-        imageUrl = await generateImageWithPollinationsWithRetry(enhancedPrompt, width, height, finalSeed)
+        imageUrl = await generateImageWithPollinationsWithRetry(enhancedPrompt, finalWidth, finalHeight, finalSeed)
         provider = 'pollinations'
       }
     } else if (isHuggingFaceModel && model !== 'default') {
       console.log('🤗 Generating image with Hugging Face:', model)
       try {
-        imageUrl = await generateImageWithHuggingFace(model, enhancedPrompt, width, height)
+        imageUrl = await generateImageWithHuggingFace(model, enhancedPrompt, finalWidth, finalHeight)
         provider = 'huggingface'
         console.log('✅ Hugging Face generation successful')
       } catch (hfError: any) {
         console.warn('❌ Hugging Face failed, falling back to Pollinations:', hfError.message)
         // Fallback to Pollinations if Hugging Face fails
-        imageUrl = await generateImageWithPollinationsWithRetry(enhancedPrompt, width, height, finalSeed)
+        imageUrl = await generateImageWithPollinationsWithRetry(enhancedPrompt, finalWidth, finalHeight, finalSeed)
         provider = 'pollinations'
       }
     } else {
       console.log('🌸 Generating image with Pollinations AI (free) with retry logic')
-      imageUrl = await generateImageWithPollinationsWithRetry(enhancedPrompt, width, height, finalSeed)
+      imageUrl = await generateImageWithPollinationsWithRetry(enhancedPrompt, finalWidth, finalHeight, finalSeed)
       provider = 'pollinations'
     }
 
@@ -1073,8 +1094,8 @@ router.post('/generate-image', async (req: Request, res: Response) => {
       model,
       style,
       seed: finalSeed,
-      dimensions: { width, height },
-      size: `${width}x${height}`,
+      dimensions: { width: finalWidth, height: finalHeight },
+      size: `${finalWidth}x${finalHeight}`,
       generatedAt: new Date().toISOString(),
       provider
     })

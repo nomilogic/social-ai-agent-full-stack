@@ -46,6 +46,7 @@ export interface PostContent {
   campaignId?: string;
   selectedPlatforms?: Platform[];
   imageAnalysis?: string;
+  thumbnailUrl?: string; // For video thumbnails
 }
 
 export interface GeneratedPost {
@@ -59,6 +60,7 @@ export interface GeneratedPost {
   pageId?: string; // For Facebook/Instagram pages
   mediaUrl?: string; // URL of uploaded media
   generationPrompt?: string; // Individual prompt for each platform
+  thumbnailUrl?: string; // For video thumbnails
 }
 
 export type Platform = 'facebook' | 'instagram' | 'twitter' | 'linkedin' | 'tiktok' | 'youtube';

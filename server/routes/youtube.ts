@@ -627,6 +627,122 @@ router.post('/access-token', async (req: Request, res: Response) => {
   }
 })
 
+// POST /api/youtube/set-thumbnail - Set custom thumbnail for YouTube video
+router.post('/set-thumbnail', async (req: Request, res: Response) => {
+  const { accessToken, videoId, thumbnailUrl } = req.body
+
+  if (!accessToken || !videoId || !thumbnailUrl) {
+    return res.status(400).json({ error: 'Missing required parameters: accessToken, videoId, thumbnailUrl' })
+  }
+
+  try {
+    console.log(`Setting thumbnail for YouTube video ${videoId}...`)
+    
+    // Download the thumbnail image
+    const thumbnailBuffer = await downloadMediaFromStorage(thumbnailUrl)
+    
+    if (!thumbnailBuffer) {
+      throw new Error('Failed to download thumbnail from storage')
+    }
+    
+    console.log('Thumbnail downloaded successfully, size:', thumbnailBuffer.length, 'bytes')
+    
+    // Detect image content type from buffer
+    let contentType = 'image/jpeg' // Default
+    const firstBytes = thumbnailBuffer.slice(0, 12)
+    
+    if (firstBytes[0] === 0xFF && firstBytes[1] === 0xD8) {
+      contentType = 'image/jpeg'
+    } else if (firstBytes[0] === 0x89 && firstBytes[1] === 0x50 && firstBytes[2] === 0x4E && firstBytes[3] === 0x47) {
+      contentType = 'image/png'
+    } else if (firstBytes[0] === 0x47 && firstBytes[1] === 0x49 && firstBytes[2] === 0x46) {
+      contentType = 'image/gif'
+    }
+    
+    console.log('Detected thumbnail content type:', contentType)
+    
+    // Upload thumbnail to YouTube using thumbnails.set API
+    const uploadUrl = `https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=${videoId}`
+    
+    const uploadResponse = await axios.post(uploadUrl, thumbnailBuffer, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': contentType,
+        'Content-Length': thumbnailBuffer.length.toString()
+      },
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+      timeout: 60000 // 1 minute timeout
+    })
+    
+    console.log('YouTube thumbnail upload completed successfully!')
+    
+    res.json({
+      success: true,
+      platform: 'youtube',
+      data: uploadResponse.data,
+      message: `Thumbnail successfully set for video ${videoId}`
+    })
+    
+  } catch (error: any) {
+    console.error('YouTube thumbnail upload error:', error.message)
+    console.error('YouTube error response:', error.response?.data)
+    console.error('YouTube error status:', error.response?.status)
+    
+    // Enhanced error handling for thumbnail upload
+    const errorData = error.response?.data
+    let errorMessage = 'Failed to set YouTube thumbnail'
+    let statusCode = 500
+    
+    if (errorData?.error) {
+      const ytError = errorData.error
+      
+      if (ytError.code === 401) {
+        errorMessage = 'YouTube access token expired or invalid. Please reconnect your account.'
+        statusCode = 401
+      } else if (ytError.code === 403) {
+        if (ytError.errors?.some((e: any) => e.reason === 'forbidden')) {
+          errorMessage = 'YouTube thumbnail upload permission denied. Your account may not have custom thumbnail privileges.'
+          statusCode = 403
+        } else {
+          errorMessage = 'YouTube API access forbidden for thumbnail upload.'
+          statusCode = 403
+        }
+      } else if (ytError.code === 400) {
+        if (ytError.message?.includes('Invalid video')) {
+          errorMessage = 'Invalid video ID. The video may not exist or may not be owned by your account.'
+          statusCode = 400
+        } else {
+          errorMessage = 'Invalid thumbnail upload request. Please check your image file.'
+          statusCode = 400
+        }
+      } else {
+        errorMessage = ytError.message || 'YouTube thumbnail API error'
+        statusCode = error.response?.status || 500
+      }
+    } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+      errorMessage = 'Unable to connect to YouTube API. Please check your internet connection.'
+      statusCode = 503
+    } else if (error.message?.includes('timeout')) {
+      errorMessage = 'Thumbnail upload timeout. Please try again.'
+      statusCode = 408
+    }
+    
+    const safeErrorDetails = errorData ? {
+      error: errorData.error,
+      message: errorData.message,
+      code: errorData.code
+    } : (error.message || 'Unknown error')
+    
+    res.status(statusCode).json({
+      error: errorMessage,
+      details: safeErrorDetails,
+      platform: 'youtube',
+      retryable: statusCode >= 500 || statusCode === 429 || statusCode === 408
+    })
+  }
+})
+
 // GET /api/youtube/oauth_tokens - Get YouTube OAuth tokens for a user
 router.get('/oauth_tokens', async (req: Request, res: Response) => {
   const { user_id } = req.query
