@@ -103,9 +103,7 @@ router.post('/post', async (req: Request, res: Response) => {
   // Convert relative URL to full URL if needed (similar to LinkedIn image handling)
   let fullVideoUrl = videoUrlToUse;
   if (fullVideoUrl.startsWith('/uploads/')) {
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? process.env.BASE_URL || 'http://localhost:5000'
-      : 'http://localhost:5000';
+    const baseUrl =  process.env.BASE_URL || 'http://localhost:5000'
     fullVideoUrl = `${baseUrl}${fullVideoUrl}`;
   }
   
