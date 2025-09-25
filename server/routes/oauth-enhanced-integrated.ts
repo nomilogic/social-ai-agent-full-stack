@@ -83,15 +83,14 @@ console.log("OUAAAAUT")
     );
 
     const username = (connectionData.userProfile.username || connectionData.userProfile.name || '').replace(/'/g, "\\'");
-    const profilePicture = (connectionData.userProfile.profile_picture_url || '').replace(/'/g, "\\'");
-    
+    //const profilePicture = (connectionData.userProfile.profile_picture_url || '').replace(/'/g, "\\'");
+    //profilePicture: '${profilePicture}',
     res.send(`
       <script>
         window.opener.postMessage({
           type: 'oauth_success', 
           platform: '${platform}',
           username: '${username}',
-          profilePicture: '${profilePicture}',
           connectedAt: ${connectionData.connectedAt}
         }, '*'); 
         //window.close();
