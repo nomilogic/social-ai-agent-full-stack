@@ -1360,7 +1360,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                             type="range"
                             min="0"
                             max="1"
-                            step="0.1"
+                            step="0.01"
                             value={(selectedElementData as TextElement).textOpacity || 1}
                             onChange={(e) => updateSelectedElement({ textOpacity: parseFloat(e.target.value) })}
                             className="w-full template-range"
@@ -1374,7 +1374,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                             type="range"
                             min="0"
                             max="1"
-                            step="0.1"
+                            step="0.01"
                             value={(selectedElementData as TextElement).backgroundOpacity || 1}
                             onChange={(e) => updateSelectedElement({ backgroundOpacity: parseFloat(e.target.value) })}
                             className="w-full template-range"
@@ -1418,7 +1418,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                           type="range"
                           min="0"
                           max="1"
-                          step="0.1"
+                          step="0.01"
                           value={(selectedElementData as ShapeElement).opacity || 1}
                           onChange={(e) => updateSelectedElement({ opacity: parseFloat(e.target.value) })}
                           className="w-full template-range"
@@ -1462,12 +1462,12 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
         </div>
         
         {/* Tools Actions - Fixed at bottom of tools panel */}
-        <div className="flex-shrink-0 p-3 md:p-4 border-t border-gray-200 bg-white">
-          <div className="flex flex-col justify-center space-x-2 md:space-x-0 md:space-y-2.5">
+        <div className="flex-shrink-0 px-3 border-t border-gray-200 bg-white">
+          <div className="flex flex-col justify-center space-x-2 md:space-x-0 ">
             <button
               onClick={exportImage}
               disabled={isSaving}
-              className="btn-success w-full py-4 px-8"
+              className="btn-success w-full py px-8"
             >
               {isSaving ? (
                 <>
@@ -1483,10 +1483,12 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                 </>
               )}
             </button>
-             or 
+             <div className="text-center theme-text-secondary ">
+              <span className="text-lg font-medium">or</span>
+            </div>
             <button
               onClick={onCancel}
-              className="btn-primary w-full py-4 px-8"
+              className="btn-primary w-full  px-8"
             >
               {isVideoThumbnail ? 'Back to Upload Video' : 'Back to Upload Image'}
             </button>

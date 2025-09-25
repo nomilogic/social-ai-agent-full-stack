@@ -974,7 +974,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
             </button>
             
             {/* Or divider */}
-            <div className="text-center theme-text-secondary my-4">
+            <div className="text-center theme-text-secondary my-2">
               <span className="text-lg font-medium">or</span>
             </div>
             
