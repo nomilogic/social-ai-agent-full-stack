@@ -129,9 +129,7 @@ router.post('/post', async (req: Request, res: Response) => {
       }
       // Convert relative URL to absolute if needed
       else if (resolvedMediaUrl.startsWith('/uploads/')) {
-        const baseUrl = process.env.NODE_ENV === 'production' 
-          ? (process.env.BASE_URL || 'http://localhost:5000')
-          : 'http://localhost:5000'
+      const baseUrl =  process.env.BASE_URL || 'http://localhost:5000'
         resolvedMediaUrl = `${baseUrl}${resolvedMediaUrl}`
         console.log(`Resolved relative ${isVideo ? 'video' : 'image'} URL:`, resolvedMediaUrl)
       }

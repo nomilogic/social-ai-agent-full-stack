@@ -112,9 +112,7 @@ router.post("/post", async (req: Request, res: Response) => {
       // Convert relative URL to full URL if needed
       let fullMediaUrl = mediaUrl;
       if (fullMediaUrl.startsWith('/uploads/')) {
-        const baseUrl = process.env.NODE_ENV === 'production' 
-          ? process.env.BASE_URL || 'http://localhost:5000'
-          : 'http://localhost:5000';
+        const baseUrl =  process.env.BASE_URL || 'http://localhost:5000'
         fullMediaUrl = `${baseUrl}${fullMediaUrl}`;
       }
       
