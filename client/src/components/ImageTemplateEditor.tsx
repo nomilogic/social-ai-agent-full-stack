@@ -1262,9 +1262,9 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                           <label className="block text-sm font-medium text-gray-700 mb-2">Opacity</label>
                           <input
                             type="range"
-                            min="0"
+                            min="0.01"
                             max="1"
-                            step="0.1"
+                            step="0.01"
                             value={(selectedElementData as LogoElement).opacity || 1}
                             onChange={(e) => updateSelectedElement({ opacity: parseFloat(e.target.value) })}
                             className="w-full template-range"
@@ -1406,7 +1406,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                         <div>
                           <input
                             type="range"
-                            min="0"
+                            min="0.01"
                             max="1"
                             step="0.01"
                             value={(selectedElementData as TextElement).textOpacity || 1}
@@ -1420,7 +1420,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                         <div>
                           <input
                             type="range"
-                            min="0"
+                            min="0.01"
                             max="1"
                             step="0.01"
                             value={(selectedElementData as TextElement).backgroundOpacity || 1}
@@ -1464,7 +1464,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                         <label className="block text-sm font-medium text-gray-700 mb-2">Opacity</label>
                         <input
                           type="range"
-                          min="0"
+                          min="0.01"
                           max="1"
                           step="0.01"
                           value={(selectedElementData as ShapeElement).opacity || 1}
@@ -1472,7 +1472,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                           className="w-full template-range"
                         />
                         <div className="flex justify-between text-sm text-gray-500 mt-1">
-                          <span>0%</span>
+                          <span>1%</span>
                           <span className="font-medium">{Math.round(((selectedElementData as ShapeElement).opacity || 1) * 100)}%</span>
                           <span>100%</span>
                         </div>
@@ -1538,7 +1538,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
               onClick={onCancel}
               className="btn-primary w-full  px-8"
             >
-              {isVideoThumbnail ? 'Back to Upload Video' : 'Back to Upload Image'}
+              Back
             </button>
           </div>
         </div>

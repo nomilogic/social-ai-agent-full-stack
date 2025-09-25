@@ -1211,6 +1211,33 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     setShowTemplateEditor(false);
     setSelectedTemplate(undefined);
     
+    // Clear all media when canceling from template editor
+    console.log('🗑️ Clearing all media when canceling from template editor');
+    
+    // Clean up blob URLs if they exist
+    if (formData.mediaUrl && formData.mediaUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(formData.mediaUrl);
+      console.log('🗑️ Cleaned up blob URL during template editor cancel');
+    }
+    
+    // Reset form data media
+    setFormData((prev) => ({
+      ...prev,
+      media: undefined,
+      mediaUrl: undefined,
+      serverUrl: undefined,
+      imageUrl: undefined,
+      videoUrl: undefined,
+      thumbnailUrl: undefined
+    }));
+    
+    // Clear all template and media related state
+    setTemplatedImageUrl("");
+    setImageAnalysis("");
+    setVideoThumbnailUrl("");
+    setOriginalVideoFile(null);
+    setVideoAspectRatio(null);
+    
     // If we have pending post generation, cancel it and reset state
     if (pendingPostGeneration) {
       console.log('❌ Template editor cancelled, aborting post generation');
@@ -1218,17 +1245,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       setIsGeneratingBoth(false);
     }
     
-    // If we were in video mode, return to video upload
-    if (selectedPostType === 'video') {
-      console.log('🎬 Returning to video upload mode after template editor cancel');
-      setSelectedVideoMode('upload');
-      // Clear any templated content and return to original video state
-      setTemplatedImageUrl("");
-      if (originalVideoFile && formData.mediaUrl) {
-        // Keep the original video file and URL
-        console.log('📹 Restoring original video state');
-      }
-    }
+    console.log('✅ All media cleared - returning to empty state');
   };
 
   const handleTemplateSelectorCancel = () => {
@@ -2488,8 +2505,8 @@ export const ContentInput: React.FC<ContentInputProps> = ({
               </p></div>
         
 
-            {/* Aspect Ratio Selection - Only show for text-to-image mode */}
-            {selectedPostType === 'image' && selectedImageMode === 'textToImage' && (
+            {/* Aspect Ratio Selection - Show for both text-to-image and upload modes */}
+            {selectedPostType === 'image' && (selectedImageMode === 'textToImage' || selectedImageMode === 'upload') && (
               <div className="mb-4">
                 <label className="block text-md font-medium theme-text-primary mb-2">
                   Image Dimensions
@@ -2510,7 +2527,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           : 'theme-bg-primary hover:theme-bg-primary/50'
                       }`}
                     >
-                             <div className={`border mx-aut  mb-2 ${ratio.value === "1:1"
+                      <div className={`border mx-aut  mb-2 ${ratio.value === "1:1"
                                 ? 'w-8 h-8 border-1 theme-border-secondary'
                                 : ratio.value === "16:9"
                                   ? 'w-10 h-6 border-1'
@@ -2519,10 +2536,8 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                                     : 'w-8 h-8 border-1'
                               } ${aspectRatio === ratio.value
                                 ? 'theme-border-secondary border-2'
-                                :'theme-border-dark border-1'
-                               
-                              }`}>
-                          </div>
+                                :'theme-border-dark border-1'}`}>
+                      </div>
                       <div className="text-md font-medium whitespace-pre-line">
                         {ratio.label}
                       </div>
