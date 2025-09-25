@@ -29,6 +29,7 @@ export class OAuthManagerClient {
 
   constructor(baseURL?: string, options: { userId?: string; authToken?: string; headers?: HeadersInit } = {}) {
     // Normalize base URL by removing trailing slash
+    console.log('OAuth Manager Base URL:', import.meta.env.VITE_APP_URL, baseURL);
     const rawBaseURL = baseURL || import.meta.env.VITE_APP_URL || 'http://localhost:5000';
     this.baseURL = rawBaseURL.endsWith('/') ? rawBaseURL.slice(0, -1) : rawBaseURL;
     this.userId = options.userId;
