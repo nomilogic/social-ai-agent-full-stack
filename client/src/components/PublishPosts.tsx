@@ -460,7 +460,7 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
                       {isConnected && !publishedPlatforms.includes(post.platform) && (
                         <label className="flex items-center cursor-pointer" htmlFor={`platform-${post.platform}`}>
                           <div className="relative">
-                            <input className="text-green-500 focus:ring-green-400"
+                            <input className="text-green-500 focus:ring-green-400 sr-only"
                               type="checkbox"
                               checked={selectedPlatforms.includes(post.platform)}
                               onChange={e => {
@@ -470,7 +470,6 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
                                     : prev.filter(p => p !== post.platform)
                                 );
                               }}
-                              className="sr-only"
                               id={`platform-${post.platform}`}
                             />
                             <div className={`w-6 h-6 rounded border-2 transition-all duration-200 flex items-center justify-center ${
