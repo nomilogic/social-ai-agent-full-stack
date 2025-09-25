@@ -1130,7 +1130,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                 </div>
 
                 {/* Layer Controls */}
-                <div className="mb-3 md:mb-4">
+                <div className="mb-2 md:mb-3">
                   <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5 md:mb-2">Layer Order</label>
                   <div className="grid grid-cols-4 gap-1 md:gap-1.5">
                     <button
@@ -1164,7 +1164,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                   </div>
                 </div>
                 {/* W H X Y Controls in one row */}
-                <div className="grid grid-cols-4 gap-1.5 md:gap-2 mb-3 md:mb-4 text-center">
+                <div className="grid grid-cols-4 gap-1.5 md:gap-2 mb-2 md:mb-3 text-center">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1 text-center">W</label>
                     <input
@@ -1209,24 +1209,26 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                   </div>
                 </div>
 
-                {/* Rotation Control - Universal */}
-                <div className="mb-3 md:mb-4">
-                  <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5 md:mb-2">Rotation</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="360"
-                    value={selectedElementData.rotation || 0}
-                    onChange={(e) => updateSelectedElement({ rotation: parseInt(e.target.value) })}
-                    className="w-full template-range"
-                    disabled={isElementLocked(selectedElement)}
-                  />
-                  <div className="flex justify-between text-sm text-gray-500 mt-1">
-                    <span>0°</span>
-                    <span className="font-medium">{selectedElementData.rotation || 0}°</span>
-                    <span>360°</span>
+                {/* Rotation Control - Shown here for non-text elements */}
+                {selectedElementData.type !== 'text' && (
+                  <div className="mb-2 md:mb-3">
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Rotation</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="360"
+                      value={selectedElementData.rotation || 0}
+                      onChange={(e) => updateSelectedElement({ rotation: parseInt(e.target.value) })}
+                      className="w-full template-range"
+                      disabled={isElementLocked(selectedElement)}
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>0°</span>
+                      <span className="font-medium">{selectedElementData.rotation || 0}°</span>
+                      <span>360°</span>
+                    </div>
                   </div>
-                </div>
+                )}
 
                   {selectedElementData.type === 'logo' && (
                     <div className="space-y-4">
@@ -1259,7 +1261,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                       </div>
                       <div className="grid grid-cols-2 gap-2.5">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Opacity</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Opacity</label>
                           <input
                             type="range"
                             min="0.01"
@@ -1290,9 +1292,66 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                   )}
 
                   {selectedElementData.type === 'text' && (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
+                      {/* Colors first */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Text</label>
+                          <input
+                            type="color"
+                            value={(selectedElementData as TextElement).color || '#000000'}
+                            onChange={(e) => updateSelectedElement({ color: e.target.value })}
+                            className="w-full h-9 border border-gray-300 rounded-lg cursor-pointer"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Background</label>
+                          <input
+                            type="color"
+                            value={(selectedElementData as TextElement).backgroundColor || '#ffffff'}
+                            onChange={(e) => updateSelectedElement({ backgroundColor: e.target.value })}
+                            className="w-full h-9 border border-gray-300 rounded-lg cursor-pointer"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Opacity second */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Text Opacity</label>
+                          <input
+                            type="range"
+                            min="0.01"
+                            max="1"
+                            step="0.01"
+                            value={(selectedElementData as TextElement).textOpacity || 1}
+                            onChange={(e) => updateSelectedElement({ textOpacity: parseFloat(e.target.value) })}
+                            className="w-full template-range"
+                          />
+                          <span className="text-xs text-gray-600 text-center block mt-1">
+                            {Math.round(((selectedElementData as TextElement).textOpacity || 1) * 100)}%
+                          </span>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Background Opacity</label>
+                          <input
+                            type="range"
+                            min="0.01"
+                            max="1"
+                            step="0.01"
+                            value={(selectedElementData as TextElement).backgroundOpacity || 1}
+                            onChange={(e) => updateSelectedElement({ backgroundOpacity: parseFloat(e.target.value) })}
+                            className="w-full template-range"
+                          />
+                          <span className="text-xs text-gray-600 text-center block mt-1">
+                            {Math.round(((selectedElementData as TextElement).backgroundOpacity || 1) * 100)}%
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Text Content last */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Text Content</label>
+                        <label className="block text-sm font-medium text-yellow-500-700 mb-1.5">Text Content</label>
                         <textarea
                           value={(selectedElementData as TextElement).content || ''}
                           onChange={(e) => updateSelectedElement({ content: e.target.value })}
@@ -1301,10 +1360,9 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                           placeholder="Enter your text..."
                         />
                       </div>
-
-                      {/* Font Family Control */}
+                      {/* Font Family */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Font Family</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Font Family</label>
                         <select
                           value={(selectedElementData as TextElement).fontFamily || 'Arial'}
                           onChange={(e) => updateSelectedElement({ fontFamily: e.target.value })}
@@ -1326,9 +1384,9 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                           <option value="Merriweather">Merriweather</option>
                         </select>
                       </div>
-                      
-                      {/* Size, Weight, Alignment, Padding in one row */}
-                      <div className="grid grid-cols-4 gap-2 mb-4">
+
+                      {/* Size, Weight, Align, Padding */}
+                      <div className="grid grid-cols-4 gap-2 mb-3">
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">Size</label>
                           <input
@@ -1378,68 +1436,33 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                         </div>
                       </div>
 
-                      {/* Colors in one row */}
-                      <div className="grid grid-cols-2 gap-2.5">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Text</label>
-                          <input
-                            type="color"
-                            value={(selectedElementData as TextElement).color || '#000000'}
-                            onChange={(e) => updateSelectedElement({ color: e.target.value })}
-                            className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Background</label>
-                          <input
-                            type="color"
-                            value={(selectedElementData as TextElement).backgroundColor || '#ffffff'}
-                            onChange={(e) => updateSelectedElement({ backgroundColor: e.target.value })}
-                            className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
-                          />
+                      {/* Rotation below fonts for text */}
+                      <div className="mb-2">
+                        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Rotation</label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="360"
+                          value={selectedElementData.rotation || 0}
+                          onChange={(e) => updateSelectedElement({ rotation: parseInt(e.target.value) })}
+                          className="w-full template-range"
+                          disabled={isElementLocked(selectedElement)}
+                        />
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>0°</span>
+                          <span className="font-medium">{selectedElementData.rotation || 0}°</span>
+                          <span>360°</span>
                         </div>
                       </div>
-                      
-                      {/* Opacity Controls */}
-                      <div className="grid grid-cols-2 gap-2.5">
 
-                        <div>
-                          <input
-                            type="range"
-                            min="0.01"
-                            max="1"
-                            step="0.01"
-                            value={(selectedElementData as TextElement).textOpacity || 1}
-                            onChange={(e) => updateSelectedElement({ textOpacity: parseFloat(e.target.value) })}
-                            className="w-full template-range"
-                          />
-                          <span className="text-sm text-gray-600 text-center block mt-1">
-                            {Math.round(((selectedElementData as TextElement).textOpacity || 1) * 100)}%
-                          </span>
-                        </div>
-                        <div>
-                          <input
-                            type="range"
-                            min="0.01"
-                            max="1"
-                            step="0.01"
-                            value={(selectedElementData as TextElement).backgroundOpacity || 1}
-                            onChange={(e) => updateSelectedElement({ backgroundOpacity: parseFloat(e.target.value) })}
-                            className="w-full template-range"
-                          />
-                          <span className="text-sm text-gray-600 text-center block mt-1">
-                            {Math.round(((selectedElementData as TextElement).backgroundOpacity || 1) * 100)}%
-                          </span>
-                        </div>
-                      </div>
-                  </div>
-                )}
+                    </div>
+                  )}
 
                   {selectedElementData.type === 'shape' && (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-2.5">
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Shape Type</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Shape Type</label>
                           <select
                             value={(selectedElementData as ShapeElement).shape || 'rectangle'}
                             onChange={(e) => updateSelectedElement({ shape: e.target.value as 'rectangle' | 'circle' })}
@@ -1450,7 +1473,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Color</label>
                           <input
                             type="color"
                             value={(selectedElementData as ShapeElement).color || '#3b82f6'}
@@ -1480,7 +1503,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                       
                       {(selectedElementData as ShapeElement).shape === 'rectangle' && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Corner Radius</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Corner Radius</label>
                           <input
                             type="number"
                             value={(selectedElementData as ShapeElement).borderRadius || 0}
