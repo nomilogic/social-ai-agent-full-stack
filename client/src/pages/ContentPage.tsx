@@ -225,6 +225,7 @@ export const ContentPage: React.FC = () => {
                     location: location.pathname
                   });
                   
+                  
                   return state.contentData ? (
                     <AIGenerator
                       contentData={state.contentData}
@@ -270,6 +271,7 @@ export const ContentPage: React.FC = () => {
                     location: location.pathname
                   });
                   
+                  
                   return state.generatedPosts && state.generatedPosts.length > 0 ? (
                     <PostPreview
                       posts={state.generatedPosts}
@@ -291,7 +293,7 @@ export const ContentPage: React.FC = () => {
                       onRegeneratePlatform={handleRegeneratePlatform}
                     />
                   ) : (
-                    <div className="text-center py-8">
+                   /*  <div className="text-center py-8">
                       <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 text-left max-w-md mx-auto">
                         <h3 className="font-semibold text-red-800 mb-2">No Generated Posts Found</h3>
                         <p className="text-red-700 text-sm mb-3">
@@ -312,7 +314,8 @@ export const ContentPage: React.FC = () => {
                       >
                         Start Content Creation
                       </button>
-                    </div>
+                    </div> */
+                    <></>
                   );
                 })()
               }

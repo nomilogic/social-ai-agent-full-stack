@@ -77,8 +77,8 @@ export const generateVideoThumbnail = async (
  * @param file - File to check
  * @returns boolean indicating if file is a video
  */
-export const isVideoFile = (file: File): boolean => {
-  return file.type.startsWith('video/');
+export const isVideoFile = (file: File | undefined | null): boolean => {
+  return file ? file.type.startsWith('video/') : false;
 };
 
 /**

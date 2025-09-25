@@ -253,7 +253,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
             Your browser does not support the video tag.
           </video>
           {/* Enhanced fallback overlay for videos without thumbnails */}
-          {!videoThumbnail && (
+          {/* {!videoThumbnail && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-60 pointer-events-none rounded-lg">
               <div className="text-white text-center">
                 <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-3 mx-auto backdrop-blur-sm">
@@ -265,7 +265,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                 <p className="text-xs opacity-70 mt-1">Click to play</p>
               </div>
             </div>
-          )}
+          )} */}
         </div>
       );
     } else {
@@ -359,9 +359,9 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                   IG
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-900 text-sm">
+                  {/* <h3 className="font-medium text-gray-900 text-sm">
                     yourcampaign
-                  </h3>
+                  </h3> */}
                 </div>
               </div>
             </div>
@@ -396,7 +396,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                       Your browser does not support the video tag.
                     </video>
                     {/* Fallback overlay for videos without thumbnails */}
-                    {!(post as any).thumbnailUrl && (
+                    {/* {!(post as any).thumbnailUrl && (
                       <div className="absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-30 pointer-events-none">
                         <div className="text-white text-center">
                           <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-2 mx-auto">
@@ -405,7 +405,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                           <p className="text-sm opacity-75">Video Content</p>
                         </div>
                       </div>
-                    )}
+                    )} */}
                   </>
                 ) : (
                   <img
@@ -577,46 +577,66 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
         return (
           <div className="bg-black rounded-lg overflow-hidden max-w-sm shadow-sm">
             <div className="aspect-[9/16] bg-gray-900 relative">
-              {mediaUrl && (
+               <div className={`bg-gray-100 flex items-center justify-center relative ${
+              mediaUrl && isVideoMedia(post, mediaUrl) ? (() => {
+                const videoAspectRatio = (post as any).videoAspectRatio;
+                if (videoAspectRatio) {
+                  const ratio = videoAspectRatio;
+                  if (ratio >= 1.6 && ratio <= 1.9) {
+                    return 'aspect-video'; // 16:9 horizontal
+                  } else if (ratio >= 0.5 && ratio <= 0.65) {
+                    return 'aspect-[9/16]'; // 9:16 vertical
+                  }
+                }
+                return 'aspect-[9/16]'; // default for videos
+              })() : 'aspect-square'
+            }`}>
+              {mediaUrl ? (
                 isVideoMedia(post, mediaUrl) ? (
                   <>
                     <video
                       src={mediaUrl}
-                      poster={(post as any).thumbnailUrl} // Use custom thumbnail for TikTok videos
+                      poster={(post as any).thumbnailUrl} // Use custom thumbnail for Instagram videos
                       controls
                       preload="metadata" // Load video metadata to show first frame
-                      className="absolute inset-0 w-full h-full object-cover"
+                      className="object-cover w-full h-full"
                       onError={(e) => {
                         console.error('TikTok media (video) failed to load:', mediaUrl);
                         e.currentTarget.style.display = 'none';
-                      }}
+                      }} 
                     >
                       Your browser does not support the video tag.
                     </video>
                     {/* Fallback overlay for videos without thumbnails */}
-                    {!(post as any).thumbnailUrl && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 pointer-events-none">
+                    {/* {!(post as any).thumbnailUrl && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-30 pointer-events-none">
                         <div className="text-white text-center">
-                          <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-3 mx-auto">
-                            <span className="text-4xl">▶</span>
+                          <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-2 mx-auto">
+                            <span className="text-3xl">▶</span>
                           </div>
-                          <p className="text-base opacity-75">Vertical Video</p>
+                          <p className="text-sm opacity-75">Video Content</p>
                         </div>
                       </div>
-                    )}
+                    )} */}
                   </>
                 ) : (
                   <img
                     src={mediaUrl}
                     alt="TikTok media"
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="object-cover w-full h-full"
                     onError={(e) => {
                       console.error('TikTok media (image) failed to load:', mediaUrl);
                       e.currentTarget.style.display = 'none';
                     }}
                   />
                 )
+              ) : (
+                <div className="text-gray-400 text-center">
+                  <div className="w-16 h-16 bg-gray-300 rounded-lg mx-auto mb-2"></div>
+                  <p className="text-sm">Your media here</p>
+                </div>
               )}
+            </div>
               <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
                 <div className="text-white">
                   <p className="text-sm mb-2">{post.caption}</p>
@@ -636,55 +656,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
       case "youtube":
         return (
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm max-w-lg">
-            <div className="aspect-video bg-gray-900 flex items-center justify-center relative">
-              {mediaUrl ? (
-                isVideoMedia(post, mediaUrl) ? (
-                  <>
-                    <video
-                      src={mediaUrl}
-                      poster={(post as any).thumbnailUrl || undefined} // Use custom thumbnail for YouTube videos
-                      controls
-                      preload="metadata"
-                      className="object-cover w-full h-full"
-                      onError={(e) => {
-                        console.error('YouTube media (video) failed to load:', mediaUrl);
-                        // Don't hide the video element, let the fallback overlay show
-                      }}
-                    >
-                      Your browser does not support the video tag.
-                    </video>
-                    {/* Fallback overlay for videos without thumbnails */}
-                    {!(post as any).thumbnailUrl && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-red-900 bg-opacity-60 pointer-events-none">
-                        <div className="text-white text-center">
-                          <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-3 mx-auto backdrop-blur-sm">
-                            <span className="text-4xl">▶</span>
-                          </div>
-                          <p className="text-lg font-medium opacity-90">YouTube Video</p>
-                          <p className="text-sm opacity-70 mt-1">Click to play</p>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <img
-                    src={mediaUrl}
-                    alt="YouTube media"
-                    className="object-cover w-full h-full"
-                    onError={(e) => {
-                      console.error('YouTube media (image) failed to load:', mediaUrl);
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                )
-              )
-              : (
-                <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-3xl">▶</span>
-                </div>
-              )
-              }
-            </div>
+          {renderMedia({...post, mediaUrl}, "rounded-lg max-h-96 object-contain w-full", "w-full flex justify-center bg-black")}
             <div className="p-4">
               <h3 
                 className={`font-medium text-gray-900 mb-2 line-clamp-2 block ${editingMode ? 'border border-blue-300 rounded p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent' : ''}`}
@@ -937,7 +909,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                         {selectedPost.hashtags.length}
                       </span>
                     </div>
-                    <div className="flex justify-between md:flex-col md:items-start">
+                    {/* <div className="flex justify-between md:flex-col md:items-start">
                       <span className="text-gray-600">Engagement:</span>
                       <span
                         className={`font-medium capitalize ${
@@ -950,7 +922,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                       >
                         {selectedPost.engagement}
                       </span>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               </div>
