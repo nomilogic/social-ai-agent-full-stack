@@ -236,7 +236,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         </div>
 
         {/* Main Content */}
-        <main className="py-0 h-full-dec-hf overflow-auto theme-bg-card lg:px-[10%]">
+        <main className="py-0 h-full-dec-hf overflow-auto theme-bg-card lg:px-[20%]">
           <div className="w-full mx-auto sm:px-0 lg:px-0 overflow-auto">
             <div className="  p-0  ">{children}</div>
           </div>

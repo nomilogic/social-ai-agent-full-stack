@@ -37,6 +37,8 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoImages, setLogoImages] = useState<{[key: string]: HTMLImageElement}>({});  
   const [isResizing, setIsResizing] = useState(false);
+  const [backgroundImageLoading, setBackgroundImageLoading] = useState(false);
+  const [logoImageLoadingIds, setLogoImageLoadingIds] = useState<Set<string>>(new Set());
   const [resizeHandle, setResizeHandle] = useState<string | null>(null); // 'nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'
   const [resizeStart, setResizeStart] = useState<{x: number, y: number, width: number, height: number} | null>(null);
   const [imageDimensions, setImageDimensions] = useState<{width: number, height: number} | null>(null);
@@ -115,6 +117,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
         
         // Try to load background image to get its dimensions
         if (imageUrl) {
+          setBackgroundImageLoading(true);
           const img = new Image();
           // Only set crossOrigin for external URLs, not for blob URLs or data URLs
           if (!imageUrl.startsWith('blob:') && !imageUrl.startsWith('data:')) {
@@ -145,11 +148,13 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
             setMaxZoom(maxZoomLevel);
             
             setBackgroundImage(img);
+            setBackgroundImageLoading(false);
             redrawCanvas(context, img, elements);
           };
           
           img.onerror = (error) => {
             console.error('Background image failed to load:', imageUrl, error);
+            setBackgroundImageLoading(false);
             // Use template dimensions or fallback to square
             
           };
@@ -844,7 +849,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
       fontSize: fontSize,
       fontWeight: 'normal',
       fontFamily: 'Arial',
-      color: '#000000',
+      color: '#ffeb3b',
       textAlign: 'center',
       backgroundColor: '#ffffff',
       backgroundOpacity: 0.8,
@@ -1299,7 +1304,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                           <label className="block text-sm font-medium text-gray-700 mb-1.5">Text</label>
                           <input
                             type="color"
-                            value={(selectedElementData as TextElement).color || '#000000'}
+                            value={(selectedElementData as TextElement).color || '#ffeb3b'}
                             onChange={(e) => updateSelectedElement({ color: e.target.value })}
                             className="w-full h-9 border border-gray-300 rounded-lg cursor-pointer"
                           />
@@ -1570,13 +1575,13 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
       {/* Canvas Area - Bottom Row on Mobile, Right Column on Desktop - Flexible Height/Width with Scroll */}
       <div className="flex-1 bg-gray-50 flex flex-col min-h-0">
         {/* Canvas Controls - Fixed Header */}
-        <div className="flex-shrink-0 p-3 md:p-4 bg-white border-b border-gray-200">
+        <div className="flex-shrink-0 px-3 py-1 md:py-2 bg-white border-b border-gray-200">
           <div className="flex items-center justify-between">
             {/* Canvas Info */}
             <div className="text-xs text-gray-600 font-mono">
-              {imageDimensions && (
+              {canvasDimensions && (
                 <>
-                  <span className="hidden sm:inline">{imageDimensions.width} × {imageDimensions.height} | {Math.round(zoomLevel * 100)}%</span>
+                  <span className="hidden sm:inline">{canvasDimensions.width} × {canvasDimensions.height} | {Math.round(zoomLevel * 100)}%</span>
                   <span className="sm:hidden">{Math.round(zoomLevel * 100)}%</span>
                 </>
               )}
