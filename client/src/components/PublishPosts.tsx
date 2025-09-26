@@ -222,7 +222,8 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
         // Use the OAuth manager client for disconnecting (uses JWT authentication)
         await oauthManagerClient.disconnectPlatform(platform);
   
-       
+          checkConnectedPlatforms();
+         // window.removeEventListener("message", messageListener);
       } catch (error) {
         console.error("Failed to disconnect:", error);
       }
@@ -477,7 +478,7 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
                   <>
                     <button
                       onClick={() => handleConnect(post.platform)}
-                    
+                      disabled={isConnecting} 
                       className="p-2 text-gray-500 hover:text-blue-600 disabled:opacity-50 rounded-lg hover:bg-gray-100"
                       title="Refresh connection"
                     >
@@ -487,6 +488,7 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
                     </button>
                     <button
                       onClick={() => handleDisconnect(post.platform)}
+                      disabled={isConnecting}
                       className="p-2 text-gray-500 hover:text-red-600 disabled:opacity-50 rounded-lg hover:bg-gray-100"
                       title="Disconnect"
                     >
