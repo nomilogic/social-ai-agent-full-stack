@@ -970,7 +970,18 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
             <div className="mb-4">
               <textarea
                 value={regenerationPrompt}
-                onChange={(e) => setRegenerationPrompt(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setRegenerationPrompt(value);
+                  // Keep the selected post's generationPrompt in sync while typing
+                  setPosts(prev => {
+                    const idx = prev.findIndex(p => p.platform === selectedPlatform);
+                    if (idx === -1) return prev;
+                    const updated = [...prev];
+                    updated[idx] = { ...updated[idx], generationPrompt: value } as any;
+                    return updated;
+                  });
+                }}
                 placeholder="Enter your prompt to regenerate the post text for the selected platform..."
                 className="w-full h-32 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent theme-text-secondary"
               />

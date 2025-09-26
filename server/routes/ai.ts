@@ -288,7 +288,7 @@ router.post('/generate', async (req: Request, res: Response) => {
         console.log(`Generating content for ${platform} with prompt:`, prompt.substring(0, 200) + '...')
         
         const response = await genAI.models.generateContent({
-          model: 'gemini-2.5-flash',
+          model: 'gemini-2.5-flash-lite',
           contents: [{ text: prompt }]
         })
         
@@ -381,11 +381,12 @@ Tone: ${content.tone}
 
   const platformGuidelines = {
     linkedin: `
-Create a professional LinkedIn post (max 3000 characters).
+Create a professional LinkedIn post (max 1000 characters).
 - Use professional tone
 - Include relevant hashtags
 - Focus on business insights or industry trends
 - Keep it engaging but informative
+- No /n or /r No special characters** or any other symbols other than #
 `,
     twitter: `
 Create a Twitter post (max 280 characters).
@@ -393,20 +394,23 @@ Create a Twitter post (max 280 characters).
 - Use relevant hashtags (2-3 max)
 - Consider adding emojis if appropriate
 - Make it shareable
+- No /n or /r No special characters** or any other symbols other than #
 `,
     facebook: `
-Create a Facebook post (max 2000 characters recommended).
+Create a Facebook post (max 1000 characters recommended).
 - Be conversational and engaging
 - Use storytelling elements
 - Include relevant hashtags
 - Encourage interaction
+- No /n or /r No special characters** or any other symbols other than #
 `,
     instagram: `
-Create an Instagram caption (max 2200 characters).
+Create an Instagram caption (max 1200 characters).
 - Be visual-focused
 - Use many relevant hashtags (up to 30)
 - Include emojis
 - Create engaging, lifestyle-focused content
+- No /n or /r No special characters** or any other symbols other than #
 `,
     tiktok: `
 Create TikTok caption (max 150 characters).
@@ -414,15 +418,17 @@ Create TikTok caption (max 150 characters).
 - Use popular hashtags
 - Be energetic and engaging
 - Focus on entertainment value
+- No /n or /r No special characters** or any other symbols other than #
 `,
     youtube: `
-Create YouTube video description.
+Create YouTube video description (max 1000 characters recommended).
 - Include compelling title suggestion
 - Be trendy and fun
 - Use popular hashtags
 - Be energetic and engaging
 - Include relevant keywords and hashtags
 - Add call-to-action
+- No /n or /r No special characters** or any other symbols other than #
 ` 
   }
 
@@ -432,7 +438,25 @@ Platform: ${platform.toUpperCase()}
 
 ${platformGuidelines[platform as keyof typeof platformGuidelines] || 'Create engaging social media content for this platform.'}
 
-Please generate compelling content that aligns with the campaign brand and platform requirements. Return only the content without any prefixes or explanations.`
+CONTENT DETAILS:
+- Main Message: ${content.prompt}
+- Keywords/Tags: ${content.tags.join(', ')}
+- Campaign ID: ${content.campaignId || 'N/A'}
+
+PLATFORM REQUIREMENTS FOR ${platform.toUpperCase()}:
+- Maximum length: ${content.maxLength} characters
+- Tone: ${content.tone}
+
+
+INSTRUCTIONS:
+1. Create an engaging caption that matches the brand tone and platform style
+2. Incorporate the main message and keywords naturally4. Include appropriate emojis for the platform
+5. Make it optimized for ${platform} audience engagement
+6. Keep it short and sweet
+7. create some additional random hashtags as per the content
+8. Dont use paragraphs, keep it in single paragraph dont use line breaks
+9. Dont use Ai elements like "As an AI language model" for e.g(**, symbols etc**)
+`
 }
 
 // Generate image using DALL-E 3 (Legacy endpoint - keeping for compatibility)
