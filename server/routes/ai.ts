@@ -194,7 +194,7 @@ router.post('/generate-posts', async (req: Request, res: Response) => {
 
       try {
         const response = await genAI.models.generateContent({
-          model: 'gemini-2.5-flash',
+          model: 'gemini-2.5-flash-lite',
           contents: [{ text: prompt }]
         })
         
