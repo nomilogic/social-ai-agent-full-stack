@@ -5,6 +5,7 @@ import { SocialMediaManager } from './SocialMediaManager';
 import { socialMediaAPI } from '../lib/socialMediaApi';
 import { oauthManagerClient } from '../lib/oauthManagerClient';
 import Icon from './Icon';
+import { RefreshCw, Trash2 } from 'lucide-react';
 
 interface PublishProps {
   posts: GeneratedPost[];
@@ -207,6 +208,25 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
       setConnectingPlatforms(prev => prev.filter(p => p !== platform));
     }
   };
+
+  const handleDisconnect = async (platform: Platform) => {
+      // if (
+      //   !confirm(
+      //     `Are you sure you want to disconnect ${getPlatformDisplayName(platform)}?`,
+      //   )
+      // ) {
+      //   return;
+      // }
+  
+      try {
+        // Use the OAuth manager client for disconnecting (uses JWT authentication)
+        await oauthManagerClient.disconnectPlatform(platform);
+  
+       
+      } catch (error) {
+        console.error("Failed to disconnect:", error);
+      }
+    };
 
   const handlePublish = async () => {
     // Filter to only connected platforms that are selected and not already published
@@ -453,8 +473,33 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
                         </svg>
                       )}
                     </div> */}
+                    {isConnected ? (
+                  <>
+                    <button
+                      onClick={() => handleConnect(post.platform)}
+                    
+                      className="p-2 text-gray-500 hover:text-blue-600 disabled:opacity-50 rounded-lg hover:bg-gray-100"
+                      title="Refresh connection"
+                    >
+                      <RefreshCw
+                        className={`w-4 h-4`}
+                      />
+                    </button>
+                    <button
+                      onClick={() => handleDisconnect(post.platform)}
+                      className="p-2 text-gray-500 hover:text-red-600 disabled:opacity-50 rounded-lg hover:bg-gray-100"
+                      title="Disconnect"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                ) : (
+                  <> </>
+                )
+              }
 
                     {/* Platform Selection and Connect Controls */}
+
                     <div className="flex items-center gap-2">
                       {/* Checkbox - Only show if connected and not published */}
                       {isConnected && !publishedPlatforms.includes(post.platform) && (

@@ -265,9 +265,14 @@ export const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({
         ),
       );
 
+      // Refresh platform statuses from server to ensure UI is in sync
+      setTimeout(checkPlatformStatuses, 500);
+      
       onCredentialsUpdate?.();
     } catch (error) {
       console.error("Failed to disconnect:", error);
+      // Refresh statuses even on error to show actual server state
+      setTimeout(checkPlatformStatuses, 500);
     }
   };
 
