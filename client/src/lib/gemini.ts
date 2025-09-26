@@ -22,7 +22,7 @@ export interface PlatformConfig {
 export const platformConfigs: Record<Platform, PlatformConfig> = {
   facebook: {
     maxLength: 2000,
-    hashtagCount: 3,
+    hashtagCount: 5,
     tone: 'conversational',
     features: ['link preview', 'reactions', 'community engagement']
   },
@@ -34,7 +34,7 @@ export const platformConfigs: Record<Platform, PlatformConfig> = {
   },
   twitter: {
     maxLength: 280,
-    hashtagCount: 2,
+    hashtagCount: 5,
     tone: 'concise',
     features: ['trending', 'mentions', 'brevity', 'real-time']
   },
@@ -51,10 +51,10 @@ export const platformConfigs: Record<Platform, PlatformConfig> = {
     features: ['viral', 'sounds', 'challenges', 'youth appeal']
   },
   youtube: {
-    maxLength: 5000,
-    hashtagCount: 3,
+    maxLength: 1500,
+    hashtagCount: 5,
     tone: 'educational',
-    features: ['description', 'timestamps', 'SEO optimization']
+    features: ['description', 'thumbnails', 'social engagement', "entertainment"]
   }
 };
 
@@ -64,7 +64,7 @@ export async function analyzeImage(imageFile: File): Promise<string> {
     return 'Image analysis requires a valid Gemini API key. Please add a description manually.';
   }
 
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
 
   try {
     // Convert file to base64
@@ -118,7 +118,7 @@ export async function generatePostForPlatform(
   characterCount: number;
   engagement: 'high' | 'medium' | 'low';
 }> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
   const config = platformConfigs[platform];
 
   const prompt = `
@@ -145,9 +145,13 @@ PLATFORM REQUIREMENTS FOR ${platform.toUpperCase()}:
 INSTRUCTIONS:
 1. Create an engaging caption that matches the brand tone and platform style
 2. Keep within the character limit (${config.maxLength} characters)
-3. Generate exactly ${config.hashtagCount} relevant hashtags
+3. Generate hashtags ${config.hashtagCount} relevant hashtags
 4. Include appropriate emojis for the platform
 5. Make it optimized for ${platform} audience engagement
+6. Keep it short and sweet
+7. create some additional random hashtags as per the content
+8. Dont use paragraphs, keep it in single paragraph dont use line breaks
+9. Dont use Ai elements like "As an AI language model" for e.g(**, symbols etc**)
 
 Please respond in this exact JSON format:
 {
