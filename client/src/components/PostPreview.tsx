@@ -13,6 +13,7 @@ import {
   Save,
   X,
   Wand2,
+  Loader,
 } from "lucide-react";
 import Icon from './Icon';
 import { GeneratedPost, Platform } from "../types";
@@ -44,7 +45,8 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
   const [posts, setPosts] = useState<GeneratedPost[]>(generatedPosts);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
   const [isRegeneratingMode, setIsRegeneratingMode] = useState<boolean>(false);
-  const [regenerationPrompt, setRegenerationPrompt] = useState<string>('');
+  const [regenerationPrompt, setRegenerationPrompt] = useState<string>('');  
+  const [isRegenerating, setIsRegenerating] = useState<boolean>(false);
 
   // Calculate initial character counts for all posts
   useEffect(() => {
@@ -133,7 +135,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
   }, [posts, selectedPlatform]);
 
   // Handle regeneration submission
-  const handleRegenerateSubmit = useCallback(() => {
+  const handleRegenerateSubmit = useCallback(async () => {
     const currentPost = posts.find((post) => post.platform === selectedPlatform);
     console.log('🚀 HandleRegenerateSubmit called:', {
       selectedPlatform,
@@ -143,28 +145,38 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
     });
     
     if (onRegeneratePlatform && currentPost) {
-      // Update the post object with the new prompt before regenerating
-      const currentPostIndex = posts.findIndex(p => p.platform === selectedPlatform);
-      if (currentPostIndex !== -1) {
-        const updatedPosts = [...posts];
-        updatedPosts[currentPostIndex] = {
-          ...updatedPosts[currentPostIndex],
-          generationPrompt: regenerationPrompt
-        };
-        setPosts(updatedPosts);
-        
-        // Trigger save to parent if available
-        if (onPostsUpdate) {
-          onPostsUpdate(updatedPosts);
+      // Set loading state
+      setIsRegenerating(true);
+      
+      try {
+        // Update the post object with the new prompt before regenerating
+        const currentPostIndex = posts.findIndex(p => p.platform === selectedPlatform);
+        if (currentPostIndex !== -1) {
+          const updatedPosts = [...posts];
+          updatedPosts[currentPostIndex] = {
+            ...updatedPosts[currentPostIndex],
+            generationPrompt: regenerationPrompt
+          };
+          setPosts(updatedPosts);
+          
+          // Trigger save to parent if available
+          if (onPostsUpdate) {
+            onPostsUpdate(updatedPosts);
+          }
         }
+        
+        console.log('🔥 Calling onRegeneratePlatform with:', { platform: currentPost.platform, prompt: regenerationPrompt.substring(0, 50) + '...' });
+        await onRegeneratePlatform(currentPost.platform, regenerationPrompt);
+        
+        // Reset regeneration mode after successful submission
+        setIsRegeneratingMode(false);
+        setRegenerationPrompt('');
+      } catch (error) {
+        console.error('❌ Error during regeneration:', error);
+        // Keep regeneration mode open on error so user can retry
+      } finally {
+        setIsRegenerating(false);
       }
-      
-      console.log('🔥 Calling onRegeneratePlatform with:', { platform: currentPost.platform, prompt: regenerationPrompt.substring(0, 50) + '...' });
-      onRegeneratePlatform(currentPost.platform, regenerationPrompt);
-      
-      // Reset regeneration mode after submitting
-      setIsRegeneratingMode(false);
-      setRegenerationPrompt('');
     } else {
       console.error('❌ Cannot regenerate:', { 
         hasOnRegeneratePlatform: !!onRegeneratePlatform, 
@@ -990,11 +1002,18 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
             {/* Generate Button with Coin Counter - Match ContentInput styling */}
             <button
               onClick={handleRegenerateSubmit}
-              className="rounded-full w-full flex items-center justify-between theme-bg-trinary theme-text-light py-2 px-4 font-medium transition-all duration-200 text-sm"
+              disabled={isRegenerating}
+              className={`rounded-full w-full flex items-center justify-between theme-bg-trinary theme-text-light py-2 px-4 font-medium transition-all duration-200 text-sm ${
+                isRegenerating ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-90'
+              }`}
             >
               <div className="flex items-center">
-                <Wand2 className="w-6 h-6 mr-1" /> 
-                GENERATE POST TEXT
+                {isRegenerating ? (
+                  <Loader className="w-6 h-6 mr-1 animate-spin" />
+                ) : (
+                  <Wand2 className="w-6 h-6 mr-1" />
+                )}
+                {isRegenerating ? 'REGENERATING...' : 'GENERATE POST TEXT'}
               </div>
               <div className="rounded-full theme-bg-quaternary theme-text-secondary px-2 py-1">
                 <Icon name="wallet" size={14} className="inline mr-1 mt-[-1px]" />

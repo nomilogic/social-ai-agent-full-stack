@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { ContentInput } from "../components/ContentInput";
 import { AIGenerator } from "../components/AIGenerator";
 import { PostPreview } from "../components/PostPreview";
@@ -293,29 +293,7 @@ export const ContentPage: React.FC = () => {
                       onRegeneratePlatform={handleRegeneratePlatform}
                     />
                   ) : (
-                   /*  <div className="text-center py-8">
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 text-left max-w-md mx-auto">
-                        <h3 className="font-semibold text-red-800 mb-2">No Generated Posts Found</h3>
-                        <p className="text-red-700 text-sm mb-3">
-                          Debug Information:
-                        </p>
-                        <ul className="text-red-700 text-sm list-disc list-inside space-y-1">
-                          <li>Has posts: {state.generatedPosts ? 'Yes' : 'No'}</li>
-                          <li>Posts count: {state.generatedPosts?.length || 0}</li>
-                          <li>Posts data: {JSON.stringify(state.generatedPosts?.slice(0, 2), null, 2)}</li>
-                        </ul>
-                      </div>
-                      <p className="text-gray-600">
-                        Please generate content first.
-                      </p>
-                      <button
-                        onClick={() => navigate("/content")}
-                        className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        Start Content Creation
-                      </button>
-                    </div> */
-                    <></>
+                    <Navigate to="/content" replace />
                   );
                 })()
               }
