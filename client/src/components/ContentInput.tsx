@@ -121,6 +121,23 @@ export const ContentInput: React.FC<ContentInputProps> = ({
   // Image post sub-type selection state
   const [selectedImageMode, setSelectedImageMode] = useState<'upload' | 'textToImage' | ''>('');
 
+  // Video-related state - MUST be declared before useEffect that uses them
+  const [videoThumbnailUrl, setVideoThumbnailUrl] = useState<string>("");
+  const [originalVideoFile, setOriginalVideoFile] = useState<File | null>(null);
+  const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(null);
+  const [videoAspectRatioWarning, setVideoAspectRatioWarning] = useState<string>("");
+  const [warningTimeoutId, setWarningTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  
+  const [aspectRatio, setAspectRatio] = useState<string>('16:9');
+  const [imageDescription, setImageDescription] = useState<string>('');
+  const [generateImageWithPost, setGenerateImageWithPost] = useState(true );
+  const [isGeneratingBoth, setIsGeneratingBoth] = useState(false);
+  const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  
+  // State to hold pending post generation data
+  const [pendingPostGeneration, setPendingPostGeneration] = useState<any>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Helper function to get appropriate platforms based on content type
@@ -154,7 +171,39 @@ export const ContentInput: React.FC<ContentInputProps> = ({
       ...prev,
       selectedPlatforms: appropriatePlatforms
     }));
-  }, [selectedPostType, selectedImageMode, selectedVideoMode]);
+    
+    // Clear aspect ratio warning when video mode changes or when correct video is uploaded
+    if (selectedPostType === 'video') {
+      if (videoAspectRatio) {
+        // If we have a video loaded, check if the mode now matches the aspect ratio
+        let shouldClearWarning = false;
+        if (selectedVideoMode === 'upload' && is16x9Video(videoAspectRatio)) {
+          shouldClearWarning = true;
+        } else if (selectedVideoMode === 'uploadShorts' && is9x16Video(videoAspectRatio)) {
+          shouldClearWarning = true;
+        }
+        
+        if (shouldClearWarning && videoAspectRatioWarning) {
+          console.log('✅ Video mode now matches aspect ratio, clearing warning');
+          // Clear timeout if it exists
+          if (warningTimeoutId) {
+            clearTimeout(warningTimeoutId);
+            setWarningTimeoutId(null);
+          }
+          setVideoAspectRatioWarning('');
+        }
+      } else {
+        // If no video is loaded but there's a warning (from previous rejected upload), keep the warning
+        // This ensures the warning persists until a correct video is uploaded or mode is switched
+      }
+    } else {
+      // Clear warning when switching away from video post type
+      if (videoAspectRatioWarning) {
+        console.log('🔄 Clearing video warning when switching away from video post type');
+        setVideoAspectRatioWarning('');
+      }
+    }
+  }, [selectedPostType, selectedImageMode, selectedVideoMode, videoAspectRatio, videoAspectRatioWarning]);
 
   // Initialize with existing data when in edit mode
   useEffect(() => {
@@ -283,6 +332,78 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         setVideoAspectRatio(aspectRatio);
         console.log('📐 Video aspect ratio:', aspectRatio);
         console.log('📝 Video thumbnail will be generated when Generate Post is clicked');
+        
+        // Check for aspect ratio mismatch with selected video mode
+        let warningMessage = '';
+        let shouldRejectVideo = false;
+        
+        if (selectedVideoMode === 'upload' && !is16x9Video(aspectRatio)) {
+          // User selected normal video upload (16:9) but uploaded non-16:9 video
+          shouldRejectVideo = true;
+          if (is9x16Video(aspectRatio)) {
+            warningMessage = 'Aspect ratio mismatch: Please switch to "Upload Short (9:16)" mode or upload a 16:9 horizontal video.';
+          } else {
+            warningMessage = `Aspect ratio mismatch: Please switch to "Upload Short (9:16)" mode or upload a 16:9 horizontal video.`;
+          }
+        } else if (selectedVideoMode === 'uploadShorts' && !is9x16Video(aspectRatio)) {
+          // User selected shorts upload (9:16) but uploaded non-9:16 video
+          shouldRejectVideo = true;
+          if (is16x9Video(aspectRatio)) {
+            warningMessage = 'Aspect ratio mismatch: Please switch to "Upload Video (16:9)" mode or upload a 9:16 verical video.';
+          } else {
+            warningMessage = `Aspect ratio mismatch: Please switch to "Upload Video (16:9)" mode or upload a 9:16 verical video.`;
+          }
+        }
+        
+        if (shouldRejectVideo) {
+          console.log('🚫 Video rejected due to aspect ratio mismatch:', warningMessage);
+          setVideoAspectRatioWarning(warningMessage);
+          
+          // Clear any existing timeout
+          if (warningTimeoutId) {
+            clearTimeout(warningTimeoutId);
+          }
+          
+          // Set timeout to auto-dismiss warning after 4 seconds
+          const timeoutId = setTimeout(() => {
+            console.log('⏰ Auto-dismissing video warning after 4 seconds');
+            setVideoAspectRatioWarning('');
+            setWarningTimeoutId(null);
+          }, 4000);
+          
+          setWarningTimeoutId(timeoutId);
+          
+          // Remove the video from formData immediately
+          setFormData((prev) => {
+            // Clean up the blob URL
+            if (prev.mediaUrl && prev.mediaUrl.startsWith('blob:')) {
+              URL.revokeObjectURL(prev.mediaUrl);
+              console.log('🗑️ Cleaned up blob URL for rejected video');
+            }
+            return {
+              ...prev,
+              media: undefined,
+              mediaUrl: undefined,
+              serverUrl: undefined
+            };
+          });
+          
+          // Clear video-related state but keep the warning
+          setOriginalVideoFile(null);
+          setVideoAspectRatio(null);
+          setVideoThumbnailUrl("");
+          
+          // Stop the upload process by returning early
+          return;
+        } else {
+          // Clear any previous warning and timeout if video is acceptable
+          if (warningTimeoutId) {
+            clearTimeout(warningTimeoutId);
+            setWarningTimeoutId(null);
+          }
+          setVideoAspectRatioWarning('');
+          console.log('✅ Video aspect ratio matches selected mode');
+        }
         
       } catch (error) {
         console.error('❌ Error processing video:', error);
@@ -1052,7 +1173,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         // For image content, use the templated image
         currentFormData = {
           ...originalFormData,
-          mediaUrl: finalTemplatedUrl, // Use the templated image server URL
+          mediaUrl: finalTemplatedUrl, // Use the templated image
           imageUrl: finalTemplatedUrl,
           serverUrl: finalTemplatedUrl
         };
@@ -1080,17 +1201,14 @@ export const ContentInput: React.FC<ContentInputProps> = ({
         targetAudience: currentCampaignInfo.target_audience || currentCampaignInfo.targetAudience,
         description: currentCampaignInfo.description,
         imageAnalysis: imageAnalysis,
+        // Include thumbnailUrl for video posts
+        thumbnailUrl: templatedImageUrl || videoThumbnailUrl || finalPostData.thumbnailUrl,
+        // Additional campaign fields if available
         website: currentCampaignInfo.website,
         objective: currentCampaignInfo.objective,
         goals: currentCampaignInfo.goals,
         keywords: currentCampaignInfo.keywords,
         hashtags: currentCampaignInfo.hashtags,
-        // Add video-specific metadata if applicable
-        ...(isVideoContent && {
-          isVideoContent: true,
-          videoAspectRatio: videoAspectRatio,
-          originalVideoFile: originalVideoFile
-        })
       };
       
       console.log('📤 Final post data:', {
@@ -1271,18 +1389,6 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     // Reset to original image if available
     setFormData((prev) => ({ ...prev, mediaUrl: prev.media ? URL.createObjectURL(prev.media) : undefined }));
   };
-
-  const [aspectRatio, setAspectRatio] = useState<string>('16:9');
-  const [imageDescription, setImageDescription] = useState<string>('');
-  const [generateImageWithPost, setGenerateImageWithPost] = useState(true );
-  const [isGeneratingBoth, setIsGeneratingBoth] = useState(false);
-  const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  
-  // Video-related state
-  const [videoThumbnailUrl, setVideoThumbnailUrl] = useState<string>("");
-  const [originalVideoFile, setOriginalVideoFile] = useState<File | null>(null);
-  const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(null);
 
   const handleAspectRatioChange = (newAspectRatio: string) => {
     setAspectRatio(newAspectRatio);
@@ -1479,9 +1585,6 @@ export const ContentInput: React.FC<ContentInputProps> = ({
     );
   };
 
-  // State to hold pending post generation data
-  const [pendingPostGeneration, setPendingPostGeneration] = useState<any>(null);
-  
   // Enhanced combined generation function - generates image and waits for template editor completion
   const handleCombinedGenerationWithPost = async (prompt: string) => {
     setIsGeneratingBoth(true);
@@ -1712,7 +1815,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                         
                         ${selectedImageMode === 'upload'
                                 ? 'text-white'
-                                : 'theme-text-secondary'
+                                : 'theme-text-primary'
                               }`}>
                               Upload<br />Image
                             </h3>
@@ -1745,8 +1848,9 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           </div>
                           <div>
                             <h3 className={`font-semibold text-sm leading-none ${selectedImageMode === 'textToImage'
+                               
                                 ? 'text-white'
-                                : 'theme-text-secondary'
+                                : 'theme-text-primary'
                               }`}>
                               Text<br /> to Image
                             </h3>
@@ -1817,8 +1921,11 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           <div>
                             <h3 className={`font-semibold text-sm leading-none ${selectedVideoMode === 'upload' ? 'text-white' : 'theme-text-secondary'
                               }`}>
-                              Upload<br />Video
+                              Upload<br />Video (16:9)
                             </h3>
+                            {/* <p className={`text-xs mt-1 ${selectedVideoMode === 'upload' ? 'text-white/80' : 'theme-text-tertiary'}`}>
+                              Horizontal format
+                            </p> */}
                           </div>
                         </div>
                       </button>
@@ -1846,8 +1953,11 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           <div>
                             <h3 className={`font-semibold text-sm leading-none ${selectedVideoMode === 'uploadShorts' ? 'text-white' : 'theme-text-secondary'
                               }`}>
-                              Upload<br />Short
+                              Upload<br />Short (9:16)
                             </h3>
+                            {/* <p className={`text-xs mt-1 ${selectedVideoMode === 'uploadShorts' ? 'text-white/80' : 'theme-text-tertiary'}`}>
+                              Vertical format
+                            </p> */}
                           </div>
                         </div>
                       </button>
@@ -2335,7 +2445,15 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                           </div>
                         )}
                         {/* Upload preloader is now handled by enhanced preloader overlay */}
-                        {videoAspectRatio && (
+                        {videoAspectRatioWarning ? (
+                          <div className="flex items-center justify-start p-3 bg-red-500/10 border border-red-400/20 rounded text-xs">
+                            <AlertCircle className="w-4 h-4 mr-2 text-red-400 flex-shrink-0" />
+                            <div className="text-left">
+                              <div className="font-medium text-red-300 mb-1">Aspect Ratio Warning</div>
+                              <div className="text-red-200">{videoAspectRatioWarning}</div>
+                            </div>
+                          </div>
+                        ) : videoAspectRatio ? (
                           <div className="flex items-center justify-center p-2 bg-green-500/10 border border-green-400/20 rounded text-xs">
                             <CheckCircle className="w-3 h-3 mr-2 text-green-400" />
                             <span className="text-green-300">
@@ -2344,7 +2462,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                                'Video processed and ready - thumbnail will be generated when you click Generate Post'}
                             </span>
                           </div>
-                        )}
+                        ) : null}
 
                         {/* AI Analysis Button */}
                         {(formData.media || formData.mediaUrl) &&
@@ -2431,11 +2549,12 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                   ) : (
                     <div className="space-y-3">
                      
-                      <div className="flex gap-2 justify-center">
+                      <div className={`${selectedVideoMode ? "" : "filter grayscale opacity-50"} flex gap-2 justify-center`}>
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
                           className="bg-transparent"
+                          disabled={!selectedVideoMode}
                         >
                           <div className="">
                               <Icon name="upload" size={44} />
@@ -2444,7 +2563,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                                 Click to browse video
                               </p>
                               <p className="theme-text-secondary text-xs">
-
+                                {!selectedVideoMode && "Select a video mode above first"}
                               </p>
                             </div>
                           </div>
@@ -2454,6 +2573,15 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                     </div>
                   )}
                 </div>
+
+                {/* Video Aspect Ratio Warning - Always visible when there's a warning */}
+                {videoAspectRatioWarning && (
+                  <div className="flex items-center justify-start p-3 theme-bg-danger border rounded-lg text-xs mb-1 theme-text-light">
+                   <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" /> {videoAspectRatioWarning}
+                    
+              
+                  </div>
+                )}
 
                 {/* Image Analysis Results */}
                 {imageAnalysis && (
