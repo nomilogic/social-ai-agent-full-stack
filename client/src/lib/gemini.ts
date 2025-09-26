@@ -312,11 +312,15 @@ export async function generateSinglePlatformPost(
         platform,
         caption: caption,
         hashtags: hashtags,
+        emojis: '✨ 🚀 💫',
+        characterCount: caption.length + hashtags.join(' ').length,
+        engagement: 'medium' as const,
         imageUrl: serverMediaUrl || null,
         mediaUrl: serverMediaUrl || null,
         thumbnailUrl: (contentData as any).thumbnailUrl || null,
+        generationPrompt: contentData.prompt,
         success: true
-      };
+      } as any;
     } else {
       throw new Error('No content generated');
     }
@@ -331,12 +335,16 @@ export async function generateSinglePlatformPost(
       platform,
       caption: contentData.prompt || 'Check out our latest updates!',
       hashtags: [`#${campaignInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`, '#update'],
+      emojis: '✨ 🚀 💫',
+      characterCount: (contentData.prompt || 'Check out our latest updates!').length + 20, // rough estimate
+      engagement: 'medium' as const,
       imageUrl: serverMediaUrl || null,
       mediaUrl: serverMediaUrl || null,
       thumbnailUrl: (contentData as any).thumbnailUrl || null,
+      generationPrompt: contentData.prompt,
       success: false,
       error: error instanceof Error ? error.message : 'Generation failed'
-    };
+    } as any;
   }
 }
 
@@ -432,11 +440,15 @@ export async function generateAllPosts(
             platform,
             caption: caption,
             hashtags: hashtags,
+            emojis: '✨ 🚀 💫',
+            characterCount: caption.length + hashtags.join(' ').length,
+            engagement: 'medium' as const,
             imageUrl: serverMediaUrl || null,
             mediaUrl: serverMediaUrl || null,
             thumbnailUrl: (contentData as any).thumbnailUrl || null,
+            generationPrompt: contentData.prompt,
             success: true
-          });
+          } as any);
         } else {
           throw new Error('No content generated');
         }
@@ -451,12 +463,16 @@ export async function generateAllPosts(
           platform,
           caption: contentData.prompt || 'Check out our latest updates!',
           hashtags: [`#${campaignInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`, '#update'],
+          emojis: '✨ 🚀 💫',
+          characterCount: (contentData.prompt || 'Check out our latest updates!').length + 20,
+          engagement: 'medium' as const,
           imageUrl: serverMediaUrl || null,
           mediaUrl: serverMediaUrl || null,
           thumbnailUrl: (contentData as any).thumbnailUrl || null,
+          generationPrompt: contentData.prompt,
           success: false,
           error: platformError instanceof Error ? platformError.message : 'Generation failed'
-        });
+        } as any);
       }
       
       // Small delay between platforms for better UX and to avoid rate limiting
@@ -485,12 +501,16 @@ export async function generateAllPosts(
       platform,
       caption: contentData.prompt || 'Check out our latest updates!',
       hashtags: [`#${campaignInfo.name?.replace(/\s+/g, '')?.toLowerCase() || 'business'}`],
+      emojis: '✨ 🚀 💫',
+      characterCount: (contentData.prompt || 'Check out our latest updates!').length + 20,
+      engagement: 'medium' as const,
       imageUrl: serverMediaUrl || null,
       mediaUrl: serverMediaUrl || null,
       thumbnailUrl: (contentData as any).thumbnailUrl || null,
+      generationPrompt: contentData.prompt,
       success: false,
       error: error.message || 'AI generation failed'
-    }));
+    } as any));
   }
 }
 
