@@ -93,32 +93,59 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         {/* <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div> */}
       </div>
 
-      {/* Mobile Menu Overlay */}
-      {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-card bg-opacity z-140 lg:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
 
       {/* Sidebar */}
 
-      <div className="lg:pl-100 relative z-10">
+      <div className="relative z-10">
         <div
-          className={`fixed inset-y-0 left-0 z-50 w-64 theme-bg-trinary border-r border-white/0 transform ${
+          className={`fixed inset-y-0 left-0 z-50 w-64 theme-bg-trinary border-r border-white/10 transform ${
             isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-          } transition-transform duration-300 ease-in-out -lg:translate-x-0 -lg:static -lg:inset-0 -lg:w-auto`}
+          } transition-transform duration-300 ease-in-out`}
         >
-          <div className="flex items-center justify-between  px-1 border-b border-white/20 -lg:hidden">
-            {/* <h1 className="text-xl font-bold theme-text-primary">Social AI</h1> */}
+          {/* Close button */}
+          <div className="flex items-center justify-end px-4 py-3 border-b border-white/20">
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="rounded-md theme-text-light hover:theme-text-light -lg:hidden"
+              className="rounded-md theme-text-light hover:theme-text-primary"
             >
-              <X className="w-6 h-6 " />
+              <X className="w-6 h-6" />
             </button>
           </div>
-          <nav className="w-full space-y-2 lg:space-y-0 lg:inline-flex -lg:hidden mt-5">
+
+          {/* User Profile Section */}
+          <div className="p-4 border-b border-white/20">
+            <div className="flex items-center space-x-3 mb-3">
+              <img
+                className="h-10 w-10 rounded-full object-cover border-2 border-white/30 theme-bg-trinary"
+                src={
+                  user?.avatar_url ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user_metadata?.name || user?.email || "User")}&background=00000000&color=fff`
+                }
+                alt=""
+              />
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium theme-text-primary truncate">
+                  {user?.user_metadata?.name || user?.email || "User"}
+                </div>
+                <div className="text-xs theme-text-light truncate">{user?.email}</div>
+              </div>
+            </div>
+            
+            {/* Sign out button */}
+            <button
+              onClick={() => {
+                handleLogout();
+                setIsMobileMenuOpen(false);
+              }}
+              className="flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors theme-text-light hover:theme-bg-secondary hover:theme-text-primary"
+            >
+              <LogOut className="mr-3 h-5 w-5" />
+              Sign out
+            </button>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 px-2 py-4 space-y-1">
             {navigation.map((item) => {
               const isActive = location.pathname === item.path;
               const Icon = item.icon;
@@ -126,44 +153,55 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 <Link
                   key={item.name}
                   to={item.path}
-                  className={`w-full flex items-center px-3 py-1 text-sm font-medium transition-colors ${
+                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                     isActive
-                      ? "theme-bg-primary theme-text-secondary border-r-0"
-                      : "theme-text-light hover:theme-secondary hover:theme-text-secondary border-r-0"
+                      ? "theme-bg-primary theme-text-secondary"
+                      : "theme-text-light hover:theme-bg-secondary hover:theme-text-primary"
                   }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <Icon className="mr-3 h-5 w-5" />
                   {item.name}
                 </Link>
               );
             })}
+            
+            {/* Profile Settings */}
+            <div className="border-t border-white/20 pt-2 mt-2">
+              <Link
+                to="/settings"
+                className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  location.pathname === "/settings"
+                    ? "theme-bg-primary theme-text-secondary"
+                    : "theme-text-light hover:theme-bg-secondary hover:theme-text-primary"
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <User className="mr-3 h-5 w-5" />
+                Settings
+              </Link>
+            </div>
           </nav>
         </div>
         {/* Top Navigation */}
         <div className="sticky top-0 z-10 backdrop-blur-lg border-b border-white/20 px-4 py-0">
-          <div className="flex items-center justify-between mt-3">
+          <div className="relative flex items-center justify-between mt-3">
+            {/* Left: Mobile menu button */}
             <div className="flex items-center">
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="p-1 rounded-md theme-text-primary hover:theme-text-secondary -lg:hidden"
+                className="p-1 rounded-md theme-text-primary hover:theme-text-secondary"
               >
                 <Menu className="w-6 h-6" />
               </button>
-            <Icon name="logo" size={50} className="ml-0 lg:ml-0" />
-              {/* Uncomment if you want to add a search bar */}
-
-              {/* Search */}
-              {/* <div className="relative ml-4 lg:ml-0">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 theme-text-light" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="block w-full pl-10 pr-3 py-2 theme-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div> */}
             </div>
+
+            {/* Center: Logo + Brand */}
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 pointer-events-none select-none">
+              <Icon name="logo" size={50} className="ml-0 lg:ml-0" />
+              <span className="theme-text-primary text-2xl lg:text-3xl font-extrabold tracking-tight">𝗢𝗺𝗻𝗶𝗦𝗵𝗮𝗿𝗲</span>
+            </div>
+
             {/* Right Side */}
             <div className="flex items-center space-x-1">
               {/* Theme Selector */}
@@ -187,49 +225,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   />
                 )}
               </div> */}
-                <div>
-                <WalletBalance /></div>
-
-              {/* User Menu */}
-              <div className="relative" ref={userMenuRef}>
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center p-0 text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-white/30"
-                >
-                  <img
-                    className="h-8 w-8 rounded-full object-cover border-2 border-white/30 theme-bg-trinary"
-                    src={
-                      user?.avatar_url ||
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user_metadata?.name || user?.email || "User")}&background=00000000&color=fff`
-                    }
-                    alt=""
-                  />
-                </button>
-                {showUserMenu && (
-                  <div className="absolute right-0 z-10 mt-2 w-48 theme-bg-card rounded-md shadow-lg py-1 border border-white/20">
-                    <div className="px-4 py-2 text-sm border-b border-white/20">
-                      <div className="font-medium theme-text-primary">
-                        {user?.user_metadata?.name || user?.email || "User"}
-                      </div>
-                      <div className="theme-text-light">{user?.email}</div>
-                    </div>
-                    <Link
-                      to="/settings"
-                      className="flex items-center px-4 py-2 text-sm theme-text-secondary hover:theme-bg-primary hover:theme-text-primary"
-                      onClick={() => setShowUserMenu(false)}
-                    >
-                      <User className="mr-3 h-4 w-4" />
-                      Profile Settings
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center w-full px-4 py-2 text-sm theme-text-secondary hover:theme-bg-primary hover:theme-text-primary"
-                    >
-                      <LogOut className="mr-3 h-4 w-4" />
-                      Sign out
-                    </button>
-                  </div>
-                )}
+              <div>
+                <WalletBalance />
               </div>
             </div>
           </div>
