@@ -425,6 +425,14 @@ export async function postToAllPlatforms(
         successes.push(post.platform);
         onProgress?.(post.platform, 'success');
         console.log(`Successfully posted to ${post.platform} via real OAuth`);
+        
+        // Save the published post to history
+        try {
+          await savePublishedPostToHistory(post, realPostResult, authHeaders);
+        } catch (historyError: any) {
+          console.warn(`Failed to save ${post.platform} post to history:`, historyError.message);
+          // Don't fail the entire posting process if history saving fails
+        }
       } else if (realPostResult && !realPostResult.success) {
         // Real OAuth attempt failed - propagate the actual error message
         throw new Error(realPostResult.message || `Failed to post to ${post.platform}`);
@@ -700,5 +708,87 @@ function getPostIdFromResult(result: any, platform: string): string {
       return result.id || 'Unknown';
     default:
       return 'Unknown';
+  }
+}
+
+// Function to save published post to history database
+async function savePublishedPostToHistory(
+  post: GeneratedPost, 
+  publishResult: any, 
+  authHeaders: { Authorization: string; 'Content-Type': string }
+): Promise<void> {
+  try {
+    console.log(`📝 Saving ${post.platform} post to history database...`);
+    
+    // Generate a unique post ID for this publishing session
+    const postId = `${post.platform}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Get the platform-specific post URL
+    let platformUrl = '';
+    if (publishResult.postId && publishResult.postId !== 'Unknown') {
+      switch (post.platform) {
+        case 'linkedin':
+          // LinkedIn URLs: https://www.linkedin.com/feed/update/urn:li:share:postId
+          if (publishResult.postId.startsWith('urn:li:share:')) {
+            platformUrl = `https://www.linkedin.com/feed/update/${publishResult.postId}`;
+          } else if (publishResult.postId.includes('activity-')) {
+            platformUrl = `https://www.linkedin.com/posts/${publishResult.postId}`;
+          } else {
+            platformUrl = `https://www.linkedin.com/feed/update/urn:li:share:${publishResult.postId}`;
+          }
+          break;
+        case 'facebook':
+          // Facebook URLs are typically facebook.com/:fbpostId
+          platformUrl = `https://www.facebook.com/${publishResult.postId}`;
+          break;
+        case 'youtube':
+          platformUrl = `https://www.youtube.com/watch?v=${publishResult.postId}`;
+          break;
+        case 'instagram':
+          platformUrl = `https://www.instagram.com/p/${publishResult.postId}/`;
+          break;
+        case 'twitter':
+        case 'x':
+          platformUrl = `https://twitter.com/user/status/${publishResult.postId}`;
+          break;
+        case 'tiktok':
+          platformUrl = `https://www.tiktok.com/@user/video/${publishResult.postId}`;
+          break;
+        default:
+          platformUrl = `https://${post.platform}.com/posts/${publishResult.postId}`;
+          break;
+      }
+    }
+    
+    // Prepare the published URLs object
+    const publishedUrls = {
+      [post.platform]: platformUrl
+    };
+    
+    // Save to post history API
+    const response = await fetch('/api/post-history/save-published-urls', {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({
+        postId,
+        postContent: post.content || post.caption,
+        publishedUrls,
+        platforms: [post.platform],
+        category: 'General',
+        imageUrl: post.imageUrl || post.mediaUrl
+      })
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to save to history: ${response.status} ${errorText}`);
+    }
+    
+    const result = await response.json();
+    console.log(`✅ Successfully saved ${post.platform} post to history:`, result.message);
+    
+  } catch (error: any) {
+    console.error(`❌ Failed to save ${post.platform} post to history:`, error.message);
+    throw error;
   }
 }

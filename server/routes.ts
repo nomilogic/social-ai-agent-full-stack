@@ -19,6 +19,7 @@ import notificationsRouter from './routes/notifications'
 import mediaRoutes from './routes/media.js'
 import cleanupRoutes from './routes/cleanup.js'
 import aiContentRouter from './routes/ai-content'
+import postHistoryRouter from './routes/post-history'
 import api from "@/lib/api";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -44,6 +45,7 @@ app.use('/api/notifications', notificationsRouter)
 app.use('/api/media', mediaRoutes)
   app.use('/api/cleanup', cleanupRoutes)
 app.use('/api/ai-content', aiContentRouter)
+app.use('/api/post-history', postHistoryRouter)
 
 // Legacy routes for backwards compatibility
 app.use('/share', linkedinRouter)

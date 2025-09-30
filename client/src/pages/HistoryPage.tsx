@@ -1,0 +1,470 @@
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
+import { Platform } from '../types';
+import { ExternalLink, Clock, Eye, EyeOff, Image, Video, FileText } from 'lucide-react';
+import { historyRefreshService } from '../services/historyRefreshService';
+
+// Export interface for external access
+export interface HistoryPageRef {
+  refreshHistory: () => Promise<void>;
+}
+
+// Interface for post history items
+interface PostHistoryItem {
+  id: string;
+  platform: Platform;
+  postId: string;
+  postUrl: string;
+  content: string;
+  publishedAt: string;
+  isRead: boolean;
+  mediaUrl?: string;
+  mediaType?: 'image' | 'video';
+  thumbnailUrl?: string;
+  metadata?: {
+    title?: string;
+    description?: string;
+    image?: string;
+    thumbnail?: string;
+    platform_image?: string;
+    likes?: number;
+    shares?: number;
+    comments?: number;
+  };
+}
+
+export const HistoryPage = forwardRef<HistoryPageRef>((props, ref) => {
+  const [posts, setPosts] = useState<PostHistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+
+  useEffect(() => {
+    fetchPostHistory();
+  }, []);
+
+  // Register with global history refresh service
+  useEffect(() => {
+    const refreshCallback = async () => {
+      console.log('📋 Post history refresh triggered from global service');
+      setLoading(true);
+      await fetchPostHistory();
+    };
+
+    const unregister = historyRefreshService.registerRefreshCallback(refreshCallback);
+
+    // Cleanup on unmount
+    return unregister;
+  }, []);
+
+  const fetchPostHistory = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        setError('No authentication token found');
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch('/api/post-history/history', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch post history: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setPosts(data.posts || []);
+    } catch (err) {
+      console.error('Error fetching post history:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch post history');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const markAsRead = async (postId: string) => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) return;
+
+      // API call to mark as read would go here
+      await fetch(`/api/post-history/history/${postId}/read`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // Update local state
+      setPosts(prevPosts =>
+        prevPosts.map(post =>
+          post.id === postId ? { ...post, isRead: true } : post
+        )
+      );
+
+      // Trigger global refresh to update unread counter in navigation
+      console.log('📖 Post marked as read, triggering unread count refresh...');
+      historyRefreshService.refreshHistory();
+    } catch (error) {
+      console.error('Error marking post as read:', error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) return;
+
+      // API call to mark all as read
+      await fetch('/api/post-history/history/read-all', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // Update local state
+      setPosts(prevPosts =>
+        prevPosts.map(post => ({ ...post, isRead: true }))
+      );
+
+      // Trigger global refresh to update unread counter in navigation
+      console.log('📚 All posts marked as read, triggering unread count refresh...');
+      historyRefreshService.refreshHistory();
+    } catch (error) {
+      console.error('Error marking all posts as read:', error);
+    }
+  };
+
+  const getPlatformIcon = (platform: Platform) => {
+    switch (platform) {
+      case 'linkedin':
+        return (
+          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+            <span className="text-white text-xs font-bold">Li</span>
+          </div>
+        );
+      case 'facebook':
+        return (
+          <div className="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center">
+            <span className="text-white text-xs font-bold">Fb</span>
+          </div>
+        );
+      case 'instagram':
+        return (
+          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+            <span className="text-white text-xs font-bold">Ig</span>
+          </div>
+        );
+      case 'youtube':
+        return (
+          <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center">
+            <span className="text-white text-xs font-bold">Yt</span>
+          </div>
+        );
+      case 'tiktok':
+        return (
+          <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center">
+            <span className="text-white text-xs font-bold">Tk</span>
+          </div>
+        );
+      default:
+        return (
+          <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">
+            <span className="text-white text-xs font-bold">{platform.slice(0, 2).toUpperCase()}</span>
+          </div>
+        );
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  };
+
+  // Get thumbnail URL from multiple possible sources
+  const getThumbnailUrl = (post: PostHistoryItem) => {
+    return (
+      post.thumbnailUrl ||
+      post.metadata?.thumbnail ||
+      post.metadata?.image ||
+      post.mediaUrl ||
+      null
+    );
+  };
+
+  // Detect media type from URL or provided type
+  const getMediaType = (post: PostHistoryItem): 'image' | 'video' | 'text' => {
+    if (post.mediaType) return post.mediaType;
+    
+    const thumbnailUrl = getThumbnailUrl(post);
+    if (!thumbnailUrl) return 'text';
+    
+    // Check file extension
+    const url = thumbnailUrl.toLowerCase();
+    if (url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/)) return 'image';
+    if (url.match(/\.(mp4|webm|ogg|avi|mov|wmv|flv)$/)) return 'video';
+    
+    // YouTube video detection
+    if (url.includes('youtube.com') || url.includes('youtu.be')) return 'video';
+    
+    return 'image'; // Default to image for unknown types
+  };
+
+  // Render media thumbnail with proper fallbacks
+  const renderThumbnail = (post: PostHistoryItem) => {
+    const thumbnailUrl = getThumbnailUrl(post);
+    const mediaType = getMediaType(post);
+    
+    if (!thumbnailUrl) {
+      // Show media type icon based on content or platform
+      const IconComponent = mediaType === 'video' ? Video : 
+                           mediaType === 'image' ? Image : FileText;
+      
+      return (
+        <div className="flex-shrink-0 w-32 h-24 bg-gray-100 border-r border-gray-200 flex items-center justify-center">
+          <IconComponent className="w-8 h-8 text-gray-400" />
+        </div>
+      );
+    }
+    
+    return (
+      <div className="flex-shrink-0 w-32 h-24 bg-gray-200 border-r border-gray-200 relative">
+        <img
+          src={thumbnailUrl}
+          alt="Post thumbnail"
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            // Replace with fallback icon on error
+            const target = e.currentTarget;
+            const parent = target.parentElement;
+            if (parent) {
+              const IconComponent = mediaType === 'video' ? Video : Image;
+              parent.innerHTML = `
+                <div class="w-full h-full bg-gray-100 flex items-center justify-center">
+                  <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    ${mediaType === 'video' ? 
+                      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>' :
+                      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>'
+                    }
+                  </svg>
+                </div>
+              `;
+            }
+          }}
+        />
+        {/* Video play indicator */}
+        {mediaType === 'video' && (
+          <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
+            <div className="w-10 h-10 bg-white bg-opacity-90 rounded-full flex items-center justify-center">
+              <div className="w-0 h-0 border-l-4 border-r-0 border-t-2 border-b-2 border-transparent border-l-gray-700 ml-1"></div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Expose refresh function through ref
+  useImperativeHandle(ref, () => ({
+    refreshHistory: async () => {
+      console.log('📋 Refreshing post history...');
+      setLoading(true);
+      await fetchPostHistory();
+    }
+  }), []);
+
+  const filteredPosts = filter === 'unread' ? posts.filter(post => !post.isRead) : posts;
+  const unreadCount = posts.filter(post => !post.isRead).length;
+
+  if (loading) {
+    return (
+      <div className="theme-bg-light min-h-screen">
+         <div className="flex items-center justify-between max-w-4xl mx-auto">
+        <div className="">
+           <h2 className="text-3xl font-semibold theme-text-primary mb-1">Post History</h2>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-2 text-gray-600">Loading post history...</span>
+        </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="theme-bg-light min-h-screen">
+      {/* Header */}
+      <div className="">
+        <div className="flex items-center justify-between max-w-4xl mx-auto">
+          <div>
+             <h2 className="text-3xl font-semibold theme-text-primary mb-1">Post History</h2>
+            
+            <p className="text-sm theme-text-primary">
+              View all your published posts across platforms
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {unreadCount > 0 && (
+              <button
+                onClick={markAllAsRead}
+                className="text-sm px-3 py-1 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+              >
+                Mark all as read
+              </button>
+            )}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setFilter('all')}
+                className={`text-sm px-3 py-1 rounded-full transition-colors ${
+                  filter === 'all' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                All ({posts.length})
+              </button>
+              <button
+                onClick={() => setFilter('unread')}
+                className={`text-sm px-3 py-1 rounded-full transition-colors ${
+                  filter === 'unread' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Unread ({unreadCount})
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-w-2xl mx-auto px-6 py-8">
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <p className="text-red-800 text-sm">{error}</p>
+          </div>
+        )}
+
+        {filteredPosts.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-4">
+              <Clock className="w-16 h-16 mx-auto" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {filter === 'unread' ? 'No unread posts' : 'No posts yet'}
+            </h3>
+            <p className="text-gray-600">
+              {filter === 'unread' 
+                ? 'All your posts have been read!' 
+                : 'Your published posts will appear here'}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {filteredPosts.map((post) => (
+              <div 
+                key={post.id} 
+                className={`bg-white border rounded-xl overflow-hidden hover:shadow-md transition-all duration-200 ${
+                  !post.isRead ? 'border-blue-200 bg-blue-50/30' : 'border-gray-200'
+                }`}
+              >
+                {/* Post Header */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    {getPlatformIcon(post.platform)}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-900 capitalize">
+                          {post.platform}
+                        </span>
+                        {!post.isRead && (
+                          <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {formatTimeAgo(post.publishedAt)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => !post.isRead && markAsRead(post.id)}
+                      className={`p-1 rounded-full transition-colors ${
+                        post.isRead 
+                          ? 'text-gray-400' 
+                          : 'text-blue-600 hover:bg-blue-100'
+                      }`}
+                      title={post.isRead ? 'Read' : 'Mark as read'}
+                    >
+                      {post.isRead ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    </button>
+                    <a
+                      href={post.postUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1 rounded-full text-gray-600 hover:text-blue-600 hover:bg-blue-100 transition-colors"
+                      title="Open original post"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                </div>
+
+                {/* Link Preview Card */}
+                <a
+                  href={post.postUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block hover:bg-gray-50 transition-colors"
+                  onClick={() => !post.isRead && markAsRead(post.id)}
+                >
+                  <div className="flex">
+                    {/* Media Thumbnail */}
+                    {renderThumbnail(post)}
+                    
+                    {/* Content */}
+                    <div className="flex-1 p-4 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-1">
+                            {post.metadata?.title || post.content}
+                          </h3>
+                          <p className="text-gray-600 text-sm line-clamp-2 mb-2">
+                            {post.metadata?.description || post.content}
+                          </p>
+                          <p className="text-xs text-gray-500 mb-2 capitalize">
+                            {post.platform} • {new URL(post.postUrl).hostname}
+                          </p>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                </a>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
+// Add display name for better debugging
+HistoryPage.displayName = 'HistoryPage';
