@@ -24,7 +24,7 @@
 .theme-text-primary {}
 
 .h-full-dec-hf {
-  height: calc(100vh - 150px);
+  height: calc(100vh - 100px);
   padding: 1rem;
 }
 

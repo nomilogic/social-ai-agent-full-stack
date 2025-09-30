@@ -17,6 +17,7 @@ import { AuthOAuthCallback } from './components/AuthOAuthCallback';
 import { LandingPage } from './pages/LandingPage';
 import { ProfilePage } from './pages/ProfilePage'; // Import ProfilePage
 import { CampaignsPage } from './pages/CampaignsPage';
+import { AccountsPage } from './pages/AccountsPage';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import { themeManager } from './lib/theme';
 
@@ -130,6 +131,14 @@ function App() {
           <ProtectedRoute>
             <AppLayout>
               <SettingsPage />
+            </AppLayout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/accounts" element={
+          <ProtectedRoute>
+            <AppLayout>
+              <AccountsPage />
             </AppLayout>
           </ProtectedRoute>
         } />
