@@ -4,6 +4,7 @@ import { postToAllPlatforms } from '../lib/socialPoster';
 import { SocialMediaManager } from './SocialMediaManager';
 import { socialMediaAPI } from '../lib/socialMediaApi';
 import { oauthManagerClient } from '../lib/oauthManagerClient';
+import { historyRefreshService } from '../services/historyRefreshService';
 import Icon from './Icon';
 import { RefreshCw, Trash2 } from 'lucide-react';
 
@@ -286,6 +287,15 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
         .map(([platform]) => platform as Platform);
       
       const allPublishedPlatforms = [...publishedPlatforms, ...newlyPublished];
+      
+      // If any posts were published successfully, trigger history refresh
+      if (newlyPublished.length > 0) {
+        console.log(`🚀 Successfully published to ${newlyPublished.length} platforms, triggering history refresh...`);
+        // Delay slightly to allow the API to fully save the posts
+        setTimeout(() => {
+          historyRefreshService.refreshHistory();
+        }, 500);
+      }
       
       // Check if all connected platforms have been published
       const allConnectedPlatformsPublished = originalConnectedPlatforms.every(p => 

@@ -13,12 +13,14 @@ import {
   LogOut,
   User,
   Building2,
+  History,
 } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
 import { useLoading } from "../../context/LoadingContext";
 import { NotificationCenter } from "../NotificationCenter";
 import { ThemeSelector } from "../ThemeSelector";
 import { useTheme } from "../../hooks/useTheme";
+import { useUnreadPosts } from "../../hooks/useUnreadPosts";
 import Icon from "../Icon";
 import { WalletBalance } from "../WalletBalance";
 import PreloaderOverlay from "../PreloaderOverlay";
@@ -32,6 +34,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const { user, logout } = useAppContext();
   const { loadingState } = useLoading();
   const { currentTheme } = useTheme();
+  const { unreadCount, markAllAsRead: markAllUnreadAsRead } = useUnreadPosts();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -74,9 +77,37 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     setShowUserMenu(false);
   };
 
+  const handleMarkAllAsRead = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) return;
+
+      // API call to mark all as read
+      const response = await fetch('/api/post-history/history/read-all', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        // Update local unread count immediately
+        markAllUnreadAsRead();
+        console.log('📚 All posts marked as read from sidebar badge');
+      }
+    } catch (error) {
+      console.error('Error marking all posts as read:', error);
+    }
+  };
+
   const navigation = [
     { name: "Create Content", path: "/content", icon: PenTool },
     { name: "Accounts", path: "/accounts", icon: Building2 },
+    { name: "History", path: "/history", icon: History },
     // { name: "Dashboard", path: "/dashboard", icon: Home },
     // { name: "Campaigns", path: "/campaigns", icon: Target },
     
@@ -150,19 +181,31 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             {navigation.map((item) => {
               const isActive = location.pathname === item.path;
               const Icon = item.icon;
+              const showBadge = item.name === 'History' && unreadCount > 0;
               return (
                 <Link
                   key={item.name}
                   to={item.path}
-                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  className={`flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                     isActive
                       ? "theme-bg-primary theme-text-secondary"
                       : "theme-text-light hover:theme-bg-secondary hover:theme-text-primary"
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  <Icon className="mr-3 h-5 w-5" />
-                  {item.name}
+                  <div className="flex items-center">
+                    <Icon className="mr-3 h-5 w-5" />
+                    {item.name}
+                  </div>
+                  {showBadge && (
+                    <button
+                      onClick={handleMarkAllAsRead}
+                      className="h-6 w-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-xs text-white font-bold transition-colors duration-200 cursor-pointer border-0 outline-none"
+                      title={`Mark all ${unreadCount} unread posts as read`}
+                    >
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </button>
+                  )}
                 </Link>
               );
             })}
@@ -191,9 +234,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             <div className="flex items-center">
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="p-1 rounded-md theme-text-primary hover:theme-text-secondary"
+                className="p-1 rounded-md theme-text-primary hover:theme-text-secondary relative"
               >
                 <Menu className="w-6 h-6" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </button>
             </div>
 

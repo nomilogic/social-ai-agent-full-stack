@@ -18,6 +18,7 @@ import { LandingPage } from './pages/LandingPage';
 import { ProfilePage } from './pages/ProfilePage'; // Import ProfilePage
 import { CampaignsPage } from './pages/CampaignsPage';
 import { AccountsPage } from './pages/AccountsPage';
+import { HistoryPage } from './pages/HistoryPage';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import { themeManager } from './lib/theme';
 
@@ -139,6 +140,14 @@ function App() {
           <ProtectedRoute>
             <AppLayout>
               <AccountsPage />
+            </AppLayout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/history" element={
+          <ProtectedRoute>
+            <AppLayout>
+              <HistoryPage />
             </AppLayout>
           </ProtectedRoute>
         } />
