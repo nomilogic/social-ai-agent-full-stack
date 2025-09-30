@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { User, Shield, Bell, Palette, Save, Check, Eye, EyeOff } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
@@ -7,7 +7,15 @@ import { useTheme } from '../hooks/useTheme';
 export const SettingsPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const location = useLocation();
+  const navigate = useNavigate();
   const { currentTheme, changeTheme, availableThemes, currentThemeKey } = useTheme();
+  
+  // Redirect to profile by default when visiting /settings
+  useEffect(() => {
+    if (location.pathname === '/settings') {
+      navigate('/settings/profile', { replace: true });
+    }
+  }, [location.pathname, navigate]);
   
   // Form states
   const [profileData, setProfileData] = useState({
@@ -69,7 +77,7 @@ export const SettingsPage: React.FC = () => {
                     className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors duration-200 ${
                       isActivePath(item.path)
                         ? 'theme-bg-card theme-text-primary border border-white/20'
-                        : 'theme-text-light hover:theme-text-primary hover:theme-bg-primary'
+                        : 'theme-text-secondary hover:theme-text-primary hover:theme-bg-primary'
                     }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -98,8 +106,8 @@ export const SettingsPage: React.FC = () => {
                   index
                   element={
                     <div className="text-center py-8">
-                      <h3 className="text-lg font-semibold theme-text-primary mb-2">Account Settings</h3>
-                      <p className="theme-text-light">Select a category from the left to manage your settings.</p>
+                      <h3 className="text-lg font-semibold theme-text-primary mb-2">Settings</h3>
+                      <p className="theme-text-secondary">Select a category from the left to manage your settings.</p>
                     </div>
                   }
                 />
@@ -107,7 +115,7 @@ export const SettingsPage: React.FC = () => {
                   path="profile"
                   element={
                     <div>
-                      <h3 className="text-xl font-semibold theme-text-primary mb-6">Profile Settings</h3>
+                      <h3 className="text-xl font-semibold theme-text-primary mb-6">Profile</h3>
                       <div className="space-y-6">
                         <div>
                           <label className="block text-sm font-medium theme-text-secondary mb-2">Email</label>
@@ -115,7 +123,7 @@ export const SettingsPage: React.FC = () => {
                             type="email"
                             value={profileData.email}
                             disabled
-                            className="w-full px-4 py-2 border border-white/20 rounded-lg theme-bg-primary theme-text-light"
+                            className="w-full px-4 py-2 border border-white/20 rounded-lg theme-bg-primary theme-text-primary font-normal"
                           />
                           <p className="text-xs theme-text-light mt-1">Email cannot be changed</p>
                         </div>
@@ -125,14 +133,14 @@ export const SettingsPage: React.FC = () => {
                             type="text"
                             value={profileData.displayName}
                             onChange={(e) => setProfileData(prev => ({ ...prev, displayName: e.target.value }))}
-                            className="w-full px-4 py-2 border border-white/20 rounded-lg theme-bg-primary theme-text-primary focus:ring-2 focus:ring-white/30 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-white/20 rounded-lg theme-bg-primary theme-text-primary font-bold focus:ring-2 focus:ring-white/30 focus:border-transparent"
                             placeholder="Enter your display name"
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium theme-text-secondary mb-2">Current Plan</label>
                           <div className="px-4 py-2 theme-bg-primary rounded-lg border border-white/20">
-                            <span className="theme-text-primary font-medium capitalize">
+                            <span className="theme-text-primary font-normal capitalize">
                               {state.userPlan || 'No plan selected'}
                             </span>
                           </div>
@@ -160,14 +168,14 @@ export const SettingsPage: React.FC = () => {
                             <Shield className="w-5 h-5" />
                             Password
                           </h4>
-                          <p className="theme-text-light text-sm mb-4">Update your password to keep your account secure.</p>
+                          <p className="theme-text-secondary text-sm mb-4">Update your password to keep your account secure.</p>
                           <button className="theme-button-secondary text-white px-6 py-2 rounded-lg hover:theme-button-hover transition-colors duration-200">
                             Change Password
                           </button>
                         </div>
                         <div className="theme-bg-primary p-6 rounded-lg border border-white/20">
                           <h4 className="text-lg font-medium theme-text-primary mb-4">Two-Factor Authentication</h4>
-                          <p className="theme-text-light text-sm mb-4">Add an extra layer of security to your account with 2FA.</p>
+                          <p className="theme-text-secondary text-sm mb-4">Add an extra layer of security to your account with 2FA.</p>
                           <div className="flex items-center justify-between">
                             <div>
                               <span className="theme-text-secondary text-sm">Status: </span>
@@ -180,7 +188,7 @@ export const SettingsPage: React.FC = () => {
                         </div>
                         <div className="theme-bg-primary p-6 rounded-lg border border-white/20">
                           <h4 className="text-lg font-medium theme-text-primary mb-4">Account Deletion</h4>
-                          <p className="theme-text-light text-sm mb-4">Permanently delete your account and all data.</p>
+                          <p className="theme-text-secondary text-sm mb-4">Permanently delete your account and all data.</p>
                           <button className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors duration-200">
                             Delete Account
                           </button>
@@ -205,7 +213,7 @@ export const SettingsPage: React.FC = () => {
                             <div className="flex items-center justify-between">
                               <div>
                                 <h4 className="text-lg font-medium theme-text-primary">{item.title}</h4>
-                                <p className="theme-text-light text-sm">{item.desc}</p>
+                                <p className="theme-text-secondary text-sm">{item.desc}</p>
                               </div>
                               <label className="relative inline-flex items-center cursor-pointer">
                                 <input
@@ -234,7 +242,7 @@ export const SettingsPage: React.FC = () => {
                             <Palette className="w-5 h-5" />
                             App Themes
                           </h4>
-                          <p className="theme-text-light text-sm mb-6">
+                          <p className="theme-text-secondary text-sm mb-6">
                             Choose from our collection of beautiful themes based on the app's features.
                           </p>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -269,7 +277,7 @@ export const SettingsPage: React.FC = () => {
                             ))}
                           </div>
                           <div className="theme-bg-primary p-4 rounded-lg border border-white/20 mt-6">
-                            <p className="text-xs theme-text-light">
+                            <p className="text-xs theme-text-secondary">
                               💡 <strong>Tip:</strong> Themes are based on the app's feature categories from the onboarding process. 
                               Changes apply instantly across the entire application.
                             </p>
