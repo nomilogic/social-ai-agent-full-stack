@@ -14,6 +14,7 @@ import {
   User,
   Building2,
   History,
+  CreditCard,
 } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
 import { useLoading } from "../../context/LoadingContext";
@@ -105,12 +106,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   };
 
   const navigation = [
+    { name: "Dashboard", path: "/dashboard", icon: Home },
     { name: "Create Content", path: "/content", icon: PenTool },
     { name: "Accounts", path: "/accounts", icon: Building2 },
     { name: "History", path: "/history", icon: History },
-    // { name: "Dashboard", path: "/dashboard", icon: Home },
+    { name: "Price Plan", path: "/pricing", icon: CreditCard },
     // { name: "Campaigns", path: "/campaigns", icon: Target },
-    
     // { name: "Schedule", path: "/schedule", icon: Calendar },
     // { name: "Settings", path: "/settings", icon: Settings },
   ];
@@ -135,7 +136,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           } transition-transform duration-300 ease-in-out`}
         >
           {/* Close button */}
-          <div className="flex items-center justify-end px-4 py-3 border-b border-white/20">
+          <div className="flex items-center justify-end border-b border-white/20 p-2">
             <button
               onClick={() => setIsMobileMenuOpen(false)}
               className="rounded-md theme-text-light hover:theme-text-primary"
@@ -145,8 +146,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           </div>
 
           {/* User Profile Section */}
-          <div className="p-4 border-b border-white/20">
-            <div className="flex items-center space-x-3 mb-3">
+          <div className="p-1 border-b border-white/20">
+            <div className="flex items-center space-x-3 mb-1">
               <img
                 className="h-10 w-10 rounded-full object-cover border-2 border-white/30 theme-bg-trinary"
                 src={
@@ -156,24 +157,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 alt=""
               />
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium theme-text-primary truncate">
+                <div className="text-sm font-medium theme-text-light truncate">
                   {user?.user_metadata?.name || user?.email || "User"}
                 </div>
                 <div className="text-xs theme-text-light truncate">{user?.email}</div>
               </div>
             </div>
             
-            {/* Sign out button */}
-            <button
-              onClick={() => {
-                handleLogout();
-                setIsMobileMenuOpen(false);
-              }}
-              className="flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors theme-text-light hover:theme-bg-secondary hover:theme-text-primary"
-            >
-              <LogOut className="mr-3 h-5 w-5" />
-              Sign out
-            </button>
+            
           </div>
 
           {/* Navigation */}
@@ -226,6 +217,50 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               </Link>
             </div>
           </nav>
+         <div>
+              <footer className="fixed bottom-0 w-full ">
+                {/* Sign out button */}
+            <button
+              onClick={() => {
+                handleLogout();
+                setIsMobileMenuOpen(false);
+              }}
+              className="flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors theme-text-light hover:theme-bg-secondary hover:theme-text-primary border-b border-white/20 p-2"
+            >
+              <LogOut className="mr-3 h-5 w-5" />
+              Sign out
+            </button>
+          <div className="w-full mx-auto">
+            <div className="text-center flex flex-col items-center justify-center">
+              <div className="theme-text-light text-xs">
+                © 2025 OMNI SHARE
+              </div>
+              <div className="mb-2 flex justify-center space-x-1 text-xs theme-text-light">
+                <Link
+                  to="/privacy"
+                  className="hover:theme-text-primary transition-colors duration-200"
+                >
+                  Privacy Policy
+                </Link>
+                <span className="text-white/20">•</span>
+                <a
+                  href="#"
+                  className="hover:theme-text-primary transition-colors duration-200"
+                >
+                  Terms of Service
+                </a>
+                <span className="text-white/20">•</span>
+                <a
+                  href="#"
+                  className="hover:theme-text-primary transition-colors duration-200"
+                >
+                  Support
+                </a>
+              </div>
+            </div>
+          </div>
+        </footer>
+         </div>
         </div>
         {/* Top Navigation */}
         <div className="sticky top-0 z-10 backdrop-blur-lg border-b border-white/20 px-4 py-0">
@@ -289,37 +324,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         </main>
 
         {/* Footer */}
-        <footer className="fixed bottom-0 w-full theme-bg-card border-t border-white/20 mt-0">
-          <div className="w-full mx-auto px-4 sm:px-6 lg:px-4 py-2">
-            <div className="text-center flex flex-col items-center justify-center">
-              <div className="theme-text-primary text-xs">
-                © 2025 OMNI SHARE. Powered by 
-              </div>
-              <div className="mt-2 flex justify-center space-x-6 text-xs theme-text-secondary">
-                <Link
-                  to="/privacy"
-                  className="hover:theme-text-primary transition-colors duration-200"
-                >
-                  Privacy Policy
-                </Link>
-                <span className="text-white/20">•</span>
-                <a
-                  href="#"
-                  className="hover:theme-text-primary transition-colors duration-200"
-                >
-                  Terms of Service
-                </a>
-                <span className="text-white/20">•</span>
-                <a
-                  href="#"
-                  className="hover:theme-text-primary transition-colors duration-200"
-                >
-                  Support
-                </a>
-              </div>
-            </div>
-          </div>
-        </footer>
+  
       </div>
 
       {/* Global Preloader Overlay */}

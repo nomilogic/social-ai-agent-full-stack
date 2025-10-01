@@ -60,7 +60,9 @@ function App() {
         {/* Protected routes */}
         <Route path="/pricing" element={
           <ProtectedRoute>
+            <AppLayout>
             <PricingPage />
+            </AppLayout>
           </ProtectedRoute>
         } />
 

@@ -180,12 +180,12 @@ export const PricingPage: React.FC = () => {
     const userType = selectedPlan === 'business' ? 'business' : 'individual';
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-16 px-4">
+      <div className="theme-bg-light py-8 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
             <button
               onClick={handleBackToPricing}
-              className="flex items-center text-blue-600 hover:text-blue-800 mb-4 mx-auto"
+              className="flex items-center theme-text-primary hover:opacity-75 mb-4 mx-auto transition-opacity"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Pricing
@@ -206,8 +206,15 @@ export const PricingPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-16 px-4">
+    <div className="theme-bg-light py-8 px-6">
       <div className="max-w-7xl mx-auto">
+        {/* Page Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold theme-text-primary mb-4">Choose Your Plan</h1>
+          <p className="text-lg theme-text-secondary max-w-2xl mx-auto">
+            Select the perfect plan to supercharge your social media content creation with AI
+          </p>
+        </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {pricingTiers.map((tier) => {
@@ -215,8 +222,8 @@ export const PricingPage: React.FC = () => {
             return (
               <div
                 key={tier.id}
-                className={`relative bg-white rounded-2xl shadow-xl p-8 transition-all duration-300 hover:scale-105 ${
-                  tier.popular ? 'border-2 border-blue-500 ring-2 ring-blue-200' : 'border border-gray-200'
+                className={`relative theme-bg-quaternary rounded-2xl shadow-xl p-2 transition-all duration-300 hover:scale-105 border ${
+                  tier.popular ? 'border-2 border-blue-500 ring-2 ring-blue-200' : 'theme-border'
                 }`}
               >
                 {tier.popular && (
@@ -227,23 +234,23 @@ export const PricingPage: React.FC = () => {
                   </div>
                 )}
 
-                <div className="text-center mb-8">
+                <div className="text-center mb-2">
                   <Icon className={`w-12 h-12 mx-auto mb-4 ${
-                    tier.popular ? 'text-blue-600' : 'text-gray-600'
+                    tier.popular ? 'text-blue-600' : 'theme-text-primary'
                   }`} />
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{tier.name}</h3>
-                  <p className="text-gray-600 mb-4">{tier.description}</p>
+                  <h3 className="text-2xl font-bold theme-text-primary mb-2">{tier.name}</h3>
+                  <p className="theme-text-secondary mb-4">{tier.description}</p>
                   <div className="flex items-baseline justify-center">
-                    <span className="text-4xl font-bold text-gray-900">{tier.price}</span>
-                    {tier.price !== '$0' && <span className="text-gray-600 ml-2">/month</span>}
+                    <span className="text-4xl font-bold theme-text-primary">{tier.price}</span>
+                    {tier.price !== '$0' && <span className="theme-text-secondary ml-2">/month</span>}
                   </div>
                 </div>
 
-                <ul className="space-y-4 mb-8">
+                <ul className="space-y-4 mb-3">
                   {tier.features.map((feature, index) => (
                     <li key={index} className="flex items-start">
                       <Check className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">{feature}</span>
+                      <span className="theme-text-primary">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -263,7 +270,7 @@ export const PricingPage: React.FC = () => {
         </div>
 
         <div className="text-center mt-12">
-          <p className="text-gray-600">
+          <p className="theme-text-secondary">
             All plans include a 14-day free trial. No credit card required for Free plan.
           </p>
         </div>

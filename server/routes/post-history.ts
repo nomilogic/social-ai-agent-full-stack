@@ -23,7 +23,7 @@ router.get('/history', authenticateJWT, async (req: Request, res: Response) => {
     }
     
     const userId = req.user.id;
-    const { limit = 50, offset = 0, platform, read_status } = req.query;
+    const { limit = 50, offset = 0 } = req.query;
     
     console.log('Fetching post history for user:', userId);
 
@@ -48,10 +48,6 @@ router.get('/history', authenticateJWT, async (req: Request, res: Response) => {
         .eq('status', 'published')
         .order('updated_at', { ascending: false });
 
-      // Filter by platform if specified
-      if (platform) {
-        scheduledQuery = scheduledQuery.contains('platforms', [platform]);
-      }
 
       const { data: scheduledPosts, error: scheduledError } = await scheduledQuery;
       
@@ -141,7 +137,7 @@ router.get('/history', authenticateJWT, async (req: Request, res: Response) => {
       console.warn('Failed to fetch regular posts:', postsErr);
     }
 
-    // Sort all posts by date
+    // Sort all posts by date (newest first)
     allPosts.sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime());
     
     // Apply pagination
