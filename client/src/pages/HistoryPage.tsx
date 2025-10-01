@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Platform } from '../types';
-import { ExternalLink, Clock, Eye, EyeOff, Image, Video, FileText } from 'lucide-react';
+import { ExternalLink, Clock, Eye, EyeOff, Image, Video, FileText, Filter, ChevronDown, RotateCcw } from 'lucide-react';
 import { historyRefreshService } from '../services/historyRefreshService';
 
 // Export interface for external access
@@ -32,11 +32,23 @@ interface PostHistoryItem {
   };
 }
 
+// Filter and sort types
+type ReadFilter = 'all' | 'read' | 'unread';
+type PlatformFilter = 'all' | Platform;
+type TimePeriod = 'all' | 'today' | 'week' | 'month';
+type SortBy = 'date_desc' | 'date_asc' | 'platform_asc' | 'platform_desc';
+
 export const HistoryPage = forwardRef<HistoryPageRef>((props, ref) => {
   const [posts, setPosts] = useState<PostHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  
+  // Filter states
+  const [readFilter, setReadFilter] = useState<ReadFilter>('all');
+  const [platformFilter, setPlatformFilter] = useState<PlatformFilter>('all');
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('all');
+  const [sortBy, setSortBy] = useState<SortBy>('date_desc');
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     fetchPostHistory();
@@ -139,8 +151,22 @@ export const HistoryPage = forwardRef<HistoryPageRef>((props, ref) => {
       historyRefreshService.refreshHistory();
     } catch (error) {
       console.error('Error marking all posts as read:', error);
-    }
+    };
   };
+
+  // Reset all filters to default
+  const resetFilters = () => {
+    setReadFilter('all');
+    setPlatformFilter('all');
+    setTimePeriod('all');
+    setSortBy('date_desc');
+  };
+
+  // Check if any filters are active (non-default)
+  const hasActiveFilters = readFilter !== 'all' || platformFilter !== 'all' || timePeriod !== 'all' || sortBy !== 'date_desc';
+
+  // Don't refetch data when filters change - handle all filtering client-side
+  // This improves performance and provides instant filtering
 
   const getPlatformIcon = (platform: Platform) => {
     switch (platform) {
@@ -286,8 +312,62 @@ export const HistoryPage = forwardRef<HistoryPageRef>((props, ref) => {
     }
   }), []);
 
-  const filteredPosts = filter === 'unread' ? posts.filter(post => !post.isRead) : posts;
+  // Apply client-side filtering as fallback (in case server-side filtering isn't working perfectly)
+  let filteredPosts = posts;
+  
+  // Apply read filter
+  if (readFilter === 'read') {
+    filteredPosts = filteredPosts.filter(post => post.isRead);
+  } else if (readFilter === 'unread') {
+    filteredPosts = filteredPosts.filter(post => !post.isRead);
+  }
+  
+  // Apply platform filter
+  if (platformFilter !== 'all') {
+    filteredPosts = filteredPosts.filter(post => post.platform === platformFilter);
+  }
+  
+  // Apply time period filter
+  if (timePeriod !== 'all') {
+    const now = new Date();
+    const filterDate = new Date();
+    
+    switch (timePeriod) {
+      case 'today':
+        filterDate.setHours(0, 0, 0, 0);
+        break;
+      case 'week':
+        filterDate.setDate(now.getDate() - 7);
+        break;
+      case 'month':
+        filterDate.setMonth(now.getMonth() - 1);
+        break;
+    }
+    
+    filteredPosts = filteredPosts.filter(post => {
+      const postDate = new Date(post.publishedAt);
+      return postDate >= filterDate;
+    });
+  }
+  
+  // Apply sorting
+  filteredPosts = [...filteredPosts].sort((a, b) => {
+    switch (sortBy) {
+      case 'date_asc':
+        return new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime();
+      case 'date_desc':
+        return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+      case 'platform_asc':
+        return a.platform.localeCompare(b.platform);
+      case 'platform_desc':
+        return b.platform.localeCompare(a.platform);
+      default:
+        return 0;
+    }
+  });
+  
   const unreadCount = posts.filter(post => !post.isRead).length;
+  const availablePlatforms = Array.from(new Set(posts.map(post => post.platform)));
 
   if (loading) {
     return (
@@ -309,7 +389,7 @@ export const HistoryPage = forwardRef<HistoryPageRef>((props, ref) => {
     <div className="theme-bg-light min-h-screen">
       {/* Header */}
       <div className="">
-        <div className="flex items-center justify-between max-w-4xl mx-auto">
+        <div className="flex items-center justify-between max-w-4xl mx-auto mb-6">
           <div>
              <h2 className="text-3xl font-semibold theme-text-primary mb-1">Post History</h2>
             
@@ -326,30 +406,129 @@ export const HistoryPage = forwardRef<HistoryPageRef>((props, ref) => {
                 Mark all as read
               </button>
             )}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setFilter('all')}
-                className={`text-sm px-3 py-1 rounded-full transition-colors ${
-                  filter === 'all' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                All ({posts.length})
-              </button>
-              <button
-                onClick={() => setFilter('unread')}
-                className={`text-sm px-3 py-1 rounded-full transition-colors ${
-                  filter === 'unread' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Unread ({unreadCount})
-              </button>
-            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 text-sm px-3 py-2 rounded-lg border transition-colors ${
+                showFilters || hasActiveFilters
+                  ? 'bg-blue-50 border-blue-200 text-blue-700' 
+                  : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <Filter className="w-4 h-4" />
+              Filters
+              {hasActiveFilters && (
+                <span className="ml-1 w-2 h-2 bg-blue-600 rounded-full"></span>
+              )}
+              <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+            </button>
           </div>
         </div>
+        
+        {/* Filters Section */}
+        {showFilters && (
+          <div className="max-w-4xl mx-auto mb-6 p-4 bg-white border border-gray-200 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Read Status Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Read Status</label>
+                <select 
+                  value={readFilter} 
+                  onChange={(e) => setReadFilter(e.target.value as ReadFilter)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="all">All Posts</option>
+                  <option value="unread">Unread ({unreadCount})</option>
+                  <option value="read">Read ({posts.length - unreadCount})</option>
+                </select>
+              </div>
+              
+              {/* Platform Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Platform</label>
+                <select 
+                  value={platformFilter} 
+                  onChange={(e) => setPlatformFilter(e.target.value as PlatformFilter)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="all">All Platforms</option>
+                  {availablePlatforms.map(platform => (
+                    <option key={platform} value={platform}>
+                      {platform.charAt(0).toUpperCase() + platform.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Time Period Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Time Period</label>
+                <select 
+                  value={timePeriod} 
+                  onChange={(e) => setTimePeriod(e.target.value as TimePeriod)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="all">All Time</option>
+                  <option value="today">Today</option>
+                  <option value="week">Last 7 Days</option>
+                  <option value="month">Last 30 Days</option>
+                </select>
+              </div>
+              
+              {/* Sort By */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                <select 
+                  value={sortBy} 
+                  onChange={(e) => setSortBy(e.target.value as SortBy)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="date_desc">Newest First</option>
+                  <option value="date_asc">Oldest First</option>
+                  <option value="platform_asc">Platform A-Z</option>
+                  <option value="platform_desc">Platform Z-A</option>
+                </select>
+              </div>
+            </div>
+            
+            {/* Reset Filters Button */}
+            {hasActiveFilters && (
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={resetFilters}
+                  className="flex items-center gap-2 text-sm px-3 py-1 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Reset Filters
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Active Filters Summary */}
+        {hasActiveFilters && (
+          <div className="max-w-4xl mx-auto mb-4">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span>Showing:</span>
+              {readFilter !== 'all' && (
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                  {readFilter === 'read' ? 'Read posts' : 'Unread posts'}
+                </span>
+              )}
+              {platformFilter !== 'all' && (
+                <span className="px-2 py-1 bg-green-100 text-green-700 rounded">
+                  {platformFilter.charAt(0).toUpperCase() + platformFilter.slice(1)}
+                </span>
+              )}
+              {timePeriod !== 'all' && (
+                <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded">
+                  {timePeriod === 'today' ? 'Today' : timePeriod === 'week' ? 'Last 7 days' : 'Last 30 days'}
+                </span>
+              )}
+              <span className="text-gray-500">• {filteredPosts.length} posts</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Content */}
@@ -366,13 +545,21 @@ export const HistoryPage = forwardRef<HistoryPageRef>((props, ref) => {
               <Clock className="w-16 h-16 mx-auto" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {filter === 'unread' ? 'No unread posts' : 'No posts yet'}
+              {hasActiveFilters ? 'No posts match your filters' : 'No posts yet'}
             </h3>
             <p className="text-gray-600">
-              {filter === 'unread' 
-                ? 'All your posts have been read!' 
+              {hasActiveFilters
+                ? 'Try adjusting your filters to see more posts'
                 : 'Your published posts will appear here'}
             </p>
+            {hasActiveFilters && (
+              <button
+                onClick={resetFilters}
+                className="mt-4 text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Clear all filters
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-6">

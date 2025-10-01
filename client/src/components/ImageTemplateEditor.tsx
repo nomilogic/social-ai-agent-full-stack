@@ -1538,8 +1538,8 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
         </div>
         
         {/* Tools Actions - Fixed at bottom of tools panel */}
-        <div className="flex-shrink-0 px-3 border-t border-gray-200 bg-white">
-          <div className="flex flex-col justify-center space-x-2 md:space-x-0 ">
+        <div className="flex-shrink-0 px-1 border-t border-gray-200 bg-white">
+          <div className="flex flex-row justify-center space-x-2 md:space-x-2 ">
             <button
               onClick={exportImage}
               disabled={isSaving}
@@ -1554,14 +1554,14 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
               ) : (
                 <>
                   {/* <Download className="w-3 h-3 md:w-4 md:h-4" /> */}
-                  <span className="sm:inline">Continue with the Image</span>
+                  <span className="sm:inline">Continue</span>
                   {/* <span className="sm:hidden">Save</span> */}
                 </>
               )}
             </button>
-             <div className="text-center theme-text-secondary ">
+             {/* <div className="text-center theme-text-secondary ">
               <span className="text-lg font-medium">or</span>
-            </div>
+            </div> */}
             <button
               onClick={onCancel}
               className="btn-primary w-full  px-8"
