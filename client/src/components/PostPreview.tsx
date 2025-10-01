@@ -309,12 +309,15 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm max-w-lg">
             <div className="p-4 border-b border-gray-100">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-                  FB
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getPlatformColors('facebook')}`}>
+                  {(() => {
+                    const IconComponent = getPlatformIcon('facebook');
+                    return IconComponent ? <IconComponent className="w-5 h-5 text-white" /> : <span className="text-white font-bold text-sm">FB</span>;
+                  })()}
                 </div>
                 <div>
-                  {/* <h3 className="font-medium text-gray-900">Your Campaign</h3>
-                  <p className="text-xs text-gray-500">Just now · 🌍</p> */}
+                  <h3 className="font-medium text-gray-900">{getPlatformDisplayName('facebook')}</h3>
+                  <p className="text-xs text-gray-500">Just now · 🌍</p>
                 </div>
               </div>
             </div>
@@ -367,13 +370,16 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden max-w-sm shadow-sm">
             <div className="p-3 border-b border-gray-100">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                  IG
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getPlatformColors('instagram')}`}>
+                  {(() => {
+                    const IconComponent = getPlatformIcon('instagram');
+                    return IconComponent ? <IconComponent className="w-4 h-4 text-white" /> : <span className="text-white font-bold text-xs">IG</span>;
+                  })()}
                 </div>
                 <div>
-                  {/* <h3 className="font-medium text-gray-900 text-sm">
-                    yourcampaign
-                  </h3> */}
+                  <h3 className="font-medium text-gray-900 text-sm">
+                    {getPlatformDisplayName('instagram')}
+                  </h3>
                 </div>
               </div>
             </div>
@@ -477,15 +483,18 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden max-w-lg shadow-sm">
             <div className="p-4">
               <div className="flex items-start space-x-3">
-                <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white font-bold">
-                  X
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getPlatformColors('twitter')}`}>
+                  {(() => {
+                    const IconComponent = getPlatformIcon('twitter');
+                    return IconComponent ? <IconComponent className="w-5 h-5 text-white" /> : <span className="text-white font-bold">X</span>;
+                  })()}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-1">
-                    {/* <h3 className="font-bold text-gray-900">Your Campaign</h3>
+                    <h3 className="font-bold text-gray-900">{getPlatformDisplayName('twitter')}</h3>
                     <span className="text-gray-500">@yourcampaign</span>
                     <span className="text-gray-500">·</span>
-                    <span className="text-gray-500">now</span> */}
+                    <span className="text-gray-500">now</span>
                   </div>
                   <p 
                     className={`text-gray-800 whitespace-pre-wrap ${editingMode ? 'border border-blue-300 rounded p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent' : ''}`}
@@ -537,13 +546,16 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm max-w-lg">
             <div className="p-4">
               <div className="flex items-center space-x-3 mb-4">
-                <div className="w-12 h-12 bg-blue-700 rounded-full flex items-center justify-center text-white font-bold">
-                  LI
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getPlatformColors('linkedin')}`}>
+                  {(() => {
+                    const IconComponent = getPlatformIcon('linkedin');
+                    return IconComponent ? <IconComponent className="w-6 h-6 text-white" /> : <span className="text-white font-bold">LI</span>;
+                  })()}
                 </div>
                 <div>
-                  {/* <h3 className="font-medium text-gray-900">Your Campaign</h3>
+                  <h3 className="font-medium text-gray-900">{getPlatformDisplayName('linkedin')}</h3>
                   <p className="text-sm text-gray-500">Campaign • 1st</p>
-                  <p className="text-xs text-gray-400">Just now</p> */}
+                  <p className="text-xs text-gray-400">Just now</p>
                 </div>
               </div>
               <p 
@@ -588,6 +600,22 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
       case "tiktok":
         return (
           <div className="bg-black rounded-lg overflow-hidden max-w-sm shadow-sm">
+            {/* TikTok Header with Icon and Name */}
+            <div className="p-3 border-b border-gray-800">
+              <div className="flex items-center space-x-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getPlatformColors('tiktok')}`}>
+                  {(() => {
+                    const IconComponent = getPlatformIcon('tiktok');
+                    return IconComponent ? <IconComponent className="w-4 h-4 text-white" /> : <span className="text-white font-bold text-xs">TT</span>;
+                  })()}
+                </div>
+                <div>
+                  <h3 className="font-medium text-white text-sm">
+                    {getPlatformDisplayName('tiktok')}
+                  </h3>
+                </div>
+              </div>
+            </div>
             <div className="aspect-[9/16] bg-gray-900 relative">
                <div className={`bg-gray-100 flex items-center justify-center relative ${
               mediaUrl && isVideoMedia(post, mediaUrl) ? (() => {
@@ -608,7 +636,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                   <>
                     <video
                       src={mediaUrl}
-                      poster={(post as any).thumbnailUrl} // Use custom thumbnail for Instagram videos
+                      poster={(post as any).thumbnailUrl} // Use custom thumbnail for TikTok videos
                       controls
                       preload="metadata" // Load video metadata to show first frame
                       className="object-cover w-full h-full"
@@ -670,6 +698,19 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm max-w-lg">
           {renderMedia({...post, mediaUrl}, "rounded-lg max-h-96 object-contain w-full", "w-full flex justify-center bg-black")}
             <div className="p-4">
+              {/* YouTube Header with Icon and Name */}
+              <div className="flex items-center space-x-3 mb-4">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getPlatformColors('youtube')}`}>
+                  {(() => {
+                    const IconComponent = getPlatformIcon('youtube');
+                    return IconComponent ? <IconComponent className="w-5 h-5 text-white" /> : <span className="text-white font-bold text-sm">YT</span>;
+                  })()}
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900">{getPlatformDisplayName('youtube')}</h4>
+                  <p className="text-xs text-gray-500">Just uploaded</p>
+                </div>
+              </div>
               <h3 
                 className={`font-medium text-gray-900 mb-2 line-clamp-2 block ${editingMode ? 'border border-blue-300 rounded p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent' : ''}`}
                 contentEditable={editingMode}

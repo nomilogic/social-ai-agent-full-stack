@@ -2,6 +2,7 @@ import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'rea
 import { Platform } from '../types';
 import { ExternalLink, Clock, Eye, EyeOff, Image, Video, FileText, Filter, ChevronDown, RotateCcw } from 'lucide-react';
 import { historyRefreshService } from '../services/historyRefreshService';
+import { getPlatformIcon, getPlatformColors } from '../utils/platformIcons';
 
 // Export interface for external access
 export interface HistoryPageRef {
@@ -168,45 +169,27 @@ export const HistoryPage = forwardRef<HistoryPageRef>((props, ref) => {
   // Don't refetch data when filters change - handle all filtering client-side
   // This improves performance and provides instant filtering
 
-  const getPlatformIcon = (platform: Platform) => {
-    switch (platform) {
-      case 'linkedin':
-        return (
-          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
-            <span className="text-white text-xs font-bold">Li</span>
-          </div>
-        );
-      case 'facebook':
-        return (
-          <div className="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center">
-            <span className="text-white text-xs font-bold">Fb</span>
-          </div>
-        );
-      case 'instagram':
-        return (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
-            <span className="text-white text-xs font-bold">Ig</span>
-          </div>
-        );
-      case 'youtube':
-        return (
-          <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center">
-            <span className="text-white text-xs font-bold">Yt</span>
-          </div>
-        );
-      case 'tiktok':
-        return (
-          <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center">
-            <span className="text-white text-xs font-bold">Tk</span>
-          </div>
-        );
-      default:
-        return (
-          <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">
-            <span className="text-white text-xs font-bold">{platform.slice(0, 2).toUpperCase()}</span>
-          </div>
-        );
+  const renderPlatformIcon = (platform: Platform) => {
+    const IconComponent = getPlatformIcon(platform);
+    const colorClasses = getPlatformColors(platform);
+    
+    if (!IconComponent) {
+      return (
+        <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">
+          <span className="text-white text-xs font-bold">{platform.slice(0, 2).toUpperCase()}</span>
+        </div>
+      );
     }
+
+    // Extract background color from the color classes
+    const bgColorMatch = colorClasses.match(/bg-[\w-]+/);
+    const bgColor = bgColorMatch ? bgColorMatch[0] : 'bg-gray-600';
+    
+    return (
+      <div className={`w-8 h-8 rounded-full ${bgColor} flex items-center justify-center`}>
+        <IconComponent className="w-5 h-5 text-white" />
+      </div>
+    );
   };
 
   const formatTimeAgo = (dateString: string) => {
@@ -255,9 +238,13 @@ export const HistoryPage = forwardRef<HistoryPageRef>((props, ref) => {
     const mediaType = getMediaType(post);
     
     if (!thumbnailUrl) {
-      // Show media type icon based on content or platform
-      const IconComponent = mediaType === 'video' ? Video : 
-                           mediaType === 'image' ? Image : FileText;
+      // Don't show anything for text posts
+      if (mediaType === 'text') {
+        return null;
+      }
+      
+      // Show media type icon only for image/video posts without thumbnails
+      const IconComponent = mediaType === 'video' ? Video : Image;
       
       return (
         <div className="flex-shrink-0 w-32 h-24 bg-gray-100 border-r border-gray-200 flex items-center justify-center">
@@ -573,7 +560,7 @@ export const HistoryPage = forwardRef<HistoryPageRef>((props, ref) => {
                 {/* Post Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-100">
                   <div className="flex items-center gap-3">
-                    {getPlatformIcon(post.platform)}
+                    {renderPlatformIcon(post.platform)}
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-gray-900 capitalize">
