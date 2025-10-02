@@ -147,7 +147,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           </div>
 
           {/* User Profile Section */}
-          <div className="p-1 border-b border-white/20 relative" ref={userMenuRef}>
+          <div className="border-b border-white/20 relative" ref={userMenuRef}>
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center space-x-3 mb-1 w-full hover:theme-bg-secondary rounded-md p-2 transition-colors"
@@ -177,22 +177,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
             {/* User Menu Dropdown - Themed Style */}
             {showUserMenu && (
-              <div className="absolute top-full left-1 right-1 mt-[-10px] mx-2 theme-bg-pantary border border-white/30 rounded-xl shadow-2xl z-50 overflow-hidden animate-in slide-in-from-top-2 duration-200">
+              <div className=" w-full  theme-bg-pantary border border-white/30 shadow-2xl z-50 overflow-hidden animate-in slide-in-from-top-2 duration-200">
                 {/* User Info Header */}
                 <div className="px-4 py-3 border-b border-white/20">
                   <div className="flex items-center space-x-3">
-                    <img
-                      className="h-8 w-8 rounded-full object-cover border-2 border-white/30"
-                      src={
-                        user?.avatar_url ||
-                        `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user_metadata?.name || user?.email || "User")}&background=6366f100&color=fff`
-                      }
-                      alt=""
-                    />
+                    
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold theme-text-light truncate">
-                        {user?.user_metadata?.name || user?.email || "User"}
-                      </p>
+                   
                       <p className="text-xs theme-text-light opacity-70 truncate">
                         {user?.subscription_tier || user?.tier || "Free Tier"}
                       </p>
@@ -241,11 +232,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 </div>
 
                 {/* Email Footer */}
-                <div className="px-4 py-3 border-t border-white/20">
+                {/* <div className="px-4 py-3 border-t border-white/20">
                   <p className="text-xs theme-text-light  truncate text-center">
                     {user?.email}
                   </p>
-                </div>
+                </div> */}
               </div>
             )}
           </div>
