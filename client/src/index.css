@@ -13,6 +13,7 @@
   --theme-bg-primary: rgb(11, 85, 247);
   --theme-bg-secondary: rgba(175, 5, 253, 0.199);
   --theme-bg-trinary: rgba(175, 5, 253, 0.199);
+  --theme-bg-trinary-dark: rgba(118, 80, 227, 0.4);
   --theme-bg-card: rgb(26, 25, 25, 15);
   --theme-border: rgba(255, 255, 255, 0.2);
   --theme-button-primary: #FFFFFF;
@@ -64,12 +65,21 @@
   /* backdrop-filter: blur(10px);
   border: 1px solid var(--theme-border); */
 }
+.theme-bg-trinary-dark {
+  background-color: var(--theme-bg-trinary-dark);
+  box-shadow: 0 0px 6px rgba(0, 0, 0, 0.1);
+}
 .theme-bg-secondary {
   background-color: var(--theme-bg-secondary);
 
 }
 .theme-bg-quaternary {
-  background-color: #d7d7fc;
+  background-color: var(--theme-bg-quaternary);
+  box-shadow: 0 0px 6px rgba(0, 0, 0, 0.1);
+
+}
+.theme-bg-pantary {
+  background-color: var(--theme-bg-pantary);
   box-shadow: 0 0px 6px rgba(0, 0, 0, 0.1);
 
 }
