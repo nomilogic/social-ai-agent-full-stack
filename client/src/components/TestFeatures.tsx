@@ -58,7 +58,7 @@ export const TestFeatures: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
+    <div className="h-full-dec-hf  x-2 bg-gray-100 p-4">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-center mb-8">Feature Testing</h1>
         

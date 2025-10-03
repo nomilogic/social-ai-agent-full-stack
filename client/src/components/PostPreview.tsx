@@ -317,7 +317,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                 </div>
                 <div>
                   <h3 className="font-medium text-gray-900">{getPlatformDisplayName('facebook')}</h3>
-                  <p className="text-xs text-gray-500">Just now · 🌍</p>
+                  {/* <p className="text-xs text-gray-500">Just now · 🌍</p> */}
                 </div>
               </div>
             </div>
@@ -554,8 +554,8 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                 </div>
                 <div>
                   <h3 className="font-medium text-gray-900">{getPlatformDisplayName('linkedin')}</h3>
-                  <p className="text-sm text-gray-500">Campaign • 1st</p>
-                  <p className="text-xs text-gray-400">Just now</p>
+                  {/* <p className="text-sm text-gray-500">Campaign • 1st</p>
+                  <p className="text-xs text-gray-400">Just now</p> */}
                 </div>
               </div>
               <p 
@@ -923,7 +923,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
 
           {/* Post Details - Below Preview with constrained width */}
           {selectedPost && (
-            <div className="flex justify-center">
+            <div className="flex justify-center hidden lg:block">
               <div className="max-w-lg w-full space-y-4">
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
@@ -986,35 +986,32 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
       </div>
 
       {/* Action Buttons / Regeneration Mode */}
-      <div className="pt-8 border-t border-gray-200 mt-8">
+      <div className="pt-1 mt-1 flex flex-row-reverse">
         {!isRegeneratingMode ? (
           // Normal mode - show publish and regenerate buttons
           <>
             {/* Publish Button */}
             <button
               onClick={onPublish}
-              className="btn-success w-full py-4 px-8"
+              className="btn-success w-full p-4 mx-1"
             >
-              PUBLISH TO PLATFORMS
+              Continue
             </button>
             
-            {/* Or divider */}
-            <div className="text-center theme-text-secondary my-2">
-              <span className="text-lg font-medium">or</span>
-            </div>
+          
             
             {/* Regenerate Post Text Button */}
             <button
               onClick={handleRegenerateClick}
-              className="btn-primary w-full py-4 px-8"
+              className="btn-primary w-full p-4 mx-1"
             >
               <Edit className="w-5 h-5" />
-              REGENERATE POST TEXT
+              Regenerate
             </button>
           </>
         ) : (
           // Regeneration mode - show textarea and generate button
-          <div className="theme-bg-quaternary rounded-lg p-6 border border-purple-200">
+          <div className="theme-bg-quaternary rounded-lg p-6 border border-purple-200 w-full">
             <h4 className="text-lg font-semibold theme-text-secondary mb-4 text-center">
               Generate Post Text
             </h4>
@@ -1066,7 +1063,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
             <div className="flex justify-center mt-4">
               <button
                 onClick={handleRegenerateCancel}
-                className="text-gray-500 hover:text-gray-700 px-4 py-2 text-sm font-medium"
+                className="bg-theme-quaternary theme-text-secondary px-4 py-2 rounded-lg hover:bg-theme-tertiary transition-colors font-medium"
               >
                 Cancel
               </button>

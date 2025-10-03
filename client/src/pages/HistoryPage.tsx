@@ -358,7 +358,7 @@ export const HistoryPage = forwardRef<HistoryPageRef>((props, ref) => {
 
   if (loading) {
     return (
-      <div className="theme-bg-light min-h-screen">
+      <div className="theme-bg-light h-full-dec-hf  x-2">
          <div className="flex items-center justify-between max-w-4xl mx-auto">
         <div className="">
            <h2 className="text-3xl font-semibold theme-text-primary mb-1">Post History</h2>
@@ -373,7 +373,7 @@ export const HistoryPage = forwardRef<HistoryPageRef>((props, ref) => {
   }
 
   return (
-    <div className="theme-bg-light min-h-screen">
+    <div className="theme-bg-light h-full-dec-hf  x-2">
       {/* Header */}
       <div className="">
         <div className="flex items-center justify-between max-w-4xl mx-auto mb-6">

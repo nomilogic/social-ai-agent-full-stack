@@ -17,7 +17,7 @@ interface OnboardingSlide {
 const onboardingSlides: OnboardingSlide[] = [
   {
     id: 1,
-    title: "Social AI Agent",
+    title: "Omni Share",
     subtitle: "AI-Powered Social Media Management",
     description: "Create, schedule, and optimize content across all major platforms with advanced AI technology.",
     icon: Sparkles,
@@ -34,7 +34,7 @@ const onboardingSlides: OnboardingSlide[] = [
     id: 2,
     title: "Start Creating Today",
     subtitle: "Get Started in Under 2 Minutes",
-    description: "Join thousands of creators and businesses who trust Social AI Agent to transform their social media presence.",
+    description: "Join thousands of creators and businesses who trust Omni Share to transform their social media presence.",
     icon: Zap,
     features: [
       "Quick setup & onboarding",
@@ -77,14 +77,14 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onGetSta
 
   const goToSlide = (index: number) => {
     setCurrentSlide(index);
-    setIsAutoPlaying(false);
+    setIsAutoPlaying(false);  
   };
 
   const currentSlideData = onboardingSlides[currentSlide];
   const Icon = currentSlideData.icon;
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="relative ">
       {/* Animated Background */}
       <div className={`absolute inset-0 bg-gradient-to-br ${currentSlideData.bgGradient} transition-all duration-1000`}>
         <div className="absolute inset-0 bg-black/20"></div>
@@ -100,13 +100,11 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onGetSta
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 flex flex-col justify-center items-center min-h-screen px-4 text-center">
+      <div className="relative z-10 flex flex-col justify-center items-center min-h-screen  x-2 px-4 text-center">
         <div className="max-w-4xl mx-auto">
           {/* Icon */}
           <div className="mb-8 animate-in slide-in-from-top duration-700">
-            <div className="w-24 h-24 mx-auto bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 border border-white/30">
-              <Icon className={`w-12 h-12 ${currentSlideData.iconColor}`} />
-            </div>
+            
           </div>
 
           {/* Content */}
@@ -138,7 +136,7 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onGetSta
           </div>
 
           {/* Navigation */}
-          <div className="flex justify-center items-center space-x-4 mt-12">
+          <div className="flex justify-center items-center space-x-4 mt-6">
             <button
               onClick={prevSlide}
               className="p-3 bg-white/20 backdrop-blur-sm rounded-full border border-white/30 hover:bg-white/30 transition-colors duration-300"
@@ -170,7 +168,7 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onGetSta
           </div>
 
           {/* Get Started Button */}
-          <div className="mt-12">
+          <div className="mt-6">
             <button
               onClick={onGetStarted}
               className="bg-white text-gray-900 px-12 py-4 rounded-2xl font-bold text-xl hover:bg-gray-100 transition-colors duration-300 shadow-2xl hover:shadow-3xl transform hover:scale-105"
@@ -178,33 +176,16 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onGetSta
               Get Started Free
             </button>
             <p className="text-white/70 mt-4">
-              Join thousands of creators and businesses already using Social AI Agent
+              Join thousands of creators and businesses already using Omni Share
             </p>
           </div>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="absolute bottom-8 left-0 right-0 z-20">
-        <div className="flex justify-center items-center space-x-6 text-white/60 text-sm">
-          <Link 
-            to="/privacy" 
-            className="hover:text-white/90 transition-colors duration-300"
-          >
-            Privacy Policy
-          </Link>
-          <span className="text-white/40">•</span>
-          <span>© 2024 Social AI Agent</span>
-        </div>
-      </div>
-
+   
       {/* Progress Bar */}
-      <div className="absolute bottom-0 left-0 w-full h-1 bg-white/20">
-        <div
-          className="h-full bg-white transition-all duration-300"
-          style={{ width: `${((currentSlide + 1) / onboardingSlides.length) * 100}%` }}
-        />
-      </div>
+    
     </div>
   );
 };

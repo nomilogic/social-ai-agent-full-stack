@@ -25,8 +25,8 @@
 .theme-text-primary {}
 
 .h-full-dec-hf {
-  height: calc(100vh - 100px);
-  padding: 1rem;
+  height: calc(100vh - 60px);
+  padding: 0.5rem;
 }
 
 /* Theme Utility Classes */
