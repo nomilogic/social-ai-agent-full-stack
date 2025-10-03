@@ -17,6 +17,7 @@ import {
   CreditCard,
   ChevronDown,
   ChevronUp,
+  Plus,
 } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
 import { useLoading } from "../../context/LoadingContext";
@@ -109,7 +110,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   const navigation = [
     { name: "Dashboard", path: "/dashboard", icon: Home },
-    { name: "Create Content", path: "/content", icon: PenTool },
+    { name: "Create Content", path: "/content", icon: Plus },
     { name: "Accounts", path: "/accounts", icon: Building2 },
     { name: "History", path: "/history", icon: History },
     { name: "Price Plan", path: "/pricing", icon: CreditCard },
@@ -119,7 +120,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   ];
 
   return (
-    <div className="min-h-screen relative">
+    <div className="h-full-dec-hf x-2 relative">
       {/* Themed Background */}
       <div
         className={`fixed inset-0 bg-gradient-to-br ${currentTheme.bgGradient}`}
@@ -133,7 +134,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
       <div className="relative z-10">
         <div
-          className={`fixed inset-y-0 left-0 z-50 w-64 theme-bg-trinary border-r border-white/10 transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          className={`fixed inset-y-0 left-0 z-50 w-full md:w-64 theme-bg-trinary border-r border-white/10 transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
             } transition-transform duration-300 ease-in-out`}
         >
           {/* Close button */}
@@ -176,21 +177,23 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             </button>
 
             {/* User Menu Dropdown - Themed Style */}
-            {showUserMenu && (
-              <div className=" w-full  theme-bg-pantary border border-white/30 shadow-2xl z-50 overflow-hidden animate-in slide-in-from-top-2 duration-200">
+            {(
+              <div
+                className={`w-full theme-bg-pantary border border-white/30 shadow-2xl z-50 overflow-hidden transition-all duration-500
+                  ${showUserMenu ? " max-h-96 opacity-100" : " max-h-0 opacity-0"}
+                `}
+                style={{ pointerEvents: showUserMenu ? "auto" : "none" }}
+              >
                 {/* User Info Header */}
                 <div className="px-4 py-3 border-b border-white/20">
                   <div className="flex items-center space-x-3">
-                    
                     <div className="flex-1 min-w-0">
-                   
                       <p className="text-xs theme-text-light opacity-70 truncate">
                         {user?.subscription_tier || user?.tier || "Free Tier"}
                       </p>
                     </div>
                   </div>
                 </div>
-
                 {/* Menu Items */}
                 <div className="py-2">
                   <Link
@@ -209,20 +212,18 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                       <p className="text-xs theme-text-light opacity-70">Manage your account</p>
                     </div>
                   </Link>
-
                   {/* Divider */}
                   <div className="my-2 border-t border-white/20"></div>
-
                   <button
                     onClick={() => {
                       handleLogout();
                       setShowUserMenu(false);
                       setIsMobileMenuOpen(false);
                     }}
-                    className="group flex items-center w-full px-4 py-3 text-sm theme-text-light hover:bg-red-500/20 hover:text-red-300 transition-all duration-150 ease-in-out text-left"
+                    className="group flex items-center w-full px-4 py-3 text-sm theme-text-light transition-all duration-150 ease-in-out text-left"
                   >
-                    <div className="flex items-center justify-center w-8 h-8 rounded-lg theme-bg-trinary group-hover:theme-bg-trinary group-hover:bg-red-500/30 mr-3 transition-colors duration-150">
-                      <LogOut className="h-4 w-4 theme-text-light group-hover:text-red-300" />
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg theme-bg-trinary mr-3 transition-colors duration-150">
+                      <LogOut className="h-4 w-4 theme-text-light" />
                     </div>
                     <div className="flex-1">
                       <p className="font-medium">Logout</p>
@@ -230,7 +231,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     </div>
                   </button>
                 </div>
-
                 {/* Email Footer */}
                 {/* <div className="px-4 py-3 border-t border-white/20">
                   <p className="text-xs theme-text-light  truncate text-center">
@@ -319,8 +319,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           </div>
         </div>
         {/* Top Navigation */}
-        <div className="sticky top-0 z-10 backdrop-blur-lg border-b border-white/20 px-4 py-0">
-          <div className="relative flex items-center justify-between mt-3">
+        <div className="sticky top-0 z-10 backdrop-blur-lg border-b border-white/20 px-4 py-2 pb-2">
+          <div className="relative flex items-center justify-between mt-0">
             {/* Left: Mobile menu button */}
             <div className="flex items-center">
               <button
@@ -337,9 +337,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             </div>
 
             {/* Center: Logo + Brand */}
-            <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 pointer-events-none select-none">
-              <Icon name="logo" size={50} className="ml-0 lg:ml-0" />
-              <span className="theme-text-primary text-2xl lg:text-3xl font-extrabold tracking-tight">𝗢𝗺𝗻𝗶𝗦𝗵𝗮𝗿𝗲</span>
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-0 pointer-events-none select-none mt-[-5px] scale-80 lg:scale-100 mx-[-10px]">
+              <Icon name="logo" size={35} className="ml-0 lg:ml-0 mt-1 lg:scale-105" />
+              <span className="theme-text-primary text-2xl lg:text-[1.6rem] tracking-tight">OMNISHARE</span>
             </div>
 
             {/* Right Side */}

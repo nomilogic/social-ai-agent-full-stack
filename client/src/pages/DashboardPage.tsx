@@ -81,7 +81,7 @@ export const DashboardPage: React.FC = () => {
 
   const onboardingSteps = [
     {
-      title: "Welcome to Social AI Agent!",
+      title: "Welcome to Omni Share!",
       description: "Your AI-powered social media content creation platform",
       icon: Sparkles,
       content:
@@ -230,13 +230,13 @@ export const DashboardPage: React.FC = () => {
       color: "theme-bg-primary",
       action: () => navigate("/content"),
     },
-    {
-      title: "My Campaigns",
-      description: "View and manage your campaigns",
-      icon: Target,
-      color: "theme-bg-secondary",
-      action: () => navigate("/campaigns"),
-    },
+    // {
+    //   title: "My Campaigns",
+    //   description: "View and manage your campaigns",
+    //   icon: Target,
+    //   color: "theme-bg-secondary",
+    //   action: () => navigate("/campaigns"),
+    // },
     {
       title: "Schedule Posts",
       description: "Plan and schedule your content",
@@ -315,7 +315,7 @@ export const DashboardPage: React.FC = () => {
               <div
                 key={index}
                 onClick={action.action}
-                className="theme-bg-card rounded-xl shadow-sm border border-white/20 p-4 cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105 floating-element"
+                className="theme-bg-trinary rounded-xl shadow-sm border border-white/20 p-4 cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105 floating-element"
               >
                 <div
                   className={`w-8 h-8 ${action.color} rounded-lg flex items-center justify-center mb-3`}

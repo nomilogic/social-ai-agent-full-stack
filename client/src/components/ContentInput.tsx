@@ -1740,7 +1740,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                         }`} />
                     </div>
                     <div>
-                      <h3 className={`font-semibold text-md leading-none ${selectedPostType === 'text'
+                      <h3 className={`font-semibold text-md leading-[1.05rem] mt-1 ${selectedPostType === 'text'
                           ? 'text-white'
                           : 'theme-text-primary'
                         }`}>
@@ -1778,7 +1778,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                         }`} />
                     </div>
                     <div>
-                      <h3 className={`font-semibold text-md leading-none p-0 ${selectedPostType === 'image'
+                      <h3 className={`font-semibold text-md leading-[1.05rem] mt-1 p-0 ${selectedPostType === 'image'
                           ? 'text-white'
                           : 'theme-text-primary'
                         }`}>
@@ -1813,11 +1813,11 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                               }`} />
                           </div>
                           <div>
-                            <h3 className={`font-semibold text-sm leading-none
+                            <h3 className={`font-semibold text-sm leading-[1.05rem] mt-1
                         
                         ${selectedImageMode === 'upload'
                                 ? 'text-white'
-                                : 'theme-text-primary'
+                                : 'theme-text-secondary'
                               }`}>
                               Upload<br />Image
                             </h3>
@@ -1849,10 +1849,10 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                               }`} />
                           </div>
                           <div>
-                            <h3 className={`font-semibold text-sm leading-none ${selectedImageMode === 'textToImage'
+                            <h3 className={`font-semibold text-sm leading-[1.05rem] mt-1 ${selectedImageMode === 'textToImage'
                                
                                 ? 'text-white'
-                                : 'theme-text-primary'
+                                : 'theme-text-secondary'
                               }`}>
                               Text<br /> to Image
                             </h3>
@@ -1892,7 +1892,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                         }`} />
                     </div>
                     <div>
-                      <h3 className={`font-semibold text-md leading-none p-0 ${selectedPostType === 'video'
+                      <h3 className={`font-semibold text-md leading-[1.05rem] mt-1 p-0 ${selectedPostType === 'video'
                           ? 'text-white'
                           : 'theme-text-primary'
                         }`}>
@@ -1921,7 +1921,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                               }`}></div>
                           </div>
                           <div>
-                            <h3 className={`font-semibold text-sm leading-none ${selectedVideoMode === 'upload' ? 'text-white' : 'theme-text-secondary'
+                            <h3 className={`font-semibold text-sm leading-[1.05rem] mt-1 ${selectedVideoMode === 'upload' ? 'text-white' : 'theme-text-secondary'
                               }`}>
                               Upload<br />Video (16:9)
                             </h3>
@@ -1953,7 +1953,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                               }`}></div>
                           </div>
                           <div>
-                            <h3 className={`font-semibold text-sm leading-none ${selectedVideoMode === 'uploadShorts' ? 'text-white' : 'theme-text-secondary'
+                            <h3 className={`font-semibold text-sm leading-[1.05rem] mt-1 ${selectedVideoMode === 'uploadShorts' ? 'text-white' : 'theme-text-secondary'
                               }`}>
                               Upload<br />Short (9:16)
                             </h3>
@@ -2262,7 +2262,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                               <X className="w-3 h-3" />
                             </button>
                           </div>
-                          <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center justify-between mt-1">
                             <p className="text-xs theme-text-secondary">
                               {formData.media?.name || "AI Generated Image"}
                             </p>
@@ -2594,7 +2594,7 @@ export const ContentInput: React.FC<ContentInputProps> = ({
                         AI Analysis Complete
                       </h4>
                       <div className="max-h-24 overflow-y-auto">
-                        <p className="text-blue-200 text-xs leading-relaxed">
+                        <p className="text-blue-200 text-xs leading-[1.05rem]elaxed">
                           {imageAnalysis}
                         </p>
                       </div>

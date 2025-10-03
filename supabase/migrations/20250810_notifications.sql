@@ -60,7 +60,7 @@ CREATE TRIGGER handle_notifications_updated_at BEFORE UPDATE ON public.notificat
 INSERT INTO public.notifications (user_id, title, message, type, metadata) 
 SELECT 
     id,
-    'Welcome to Social AI Agent!',
+    'Welcome to Omni Share!',
     'Thank you for joining our platform. Start by creating your first company profile.',
     'info',
     '{"welcome": true}'

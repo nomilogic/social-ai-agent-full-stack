@@ -132,7 +132,7 @@ export const AuthOAuthCallback: React.FC<AuthOAuthCallbackProps> = ({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center theme-bg-primary">
+    <div className="h-full-dec-hf  x-2 flex items-center justify-center theme-bg-primary">
       {/* Animated Background */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-20 left-10 w-20 h-20 bg-white/10 rounded-full animate-pulse"></div>

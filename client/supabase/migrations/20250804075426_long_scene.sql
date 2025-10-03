@@ -1,5 +1,5 @@
 /*
-  # Initial Schema for Social AI Agent
+  # Initial Schema for Omni Share
 
   1. New Tables
     - `companies`

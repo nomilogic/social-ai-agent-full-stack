@@ -144,9 +144,9 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
 
 
   return (
-    <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg p-8">
+    <div className="max-w-full mx-auto bg-white rounded-2xl shadow-lg m-6 h-fit ">
       <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-gradient-to-r from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+        <div className="w-12 h-12 aspect-square bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
           <Brain className="w-8 h-8 text-blue-600" />
         </div>
         <h2 className="text-3xl font-bold text-gray-900 mb-2">AI is Crafting Your Posts</h2>
@@ -166,7 +166,7 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
         {currentPlatform && (
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl border border-blue-200">
             <div className="flex items-center justify-center space-x-4">
-              <div className={`w-16 h-16 rounded-2xl shadow-lg flex items-center justify-center animate-bounce text-white ${getPlatformColors(currentPlatform)}`}>
+              <div className={`w-12 h-12 aspect-square rounded-full shadow-lg flex items-center justify-center animate-bounce text-white ${getPlatformColors(currentPlatform)}`}>
                 {(() => {
                   const IconComponent = getPlatformIcon(currentPlatform);
                   return IconComponent ? (

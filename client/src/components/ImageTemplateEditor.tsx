@@ -808,7 +808,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
     const currentZ = currentEl.zIndex || 0;
     const nextZ = elements.filter(el => (el.zIndex || 0) > currentZ).sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))[0]?.zIndex;
     if (nextZ !== undefined) {
-      updateSelectedElement({ zIndex: nextZ + 0.1 });
+      updateSelectedElement({ zIndex: nextZ + 1 });
     }
   };
 
@@ -1051,7 +1051,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col-reverse md:flex-row">
       {/* Tools Panel - Top Row on Mobile, Left Column on Desktop - Fixed Height/Width with Scroll */}
-      <div className="w-full md:w-80 md:min-w-80 md:max-w-80 h-80 md:h-full bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-col">
+      <div className={`w-full md:w-80 md:min-w-80 md:max-w-80 ${aspectRatio === '1:1' ? 'h-[50vh]' : ''} ${aspectRatio === '16:9' ? 'h-[60vh]' : ''} ${aspectRatio === '9:16' ? 'h-[50vh]' : ''}  md:h-full bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-col`}>
         {/* Tools Header - Fixed */}
         {/* <div className="flex-shrink-0 p-3 md:p-4 border-b border-gray-200 bg-white">
           <div className="flex items-center justify-between">
@@ -1538,18 +1538,18 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
         </div>
         
         {/* Tools Actions - Fixed at bottom of tools panel */}
-        <div className="flex-shrink-0 px-1 border-t border-gray-200 bg-white">
-          <div className="flex flex-row justify-center space-x-2 md:space-x-2 ">
+        <div className="flex-shrink-0 px-1 ">
+          <div className="flex flex-row-reverse justify-center ">
             <button
               onClick={exportImage}
               disabled={isSaving}
-              className="btn-success w-full py px-8"
+              className="btn-success w-full p-4 mx-1"
             >
               {isSaving ? (
                 <>
-                  <Loader className="w-3 h-3 md:w-4 md:h-4 animate-spin" />
-                  <span className="hidden sm:inline">Saving Image...</span>
-                  <span className="sm:hidden">Saving...</span>
+                  <Loader className="w-3 h-3 md:w-4 md:h-4 animate-spin " />
+                  <span className="hidden sm:inline text-sm">Saving Image...</span>
+                  <span className="sm:hidden text-sm">Saving...</span>
                 </>
               ) : (
                 <>
@@ -1564,7 +1564,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
             </div> */}
             <button
               onClick={onCancel}
-              className="btn-primary w-full  px-8"
+              className="btn-primary w-full  px-4 mx-1"
             >
               Back
             </button>
@@ -1626,7 +1626,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
             </div>
           </div>
         </div>
-        
+                
         {/* Canvas Container - Scrollable */}
         <div className="flex-1 overflow-auto bg-gray-100 flex items-center justify-center p-2 md:p-4 min-h-0">
           <div 

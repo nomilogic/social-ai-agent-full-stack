@@ -17,7 +17,7 @@ const IconShowcase: React.FC = () => {
   const sizes = [16, 24, 32, 48, 64];
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
+    <div className="p-8 bg-gray-50 h-full-dec-hf  x-2">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-800 mb-8">Icon Component Showcase</h1>
         

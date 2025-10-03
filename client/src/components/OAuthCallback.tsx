@@ -122,7 +122,7 @@ export const OAuthCallback: React.FC = () => {
   }, [searchParams, navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="h-full-dec-hf  x-2 flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="max-w-md w-full bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 text-center">
         <div className="mb-6">
           {status === "processing" && (
@@ -261,7 +261,7 @@ export const OAuthCallback: React.FC = () => {
 //   };
 
 //   return (
-//     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+//     <div className="h-full-dec-hf  x-2 bg-gray-50 flex items-center justify-center p-4">
 //       <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
 //         {status === 'loading' && (
 //           <>

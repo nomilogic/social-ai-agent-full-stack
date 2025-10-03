@@ -372,13 +372,13 @@ export const PublishPosts: React.FC<PublishProps> = ({ posts, userId, onBack, on
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setSelectedPlatforms(connectedPlatforms.filter(p => !publishedPlatforms.includes(p)))}
-                className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                className="text-xs px-3 py-1 rounded-full theme-bg-quaternary theme-text-secondary transition-colors"
               >
                 Select All
               </button>
               <button
                 onClick={() => setSelectedPlatforms([])}
-                className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                className="text-xs px-3 py-1 rounded-full theme-bg-quaternary theme-text-secondary marker:transition-colors"
               >
                 Deselect All
               </button>

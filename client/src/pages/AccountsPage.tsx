@@ -222,7 +222,7 @@ export const AccountsPage: React.FC = () => {
   };
 
   return (
-    <div className="theme-bg-light min-h-screen">
+    <div className="theme-bg-light h-full-dec-hf  x-2">
       {/* Header */}
      
 

@@ -6,7 +6,7 @@ const PrivacyPolicy: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="h-full-dec-hf  x-2 bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
@@ -28,7 +28,7 @@ const PrivacyPolicy: React.FC = () => {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Introduction</h2>
               <p className="text-gray-700 mb-4">
-                Welcome to Social AI Agent ("we," "our," or "us"). We are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our AI-powered social media content generation platform.
+                Welcome to Omni Share ("we," "our," or "us"). We are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our AI-powered social media content generation platform.
               </p>
               <p className="text-gray-700">
                 By accessing or using our service, you agree to the collection and use of information in accordance with this policy.
@@ -216,7 +216,7 @@ const PrivacyPolicy: React.FC = () => {
         {/* Footer */}
         <div className="mt-8 text-center">
           <p className="text-gray-500 text-sm">
-            This privacy policy is effective as of {new Date().toLocaleDateString()} and applies to all users of Social AI Agent.
+            This privacy policy is effective as of {new Date().toLocaleDateString()} and applies to all users of Omni Share.
           </p>
         </div>
       </div>
