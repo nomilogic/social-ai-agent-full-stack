@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { ResizeContext } from "../../context/ResizeContext";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
@@ -46,6 +47,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const mainContentRef = useRef<HTMLElement>(null);
 
   // Close notification center when clicking outside
   useEffect(() => {
@@ -80,6 +82,25 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     navigate("/auth");
     setShowUserMenu(false);
   };
+  const handleResizeMainToFullScreen= (isFullScreen: boolean) => {
+  //use MainContentRef
+    const mainContent = mainContentRef.current;
+
+    if (mainContent && isFullScreen) {
+      mainContent.style.position = 'fixed'; 
+      mainContent.style.top = '0';
+      mainContent.style.left = '0';
+      mainContent.style.right = '0';
+      mainContent.style.bottom = '0';
+      mainContent.style.height = '98vh';
+      mainContent.style.zIndex = '1000';
+    }
+    if (mainContent && !isFullScreen) {
+      mainContent.style='';
+    }
+
+  }
+
 
   const handleMarkAllAsRead = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -120,17 +141,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   ];
 
   return (
-    <div className="h-full-dec-hf x-2 relative">
+    <ResizeContext.Provider value={{ handleResizeMainToFullScreen }}>
+      <div className="h-full-dec-hf x-2 relative">
       {/* Themed Background */}
-      <div
-        className={`fixed inset-0 bg-gradient-to-br ${currentTheme.bgGradient}`}
-      >
-        {/* <div className="absolute inset-0 bg-black/20"></div> */}
-        {/* <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div> */}
-      </div>
 
-
-      {/* Sidebar */}
 
       <div className="relative z-10">
         <div
@@ -373,9 +387,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         </div>
 
         {/* Main Content */}
-        <main className="py-0 h-full-dec-hf overflow-auto theme-bg-card lg:px-[20%]">
+        <main id="mainContent" ref={mainContentRef} className="py-0 h-full-dec-hf overflow-auto theme-bg-card lg:px-[20%]">
           <div className="w-full mx-auto sm:px-0 lg:px-0 overflow-auto">
-            <div className="  p-0  ">{children}</div>
+            <div className="p-0">{children}</div>
           </div>
         </main>
 
@@ -385,6 +399,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
       {/* Global Preloader Overlay */}
       <PreloaderOverlay loadingState={loadingState} />
-    </div>
+      </div>
+    </ResizeContext.Provider>
   );
 };

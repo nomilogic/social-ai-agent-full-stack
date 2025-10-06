@@ -1,3 +1,4 @@
+import { useResize } from '../context/ResizeContext';
 import React, { useState, useRef, useEffect } from 'react';
 import { Template, TemplateElement, TextElement, LogoElement, ShapeElement } from '../types/templates';
 import { Palette, Type, Upload, Square, Download, Undo, Redo, Loader, ArrowUp, ArrowDown, ChevronUp, ChevronDown, Trash, Lock, Unlock, Circle, Plus, Monitor, Smartphone, Youtube, Instagram, Twitter } from 'lucide-react';
@@ -23,6 +24,20 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   aspectRatio = '16:9'
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { handleResizeMainToFullScreen } = useResize();
+  // Toggle full screen on small/mobile screens and on resize
+  useEffect(() => {
+    const checkAndResize = () => {
+      const isSmallScreen = window.innerWidth < 768;
+      handleResizeMainToFullScreen(isSmallScreen);
+    };
+    checkAndResize();
+    window.addEventListener('resize', checkAndResize);
+    return () => {
+      window.removeEventListener('resize', checkAndResize);
+      handleResizeMainToFullScreen(false);
+    };
+  }, [handleResizeMainToFullScreen]);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null);
   const [ctx, setCtx] = useState<CanvasRenderingContext2D | null>(null);
