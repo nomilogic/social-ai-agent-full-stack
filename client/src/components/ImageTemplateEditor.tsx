@@ -69,6 +69,15 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
+  // IsDragging useEffect
+  useEffect(() => {
+    if (isDragging) {
+      document.body.style.cursor = 'grabbing';
+    } else {
+      document.body.style.cursor = 'auto';
+    }
+  }, [isDragging]);
+
   // Calculate canvas dimensions based on aspect ratio
   const calculateCanvasDimensions = (aspectRatioString: string): { width: number, height: number } => {
     const aspectRatioMap: { [key: string]: { width: number, height: number } } = {
@@ -718,37 +727,45 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    console.log('⬇️ Mouse down event', { isElementLocked: isElementLocked(selectedElement), selectedElement, isDragging });
+    // Only allow background drag if no element is selected
     const isLocked = isElementLocked(selectedElement);
-    if (isLocked || !selectedElement) {
-      console.log('❌ Mouse down blocked:', { isLocked, selectedElement });
-      return; // Don't allow dragging when locked
+    if (selectedElement && !isLocked) {
+      // Start dragging element
+      e.preventDefault();
+      setIsDragging(true);
+      document.body.classList.add('drag-no-scroll');
+      console.log('✅ Starting drag for element:', selectedElement);
+    } else {
+      // If no element selected, allow background drag (if you have background pan logic)
+      // Otherwise, do nothing
+      // e.preventDefault(); // Uncomment if you want to prevent default background drag
+      console.log('🟦 Background drag allowed (no element selected)');
     }
-    e.preventDefault(); // Prevent scrolling during drag
-    setIsDragging(true);
-    console.log('✅ Starting drag for element:', selectedElement);
-    
-    // Apply CSS class to prevent scrolling smoothly
-    document.body.classList.add('drag-no-scroll');
   };
 
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const isLocked = isElementLocked(selectedElement);
-    if (isLocked) return; // Don't allow dragging when locked
-    if (isDragging) {
-      console.log('🔄 Dragging element:', selectedElement, { x: getEventCoordinates(e).x, y: getEventCoordinates(e).y });
-      e.preventDefault(); // Prevent scrolling while dragging
+    if (selectedElement && isLocked) return; // Don't allow dragging when locked
+    if (isDragging && selectedElement) {
+      // Only drag element, not background
+      e.preventDefault();
+      const { x, y } = getEventCoordinates(e);
+      handleElementDrag(x, y);
+      console.log('🔄 Dragging element:', selectedElement, { x, y });
+    } else if (!selectedElement) {
+      // If you want to allow background drag/pan, handle it here
+      // e.preventDefault();
+      // handleBackgroundDrag(...)
     }
-    const { x, y } = getEventCoordinates(e);
-    handleElementDrag(x, y);
   };
 
   const handleCanvasMouseUp = () => {
-    console.log('⬆️ Mouse up event, ending drag for:', selectedElement);
-    setIsDragging(false);
-    
-    // Remove CSS class to restore normal scrolling smoothly
-    document.body.classList.remove('drag-no-scroll');
+    if (isDragging && selectedElement) {
+      setIsDragging(false);
+      document.body.classList.remove('drag-no-scroll');
+      console.log('⬆️ Mouse up event, ending drag for:', selectedElement);
+    }
+    // If you want to handle background drag end, do it here if (!selectedElement)
   };
 
   // Touch event handlers
@@ -806,14 +823,30 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   // Layer management functions
   const bringToFront = () => {
     if (!selectedElement) return;
-    const maxZ = Math.max(...elements.map(el => el.zIndex || 0));
-    updateSelectedElement({ zIndex: maxZ + 1 });
+    // Sort elements by zIndex
+    const sorted = [...elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+    // Remove selected element
+    const idx = sorted.findIndex(el => el.id === selectedElement);
+    if (idx === -1) return;
+    const [selectedEl] = sorted.splice(idx, 1);
+    // Add selected element to the end (top/front)
+    sorted.push(selectedEl);
+    // Reassign zIndex sequentially
+    setElements(sorted.map((el, i) => ({ ...el, zIndex: i })));
   };
 
   const sendToBack = () => {
     if (!selectedElement) return;
-    const minZ = Math.min(...elements.map(el => el.zIndex || 0));
-    updateSelectedElement({ zIndex: minZ - 1 });
+    // Sort elements by zIndex
+    const sorted = [...elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+    // Remove selected element
+    const idx = sorted.findIndex(el => el.id === selectedElement);
+    if (idx === -1) return;
+    const [selectedEl] = sorted.splice(idx, 1);
+    // Add selected element to the start (bottom/back)
+    sorted.unshift(selectedEl);
+    // Reassign zIndex sequentially
+    setElements(sorted.map((el, i) => ({ ...el, zIndex: i })));
   };
 
   const moveUp = () => {
@@ -850,8 +883,8 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
     if (!canvas) return;
     
     // Use responsive sizing based on canvas dimensions
-    const fontSize = Math.max(16, Math.min(32, canvas.width / 30));
-    const width = Math.min(200, canvas.width * 0.4);
+    const fontSize = Math.max(0, Math.min(32, canvas.width / 30));
+    const width = Math.max(0, canvas.width * 0.5);
     
     const newElement: TextElement = {
       id: `text-${Date.now()}`,
@@ -866,11 +899,11 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
       fontFamily: 'Arial',
       color: '#ffeb3b',
       textAlign: 'center',
-      backgroundColor: '#ffffff',
+      backgroundColor: '#000',
       backgroundOpacity: 0.8,
       textOpacity: 1,
-      padding: 8,
-      borderRadius: 4,
+      padding: 2,
+      borderRadius: 0,
       zIndex: Math.max(...elements.map(el => el.zIndex || 0)) + 1
     };
     
@@ -1189,7 +1222,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                     <label className="block text-xs font-medium text-gray-700 mb-1 text-center">W</label>
                     <input
                       type="number"
-                      value={selectedElementData.width || 100}
+                      value={selectedElementData.width || ''}
                       onChange={(e) => updateSelectedElement({ width: parseInt(e.target.value) })}
                       className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                       min="1"
@@ -1200,8 +1233,8 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                     <label className="block text-xs font-medium text-gray-700 mb-1 text-center">H</label>
                     <input
                       type="number"
-                      value={selectedElementData.height || 100}
-                      onChange={(e) => updateSelectedElement({ height: parseInt(e.target.value) })}
+                      value={selectedElementData.height || ''}
+                      onChange={(e) => updateSelectedElement({ height: e.target.value === '' ? 0 : parseInt(e.target.value) })}
                       className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                       min="1"
                       disabled={isElementLocked(selectedElement)}
@@ -1211,8 +1244,8 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                     <label className="block text-xs font-medium text-gray-700 mb-1 text-center">X</label>
                     <input
                       type="number"
-                      value={Math.round(selectedElementData.x || 0)}
-                      onChange={(e) => updateSelectedElement({ x: parseInt(e.target.value) })}
+                      value={selectedElementData.x || ''}
+                      onChange={(e) => updateSelectedElement({ x: e.target.value === '' ? 0 : parseInt(e.target.value) })}
                       className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-center"
                       disabled={isElementLocked(selectedElement)}
                     />
@@ -1221,8 +1254,8 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                     <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Y</label>
                     <input
                       type="number"
-                      value={Math.round(selectedElementData.y || 0)}
-                      onChange={(e) => updateSelectedElement({ y: parseInt(e.target.value) })}
+                      value={selectedElementData.y || ''}
+                      onChange={(e) => updateSelectedElement({ y: e.target.value === '' ? 0 : parseInt(e.target.value) })}
                       className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                       disabled={isElementLocked(selectedElement)}
                     />
@@ -1237,8 +1270,8 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                       type="range"
                       min="0"
                       max="360"
-                      value={selectedElementData.rotation || 0}
-                      onChange={(e) => updateSelectedElement({ rotation: parseInt(e.target.value) })}
+                      value={selectedElementData.rotation ?? 0}
+                      onChange={(e) => updateSelectedElement({ rotation: e.target.value === '' ? 0 : parseInt(e.target.value) })}
                       className="w-full template-range"
                       disabled={isElementLocked(selectedElement)}
                     />
@@ -1299,8 +1332,8 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                           <label className="block text-sm font-medium text-gray-700 mb-2">Border Radius</label>
                           <input
                             type="number"
-                            value={(selectedElementData as LogoElement).borderRadius || 0}
-                            onChange={(e) => updateSelectedElement({ borderRadius: parseInt(e.target.value) })}
+                            value={(selectedElementData as LogoElement).borderRadius ?? 0}
+                            onChange={(e) => updateSelectedElement({ borderRadius: e.target.value === '' ? 0 : parseInt(e.target.value) })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                             placeholder="0"
                             min="0"
@@ -1373,8 +1406,8 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                       <div>
                         <label className="block text-sm font-medium text-yellow-500-700 mb-1.5">Text Content</label>
                         <textarea
-                          value={(selectedElementData as TextElement).content || ''}
-                          onChange={(e) => updateSelectedElement({ content: e.target.value })}
+                          value={(selectedElementData as TextElement).content ?? ''}
+                          onChange={(e) => updateSelectedElement({ content: e.target.value === undefined ? '' : e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                           rows={3}
                           placeholder="Enter your text..."
@@ -1384,8 +1417,8 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">Font Family</label>
                         <select
-                          value={(selectedElementData as TextElement).fontFamily || 'Arial'}
-                          onChange={(e) => updateSelectedElement({ fontFamily: e.target.value })}
+                          value={(selectedElementData as TextElement).fontFamily ?? ''}
+                          onChange={(e) => updateSelectedElement({ fontFamily: e.target.value === undefined ? '' : e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                         >
                           <option value="Arial">Arial</option>
@@ -1411,7 +1444,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                           <label className="block text-xs font-medium text-gray-700 mb-1">Size</label>
                           <input
                             type="number"
-                            value={(selectedElementData as TextElement).fontSize || 16}
+                            value={(selectedElementData as TextElement).fontSize || ''}
                             onChange={(e) => updateSelectedElement({ fontSize: parseInt(e.target.value) })}
                             className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                             min="8"
@@ -1419,7 +1452,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Weight</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Weigt</label>
                           <select
                             value={(selectedElementData as TextElement).fontWeight || 'normal'}
                             onChange={(e) => updateSelectedElement({ fontWeight: e.target.value })}
@@ -1447,7 +1480,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
                           <label className="block text-xs font-medium text-gray-700 mb-1">Pad</label>
                           <input
                             type="number"
-                            value={(selectedElementData as TextElement).padding || 8}
+                            value={(selectedElementData as TextElement).padding || ''}
                             onChange={(e) => updateSelectedElement({ padding: parseInt(e.target.value) })}
                             className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                             min="0"
@@ -1643,7 +1676,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
         </div>
                 
         {/* Canvas Container - Scrollable */}
-        <div className="flex-1 overflow-auto bg-gray-100 flex items-center justify-center p-2 md:p-4 min-h-0">
+        <div className={`flex-1 ${isDragging ? 'overflow-hidden' : 'overflow-auto'}  bg-gray-100 flex items-center justify-center p-2 md:p-4 min-h-0`}>
           <div 
             className="flex items-center justify-center"
             style={{

@@ -176,16 +176,16 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 alt=""
               />
               <div className="flex-1 min-w-0 text-left">
-                <div className="text-sm font-medium theme-text-light truncate">
+                <div className="text-md font-medium theme-text-light truncate">
                   {user?.user_metadata?.name || user?.email || "User"}
                 </div>
                 <div className="text-xs theme-text-light truncate">{user?.email}</div>
               </div>
               <div className="theme-text-light">
                 {showUserMenu ? (
-                  <ChevronUp className="w-4 h-4" />
+                  <ChevronUp size={40} className="w-8 h-8" />
                 ) : (
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown size={40} className="w-8 h-8" />
                 )}
               </div>
             </button>
@@ -216,7 +216,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                       setShowUserMenu(false);
                       setIsMobileMenuOpen(false);
                     }}
-                    className="group flex items-center px-4 py-3 text-sm theme-text-light hover:theme-bg-secondary hover:theme-text-primary transition-all duration-150 ease-in-out"
+                    className="group flex items-center px-4 py-3 text-md theme-text-light hover:theme-bg-secondary hover:theme-text-primary transition-all duration-150 ease-in-out"
                   >
                     <div className="flex items-center justify-center w-8 h-8 rounded-lg theme-bg-trinary group-hover:theme-bg-primary mr-3 transition-colors duration-150">
                       <Settings className="h-4 w-4 theme-text-light group-hover:theme-text-secondary" />
@@ -234,7 +234,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                       setShowUserMenu(false);
                       setIsMobileMenuOpen(false);
                     }}
-                    className="group flex items-center w-full px-4 py-3 text-sm theme-text-light transition-all duration-150 ease-in-out text-left"
+                    className="group flex items-center w-full px-4 py-3 text-md theme-text-light transition-all duration-150 ease-in-out text-left"
                   >
                     <div className="flex items-center justify-center w-8 h-8 rounded-lg theme-bg-trinary mr-3 transition-colors duration-150">
                       <LogOut className="h-4 w-4 theme-text-light" />
@@ -265,7 +265,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 <Link
                   key={item.name}
                   to={item.path}
-                  className={`flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActive
+                  className={`flex items-center justify-between px-3 py-2 text-md font-medium rounded-md transition-colors ${isActive
                     ? "theme-bg-primary theme-text-secondary"
                     : "theme-text-light hover:theme-bg-secondary hover:theme-text-primary"
                     }`}

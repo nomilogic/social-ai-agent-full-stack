@@ -373,7 +373,7 @@ export const HistoryPage = forwardRef<HistoryPageRef>((props, ref) => {
   }
 
   return (
-    <div className="theme-bg-light h-full-dec-hf  x-2">
+    <div className="theme-bg-light h-fit x-2 ">
       {/* Header */}
       <div className="">
         <div className="flex items-center justify-between max-w-4xl mx-auto mb-6">
@@ -384,11 +384,11 @@ export const HistoryPage = forwardRef<HistoryPageRef>((props, ref) => {
               View all your published posts across platforms
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            {unreadCount > 0 && (
+          <div className="flex flex-col items-center gap-1">
+            {unreadCount == 0 && (
               <button
                 onClick={markAllAsRead}
-                className="text-sm px-3 py-1 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                className="text-xs px-2 py-1 rounded-full theme-bg-quaternary theme-text-secondary hover:bg-blue-200 transition-colors"
               >
                 Mark all as read
               </button>
@@ -519,7 +519,7 @@ export const HistoryPage = forwardRef<HistoryPageRef>((props, ref) => {
       </div>
 
       {/* Content */}
-      <div className="max-w-2xl mx-auto px-6 py-8">
+      <div className="w-full lg:max-w-2xl mx-auto ">
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
             <p className="text-red-800 text-sm">{error}</p>
