@@ -41,7 +41,14 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null);
   const [ctx, setCtx] = useState<CanvasRenderingContext2D | null>(null);
-  const [elements, setElements] = useState<TemplateElement[]>(selectedTemplate?.elements ? [...selectedTemplate.elements] : []);
+  const [elements, setElements] = useState<TemplateElement[]>(
+    selectedTemplate?.elements 
+      ? selectedTemplate.elements.map((el, index) => ({
+          ...el,
+          zIndex: el.zIndex !== undefined ? el.zIndex : index
+        }))
+      : []
+  );
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -680,17 +687,51 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   };
 
   const handleElementSelection = (x: number, y: number) => {
-    // Find clicked/touched element
-    const clickedElement = elements.find(element => {
-      return (
+    console.log('🔍 Element selection at coordinates:', { x, y });
+    
+    // Find all clicked/touched elements that match the coordinates
+    const matchingElements = elements.filter(element => {
+      const matches = (
         x >= element.x - element.width/2 &&
         x <= element.x + element.width/2 &&
         y >= element.y - element.height/2 &&
         y <= element.y + element.height/2
       );
+      
+      if (matches) {
+        console.log('📍 Element matches coordinates:', {
+          id: element.id,
+          type: element.type,
+          zIndex: element.zIndex || 0,
+          bounds: {
+            left: element.x - element.width/2,
+            right: element.x + element.width/2,
+            top: element.y - element.height/2,
+            bottom: element.y + element.height/2
+          }
+        });
+      }
+      
+      return matches;
     });
     
-    if (clickedElement) {
+    console.log('🎯 Total matching elements:', matchingElements.length);
+    
+    if (matchingElements.length > 0) {
+      // Sort by zIndex and pick the highest one
+      const sortedByZIndex = [...matchingElements].sort((a, b) => (b.zIndex || 0) - (a.zIndex || 0));
+      const clickedElement = sortedByZIndex[0];
+      
+      console.log('🥇 Selected topmost element:', {
+        id: clickedElement.id,
+        type: clickedElement.type,
+        zIndex: clickedElement.zIndex || 0
+      });
+      
+      console.log('📊 All matching elements by zIndex:', 
+        sortedByZIndex.map(el => ({ id: el.id, type: el.type, zIndex: el.zIndex || 0 }))
+      );
+      
       setSelectedElement(clickedElement.id);
       setDragOffset({
         x: x - clickedElement.x,
@@ -698,6 +739,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
       });
       return true;
     } else {
+      console.log('❌ No elements found at coordinates');
       setSelectedElement(null);
       return false;
     }
@@ -727,19 +769,22 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    // Only allow background drag if no element is selected
-    const isLocked = isElementLocked(selectedElement);
-    if (selectedElement && !isLocked) {
-      // Start dragging element
-      e.preventDefault();
-      setIsDragging(true);
-      document.body.classList.add('drag-no-scroll');
-      console.log('✅ Starting drag for element:', selectedElement);
+    const { x, y } = getEventCoordinates(e);
+    
+    // First, try to select an element at the clicked coordinates
+    if (handleElementSelection(x, y)) {
+      // An element was selected, check if it's locked
+      const isLocked = isElementLocked(selectedElement);
+      if (!isLocked) {
+        // Start dragging the selected element
+        e.preventDefault();
+        setIsDragging(true);
+        document.body.classList.add('drag-no-scroll');
+        console.log('✅ Starting drag for element:', selectedElement);
+      }
     } else {
-      // If no element selected, allow background drag (if you have background pan logic)
-      // Otherwise, do nothing
-      // e.preventDefault(); // Uncomment if you want to prevent default background drag
-      console.log('🟦 Background drag allowed (no element selected)');
+      // No element was selected, allow background interactions
+      console.log('🟦 Background click (no element selected)');
     }
   };
 
@@ -904,7 +949,7 @@ export const ImageTemplateEditor: React.FC<ImageTemplateEditorProps> = ({
       textOpacity: 1,
       padding: 2,
       borderRadius: 0,
-      zIndex: Math.max(...elements.map(el => el.zIndex || 0)) + 1
+      zIndex: elements.length > 0 ? Math.max(...elements.map(el => el.zIndex || 0)) + 1 : 0
     };
     
     setElements(prev => [...prev, newElement]);

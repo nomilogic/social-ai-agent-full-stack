@@ -586,7 +586,7 @@ export const HistoryPage = forwardRef<HistoryPageRef>((props, ref) => {
                       }`}
                       title={post.isRead ? 'Read' : 'Mark as read'}
                     >
-                      {post.isRead ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      {/* {post.isRead ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />} */}
                     </button>
                     <a
                       href={post.postUrl}
