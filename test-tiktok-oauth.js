@@ -99,7 +99,7 @@ function testTikTokOAuth() {
     // Test 3: OAuth URLs
     console.log('\n3. Generating OAuth URLs...');
     const redirectUri = 'http://localhost:5173/oauth/tiktok/callback';
-    const scopes = 'user.info.basic video.upload video.list';
+    const scopes = 'user.info.basic,video.publish';
     
     const authParams = new URLSearchParams({
       client_key: clientId, // TikTok uses 'client_key' instead of 'client_id'
@@ -162,7 +162,7 @@ function testTikTokOAuth() {
     console.log('\n🎉 TikTok OAuth Configuration Test Complete!');
     console.log('\n📋 Next Steps:');
     console.log('   1. Ensure your TikTok app is configured with the redirect URIs shown above');
-    console.log('   2. Make sure your app has the required scopes: user.info.basic, video.upload, video.list');
+    console.log('   2. Make sure your app has the required scopes: user.info.basic, video.publish');
     console.log('   3. Verify your app is in production mode or has test users configured');
     console.log('   4. Test the complete OAuth flow in your application');
     

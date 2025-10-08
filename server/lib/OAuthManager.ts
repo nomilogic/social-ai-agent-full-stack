@@ -108,7 +108,7 @@ class OAuthManager {
         client_id: process.env.VITE_TIKTOK_CLIENT_ID!,
         client_secret: process.env.VITE_TIKTOK_CLIENT_SECRET!,
         redirect_uri: `${this.baseUrl}/api/oauth/tiktok/callback`,
-        scopes: ['user.info.basic', 'video.upload', 'video.list'],
+        scopes: ['user.info.basic', 'video.publish'],
         authUrl: 'https://www.tiktok.com/v2/auth/authorize',
         tokenUrl: 'https://open.tiktokapis.com/v2/oauth/token'
       },

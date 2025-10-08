@@ -33,7 +33,7 @@ export async function initiateTikTokOAuth(): Promise<{ token: string; user: any 
       const params = new URLSearchParams({
         client_key: clientId, // TikTok expects 'client_key' instead of 'client_id'
         response_type: "code",
-        scope: "user.info.basic video.upload video.list", // TikTok required scopes
+        scope: "user.info.basic,video.publish", // TikTok current scopes
         redirect_uri: redirectUri,
         state,
         code_challenge: codeChallenge,
