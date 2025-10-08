@@ -154,21 +154,28 @@ export class OAuthManagerClient {
   }
 
   // Handle OAuth callback
-  async handleCallback(platform: string, code: string, state: string): Promise<any> {
+  async handleCallback(platform: string, code: string, state: string, codeVerifier?: string): Promise<any> {
     try {
-      // Make a POST request to the platform-specific access token endpoint
+      // Include codeVerifier in the request body for TikTok
+      const body: any = {
+        code,
+        state,
+        redirect_uri: `${window.location.origin}/oauth/${platform}/callback`,
+        user_id: this.userId
+      };
+
+      // Add code_verifier for TikTok PKCE
+      if (platform === 'tiktok' && codeVerifier) {
+        body.code_verifier = codeVerifier;
+      }
+
       const response = await fetch(`${this.baseURL}/api/${platform}/access-token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...this.defaultHeaders
         },
-        body: JSON.stringify({
-          code,
-          state,
-          redirect_uri: `${window.location.origin}/oauth/${platform}/callback`,
-          user_id: this.userId
-        })
+        body: JSON.stringify(body)
       });
 
       if (!response.ok) {
