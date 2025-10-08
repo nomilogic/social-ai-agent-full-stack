@@ -157,11 +157,25 @@ export class OAuthManagerClient {
   async handleCallback(platform: string, code: string, state: string, codeVerifier?: string): Promise<any> {
     try {
       // Include codeVerifier in the request body for TikTok
+      // Get user_id from stored user info
+      let userId = this.userId;
+      if (!userId) {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          try {
+            const user = JSON.parse(userStr);
+            userId = user.id;
+          } catch (e) {
+            console.warn('Failed to parse user from localStorage');
+          }
+        }
+      }
+
       const body: any = {
         code,
         state,
         redirect_uri: `${window.location.origin}/oauth/${platform}/callback`,
-        user_id: this.userId
+        user_id: userId
       };
 
       // Add code_verifier for TikTok PKCE

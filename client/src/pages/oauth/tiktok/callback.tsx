@@ -28,7 +28,23 @@ export default function TikTokCallback() {
           throw new Error("Missing code_verifier for PKCE");
         }
 
-        // Exchange code for token
+        // Get user_id for the request
+        const userStr = localStorage.getItem('user');
+        let user_id = null;
+        if (userStr) {
+          try {
+            const user = JSON.parse(userStr);
+            user_id = user.id;
+          } catch (e) {
+            console.warn('Failed to parse user from localStorage');
+          }
+        }
+        
+        if (!user_id) {
+          throw new Error('User not logged in - cannot save TikTok connection');
+        }
+
+        // Exchange code for token using direct TikTok route
         const result = await oauthManagerClient.handleCallback("tiktok", code, state, codeVerifier);
         console.log("TikTok OAuth success:", result);
 

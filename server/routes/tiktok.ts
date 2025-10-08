@@ -295,6 +295,12 @@ router.post('/access-token', async (req: Request, res: Response) => {
       }
     )
     
+    console.log('Raw TikTok API response:', {
+      status: response.status,
+      statusText: response.statusText,
+      data: response.data
+    });
+    
     console.log('TikTok token exchange successful:', {
       hasAccessToken: !!response.data.access_token,
       hasRefreshToken: !!response.data.refresh_token,
