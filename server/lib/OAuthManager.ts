@@ -188,21 +188,36 @@ class OAuthManager {
       throw new Error(`Unsupported platform: ${platform}`);
     }
 
-    // Validate and get state data from database
-    const stateData = await db.query.oauth_states.findFirst({
-      where: eq(oauth_states.state, state)
-    });
+    // For TikTok, handle PKCE validation differently since state is managed client-side
+    let userId: string;
+    let options: any = {};
+    
+    if (platform === 'tiktok') {
+      // For TikTok, we need to get user_id from additionalParams or use a different method
+      // Since TikTok uses client-side PKCE, we can't rely on server-side state storage
+      if (!additionalParams.user_id) {
+        throw new Error('user_id required for TikTok OAuth');
+      }
+      userId = additionalParams.user_id;
+      console.log(`TikTok OAuth callback - user_id: ${userId}, code: ${code ? 'present' : 'missing'}`);
+    } else {
+      // Standard OAuth flow for other platforms
+      const stateData = await db.query.oauth_states.findFirst({
+        where: eq(oauth_states.state, state)
+      });
 
-    if (!stateData) {
-      throw new Error('Invalid or expired state parameter');
+      if (!stateData) {
+        throw new Error('Invalid or expired state parameter');
+      }
+
+      // Check state expiration
+      if (new Date() > stateData.expires_at) {
+        throw new Error('OAuth state has expired');
+      }
+
+      userId = stateData.user_id;
+      options = stateData.options;
     }
-
-    // Check state expiration
-    if (new Date() > stateData.expires_at) {
-      throw new Error('OAuth state has expired');
-    }
-
-    const { user_id: userId, options } = stateData;
 
     // Exchange code for tokens
     const tokenData = await this.exchangeCodeForTokens(platform, code, additionalParams);
@@ -226,8 +241,10 @@ class OAuthManager {
 
     await this.storeConnection(userId, platform, connectionData);
     
-    // Clean up state
-    await db.delete(oauth_states).where(eq(oauth_states.state, state));
+    // Clean up state (skip for TikTok since it uses client-side state management)
+    if (platform !== 'tiktok') {
+      await db.delete(oauth_states).where(eq(oauth_states.state, state));
+    }
 
     console.log(`OAuth connection successful for ${platform}:`, { userId, platform, username: userProfile.username || userProfile.name });
     return connectionData;
@@ -248,21 +265,77 @@ class OAuthManager {
     // Platform-specific modifications
     if (platform === 'twitter') {
       tokenData.code_verifier = 'challenge';
+    } else if (platform === 'tiktok') {
+      // TikTok requires different parameter names and PKCE
+      tokenData.client_key = config.client_id;
+      delete tokenData.client_id; // TikTok uses 'client_key' instead of 'client_id'
+      
+      // Add code_verifier from additionalParams for PKCE
+      if (additionalParams.code_verifier) {
+        tokenData.code_verifier = additionalParams.code_verifier;
+      } else {
+        throw new Error('code_verifier required for TikTok OAuth PKCE');
+      }
     }
 
     try {
-      const response = await axios.post(config.tokenUrl, 
-        new URLSearchParams(tokenData).toString(),
-        {
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'application/json'
+      let response;
+      
+      if (platform === 'tiktok') {
+        // TikTok requires special handling
+        console.log('Making TikTok token exchange request:', {
+          hasClientKey: !!tokenData.client_key,
+          hasClientSecret: !!tokenData.client_secret,
+          hasCode: !!tokenData.code,
+          hasCodeVerifier: !!tokenData.code_verifier,
+          redirectUri: tokenData.redirect_uri
+        });
+        
+        response = await axios.post(config.tokenUrl, 
+          new URLSearchParams(tokenData).toString(),
+          {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache'
+            },
+            timeout: 30000 // 30 second timeout
           }
-        }
-      );
+        );
+      } else {
+        response = await axios.post(config.tokenUrl, 
+          new URLSearchParams(tokenData).toString(),
+          {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'Accept': 'application/json'
+            }
+          }
+        );
+      }
 
       let tokenResponse = response.data;
-      console.log(`Token exchange successful for ${platform}:`, tokenResponse);
+      
+      if (platform === 'tiktok') {
+        console.log(`TikTok token exchange successful:`, {
+          hasAccessToken: !!tokenResponse.access_token,
+          hasRefreshToken: !!tokenResponse.refresh_token,
+          expiresIn: tokenResponse.expires_in,
+          tokenType: tokenResponse.token_type,
+          scope: tokenResponse.scope
+        });
+        
+        // Validate TikTok response
+        if (!tokenResponse.access_token) {
+          throw new Error('TikTok token response missing access_token');
+        }
+      } else {
+        console.log(`Token exchange successful for ${platform}:`, {
+          hasAccessToken: !!tokenResponse.access_token,
+          hasRefreshToken: !!tokenResponse.refresh_token,
+          expiresIn: tokenResponse.expires_in
+        });
+      }
       // For Facebook/Instagram, exchange for long-lived token
       if ((platform === 'facebook' || platform === 'instagram') && tokenResponse.access_token) {
         try {
@@ -313,8 +386,30 @@ class OAuthManager {
           headers['Authorization'] = `Bearer ${accessToken}`;
           break;
         case 'tiktok':
-          profileUrl = 'https://open.tiktokapis.com/v2/user/info/';
-          headers['Authorization'] = `Bearer ${accessToken}`;
+          // TikTok requires a POST request for user info
+          try {
+            const tikTokResponse = await axios.post('https://open.tiktokapis.com/v2/user/info/', {}, {
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            // Handle TikTok response format
+            const tikTokData = tikTokResponse.data;
+            if (tikTokData && tikTokData.data && tikTokData.data.user) {
+              const user = tikTokData.data.user;
+              return {
+                id: user.open_id || user.union_id,
+                name: user.display_name,
+                username: user.username,
+                profile_picture_url: user.avatar_url || user.avatar_url_100
+              };
+            }
+          } catch (tikTokError) {
+            console.warn('Failed to get TikTok user profile:', tikTokError);
+            return { id: 'unknown', name: 'TikTok User' };
+          }
           break;
         default:
           return { id: 'unknown', name: 'Unknown User' };

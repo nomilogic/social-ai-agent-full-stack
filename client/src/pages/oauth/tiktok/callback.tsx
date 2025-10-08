@@ -67,18 +67,42 @@ const TikTokOAuthCallback: React.FC = () => {
           ...(user_id && { user_id }) // Include user_id if available
         };
         
-        const response = await fetch("/api/tiktok/access-token", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),
+        // Use unified OAuth callback instead of custom TikTok endpoint
+        const callbackUrl = `/api/oauth/tiktok/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&code_verifier=${encodeURIComponent(codeVerifier)}&user_id=${encodeURIComponent(user_id || '')}`;
+        console.log('Making unified OAuth callback request:', callbackUrl);
+        
+        const response = await fetch(callbackUrl, {
+          method: "GET"
         });
-        const result = await response.json();
+        
         if (!response.ok) {
-          window.opener?.postMessage({ type: "oauth_error", provider: "tiktok", error: result.error || "Token exchange failed" }, window.location.origin);
+          const errorText = await response.text();
+          console.error('Unified OAuth callback error:', errorText);
+          window.opener?.postMessage({ type: "oauth_error", provider: "tiktok", error: "Unified OAuth callback failed" }, window.location.origin);
           window.close();
           return;
         }
-        window.opener?.postMessage({ type: "oauth_success", provider: "tiktok", state, result }, window.location.origin);
+        
+        // The unified OAuth system returns HTML with postMessage script
+        // It will automatically handle the success/error messaging
+        const htmlResponse = await response.text();
+        
+        // Extract and execute the script from the HTML response
+        const scriptMatch = htmlResponse.match(/<script[^>]*>([\s\S]*?)<\/script>/);
+        if (scriptMatch && scriptMatch[1]) {
+          try {
+            // Execute the postMessage script
+            eval(scriptMatch[1]);
+          } catch (evalError) {
+            console.error('Error executing callback script:', evalError);
+            window.opener?.postMessage({ type: "oauth_error", provider: "tiktok", error: "Callback execution failed" }, window.location.origin);
+            window.close();
+          }
+        } else {
+          console.error('No script found in callback response');
+          window.opener?.postMessage({ type: "oauth_error", provider: "tiktok", error: "Invalid callback response" }, window.location.origin);
+          window.close();
+        }
         window.close();
       } catch (err) {
         window.opener?.postMessage({ type: "oauth_error", provider: "tiktok", error: err?.toString() || "Unknown error" }, window.location.origin);

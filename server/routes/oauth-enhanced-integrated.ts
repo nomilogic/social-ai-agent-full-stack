@@ -44,7 +44,7 @@ router.post('/:platform/connect', authenticateJWT, async (req: Request, res: Res
 // GET /api/oauth/:platform/callback - Handle OAuth callback for any platform
 router.get('/:platform/callback', async (req: Request, res: Response) => {
   const { platform } = req.params;
-  const { code, state, error } = req.query;
+  const { code, state, error, code_verifier, user_id } = req.query;
 console.log("OUAAAAUT")
   console.log(`OAuth callback for ${platform}:`, { code: !!code, state, error });
 
@@ -76,10 +76,18 @@ console.log("OUAAAAUT")
   }
 
   try {
+    // For TikTok, pass additional PKCE parameters
+    const additionalParams: any = {};
+    if (platform === 'tiktok') {
+      additionalParams.code_verifier = code_verifier;
+      additionalParams.user_id = user_id;
+    }
+    
     const connectionData = await oauthManager.handleCallback(
       platform, 
       code as string, 
-      state as string
+      state as string,
+      additionalParams
     );
 
     const username = (connectionData.userProfile.username || connectionData.userProfile.name || '').replace(/'/g, "\\'");
