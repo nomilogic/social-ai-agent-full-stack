@@ -134,7 +134,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     { name: "Create Content", path: "/content", icon: Plus },
     { name: "Accounts", path: "/accounts", icon: Building2 },
     { name: "History", path: "/history", icon: History },
-    { name: "Price Plan", path: "/pricing", icon: CreditCard },
+    { name: "Pricing Plan", path: "/pricing", icon: CreditCard },
     // { name: "Campaigns", path: "/campaigns", icon: Target },
     // { name: "Schedule", path: "/schedule", icon: Calendar },
     // { name: "Settings", path: "/settings", icon: Settings },
