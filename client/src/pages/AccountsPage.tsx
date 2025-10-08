@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Platform } from '../types';
 import { oauthManagerClient } from '../lib/oauthManagerClient';
+import { initiateTikTokOAuth } from '../utils/tiktokOAuth';
 import Icon from '../components/Icon';
 import { RefreshCw, Trash2 } from 'lucide-react';
 import { getPlatformIcon, getPlatformIconBackgroundColors, getPlatformDisplayName } from '../utils/platformIcons';
@@ -130,64 +131,54 @@ export const AccountsPage: React.FC = () => {
 
   const handleConnect = async (platform: Platform) => {
     console.log('Connecting to platform:', platform);
-    
+    setConnectingPlatforms(prev => [...prev, platform]);
+    setError(null);
     try {
-      setConnectingPlatforms(prev => [...prev, platform]);
-      setError(null);
-      
-      // Use the OAuth client to start OAuth flow (uses JWT authentication)
-      const result = await oauthManagerClient.startOAuthFlow(platform);
-      const { authUrl } = result;
-      console.log('Opening OAuth popup with URL:', authUrl);
-
-      const authWindow = window.open(
-        authUrl,
-        `${platform}_oauth`,
-        "width=600,height=700,scrollbars=yes,resizable=yes",
-      );
-
-      if (!authWindow) {
-        throw new Error("OAuth popup blocked");
+      if (platform === 'tiktok') {
+        // Use PKCE TikTok OAuth
+        const result = await initiateTikTokOAuth();
+        // On success, refresh connected platforms
+        setTimeout(checkConnectedPlatforms, 1000);
+      } else {
+        // Use the OAuth client to start OAuth flow (uses JWT authentication)
+        const result = await oauthManagerClient.startOAuthFlow(platform);
+        const { authUrl } = result;
+        console.log('Opening OAuth popup with URL:', authUrl);
+        const authWindow = window.open(
+          authUrl,
+          `${platform}_oauth`,
+          "width=600,height=700,scrollbars=yes,resizable=yes",
+        );
+        if (!authWindow) {
+          throw new Error("OAuth popup blocked");
+        }
+        // Listen for messages from the OAuth callback
+        const messageListener = (event: MessageEvent) => {
+          if (
+            event.data.type === "oauth_success" &&
+            event.data.platform === platform
+          ) {
+            console.log("OAuth success for", platform);
+            try { authWindow?.close(); } catch (error) { console.warn('Could not close popup from parent:', error); }
+            setTimeout(checkConnectedPlatforms, 1000);
+            window.removeEventListener("message", messageListener);
+          } else if (event.data.type === "oauth_error") {
+            console.error("OAuth error:", event.data.error);
+            try { authWindow?.close(); } catch (error) { console.warn('Could not close popup from parent:', error); }
+            setError(`Failed to connect ${platform}: ${event.data.error || "OAuth failed"}`);
+            window.removeEventListener("message", messageListener);
+          }
+        };
+        window.addEventListener("message", messageListener);
+        // Monitor window closure
+        const checkClosed = setInterval(() => {
+          if (authWindow?.closed) {
+            clearInterval(checkClosed);
+            window.removeEventListener("message", messageListener);
+            setTimeout(checkConnectedPlatforms, 1000);
+          }
+        }, 1000);
       }
-
-      // Listen for messages from the OAuth callback
-      const messageListener = (event: MessageEvent) => {
-        if (
-          event.data.type === "oauth_success" &&
-          event.data.platform === platform
-        ) {
-          console.log("OAuth success for", platform);
-          // Close popup from parent window for better browser compatibility
-          try {
-            authWindow?.close();
-          } catch (error) {
-            console.warn('Could not close popup from parent:', error);
-          }
-          setTimeout(checkConnectedPlatforms, 1000);
-          window.removeEventListener("message", messageListener);
-        } else if (event.data.type === "oauth_error") {
-          console.error("OAuth error:", event.data.error);
-          // Close popup from parent window for better browser compatibility
-          try {
-            authWindow?.close();
-          } catch (error) {
-            console.warn('Could not close popup from parent:', error);
-          }
-          setError(`Failed to connect ${platform}: ${event.data.error || "OAuth failed"}`);
-          window.removeEventListener("message", messageListener);
-        }
-      };
-
-      window.addEventListener("message", messageListener);
-
-      // Monitor window closure
-      const checkClosed = setInterval(() => {
-        if (authWindow?.closed) {
-          clearInterval(checkClosed);
-          window.removeEventListener("message", messageListener);
-          setTimeout(checkConnectedPlatforms, 1000);
-        }
-      }, 1000);
     } catch (error) {
       console.error('Error connecting to platform:', error);
       setError(`Failed to connect ${platform}: ${error instanceof Error ? error.message : "Connection failed"}`);

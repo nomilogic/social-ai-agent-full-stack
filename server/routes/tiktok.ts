@@ -221,45 +221,105 @@ router.post('/complete-upload', async (req: Request, res: Response) => {
 // POST /api/tiktok/access-token - Handle TikTok OAuth callback
 router.post('/access-token', async (req: Request, res: Response) => {
   console.log('Received TikTok OAuth callback with body:', req.body)
-  
   let body = req.body
   if (typeof body === 'string') {
-    body = JSON.parse(body)
+    try {
+      body = JSON.parse(body)
+    } catch (e) {
+      return res.status(400).json({ error: 'Invalid JSON body' })
+    }
   }
   
-  const { code, redirect_uri, user_id } = body
+  const { code, redirect_uri, user_id, code_verifier } = body
   
-  if (!code || !redirect_uri) {
-    return res.status(400).json({ error: 'Missing required parameters: code and redirect_uri' })
+  // Validate required parameters
+  if (!code || typeof code !== 'string') {
+    return res.status(400).json({ error: 'Missing or invalid authorization code' })
+  }
+  if (!redirect_uri || typeof redirect_uri !== 'string') {
+    return res.status(400).json({ error: 'Missing or invalid redirect_uri' })
+  }
+  if (!code_verifier || typeof code_verifier !== 'string') {
+    return res.status(400).json({ error: 'Missing code_verifier for PKCE' })
   }
   
-  const tokenData = {
-    client_key: process.env.VITE_TIKTOK_CLIENT_ID || '',
-    client_secret: process.env.VITE_TIKTOK_CLIENT_SECRET || '',
-    code: code,
+  // Validate code_verifier length (43-128 characters per RFC 7636)
+  if (code_verifier.length < 43 || code_verifier.length > 128) {
+    return res.status(400).json({ error: `Invalid code_verifier length: ${code_verifier.length}. Must be between 43-128 characters.` })
+  }
+  
+  // Validate code_verifier characters (must be unreserved characters per RFC 7636)
+  const validCodeVerifierPattern = /^[A-Za-z0-9\-._~]+$/;
+  if (!validCodeVerifierPattern.test(code_verifier)) {
+    return res.status(400).json({ error: 'Invalid code_verifier format. Must contain only unreserved characters [A-Z] [a-z] [0-9] - . _ ~' })
+  }
+  
+  // Get client credentials
+  const clientKey = process.env.VITE_TIKTOK_CLIENT_ID || process.env.TIKTOK_CLIENT_ID || process.env.TIKTOK_CLIENT_KEY || ''
+  const clientSecret = process.env.VITE_TIKTOK_CLIENT_SECRET || process.env.TIKTOK_CLIENT_SECRET || ''
+  
+  if (!clientKey || !clientSecret) {
+    console.error('TikTok OAuth credentials not configured')
+    return res.status(500).json({ error: 'TikTok OAuth not properly configured' })
+  }
+  
+  // TikTok expects x-www-form-urlencoded, so build params string
+  const params = new URLSearchParams({
+    client_key: clientKey,
+    client_secret: clientSecret,
+    code,
     grant_type: 'authorization_code',
-    redirect_uri: redirect_uri
-  }
+    redirect_uri,
+    code_verifier
+  })
+  console.log('TikTok token exchange request params:', {
+    client_key: params.get('client_key') ? '[REDACTED]' : 'MISSING',
+    client_secret: params.get('client_secret') ? '[REDACTED]' : 'MISSING',
+    code: params.get('code') ? '[REDACTED]' : 'MISSING',
+    redirect_uri: params.get('redirect_uri'),
+    code_verifier: params.get('code_verifier') ? '[REDACTED]' : 'MISSING',
+    grant_type: params.get('grant_type')
+  })
   
   try {
+    console.log('Making TikTok token exchange request to:', 'https://open.tiktokapis.com/v2/oauth/token/')
     const response = await axios.post(
       'https://open.tiktokapis.com/v2/oauth/token/',
-      tokenData,
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+      params.toString(),
+      { 
+        headers: { 
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Cache-Control': 'no-cache'
+        },
+        timeout: 30000 // 30 second timeout
+      }
     )
     
-    console.log('TikTok access token response:', response.data)
+    console.log('TikTok token exchange successful:', {
+      hasAccessToken: !!response.data.access_token,
+      hasRefreshToken: !!response.data.refresh_token,
+      expiresIn: response.data.expires_in,
+      tokenType: response.data.token_type,
+      scope: response.data.scope
+    })
+    
+    // Validate response has access token
+    if (!response.data.access_token) {
+      console.error('TikTok token response missing access_token:', response.data)
+      return res.status(500).json({
+        error: 'Invalid token response from TikTok',
+        details: 'Access token not present in response'
+      })
+    }
     
     // Save token to database if user_id is provided
     if (user_id && response.data.access_token) {
       try {
-        // Calculate expiry date if expires_in is provided
         let expires_at: Date | null = null
         if (response.data.expires_in) {
           expires_at = new Date(Date.now() + (response.data.expires_in * 1000))
         }
         
-        // Check if token already exists
         const existingToken = await db
           .select()
           .from(oauth_tokens)
@@ -268,15 +328,15 @@ router.post('/access-token', async (req: Request, res: Response) => {
             eq(oauth_tokens.platform, 'tiktok')
           ))
           .limit(1)
-        
+          
         if (existingToken.length > 0) {
-          // Update existing token
           await db
             .update(oauth_tokens)
             .set({
               access_token: response.data.access_token,
               refresh_token: response.data.refresh_token || null,
               expires_at: expires_at,
+              token_type: response.data.token_type || 'Bearer',
               updated_at: new Date()
             })
             .where(and(
@@ -284,26 +344,54 @@ router.post('/access-token', async (req: Request, res: Response) => {
               eq(oauth_tokens.platform, 'tiktok')
             ))
         } else {
-          // Insert new token
           await db.insert(oauth_tokens).values({
             user_id: user_id,
             platform: 'tiktok',
             access_token: response.data.access_token,
             refresh_token: response.data.refresh_token || null,
+            token_type: response.data.token_type || 'Bearer',
             expires_at: expires_at
           })
         }
-        
         console.log(`TikTok token stored successfully for user ${user_id}`)
       } catch (storeError) {
         console.error('Failed to store TikTok token:', storeError)
-        // Don't fail the request, but log the error
+        // Don't fail the request if storage fails - user can still use the token
       }
     }
     
-    res.json(response.data)
+    res.json({
+      ...response.data,
+      success: true
+    })
   } catch (error: any) {
-    console.error('TikTok token exchange error:', error.response?.data || error.message)
+    console.error('TikTok token exchange error:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      code: error.code
+    })
+    
+    // Handle specific TikTok API errors
+    if (error.response?.status === 400 && error.response?.data) {
+      const errorData = error.response.data
+      let errorMessage = 'TikTok OAuth error'
+      
+      if (errorData.error === 'invalid_grant') {
+        errorMessage = 'Invalid authorization code or code_verifier. Please try logging in again.'
+      } else if (errorData.error === 'invalid_request') {
+        errorMessage = 'Invalid PKCE parameters. Please check your OAuth configuration.'
+      } else if (errorData.error_description) {
+        errorMessage = errorData.error_description
+      }
+      
+      return res.status(400).json({
+        error: errorMessage,
+        details: errorData
+      })
+    }
+    
     res.status(500).json({
       error: 'Failed to exchange TikTok authorization code for access token',
       details: error.response?.data || error.message

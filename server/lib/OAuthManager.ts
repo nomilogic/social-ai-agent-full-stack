@@ -66,6 +66,8 @@ class OAuthManager {
     console.log('LinkedIn ID:', process.env.VITE_LINKEDIN_CLIENT_ID ? 'CONFIGURED' : 'MISSING');
     console.log('Facebook ID:', process.env.VITE_FACEBOOK_CLIENT_ID ? 'CONFIGURED' : 'MISSING');
     console.log('YouTube ID:', process.env.VITE_YOUTUBE_CLIENT_ID ? 'CONFIGURED' : 'MISSING');
+    console.log('TikTok ID:', process.env.VITE_TIKTOK_CLIENT_ID ? 'CONFIGURED' : 'MISSING');
+    console.log('TikTok Secret:', process.env.VITE_TIKTOK_CLIENT_SECRET ? 'CONFIGURED' : 'MISSING');
     
     // Platform configurations
     this.config = {
@@ -106,7 +108,7 @@ class OAuthManager {
         client_id: process.env.VITE_TIKTOK_CLIENT_ID!,
         client_secret: process.env.VITE_TIKTOK_CLIENT_SECRET!,
         redirect_uri: `${this.baseUrl}/api/oauth/tiktok/callback`,
-        scopes: ['user.info.basic', 'video.upload'],
+        scopes: ['user.info.basic', 'video.upload', 'video.list'],
         authUrl: 'https://www.tiktok.com/v2/auth/authorize',
         tokenUrl: 'https://open.tiktokapis.com/v2/oauth/token'
       },
@@ -140,16 +142,34 @@ class OAuthManager {
       expires_at: expiresAt
     });
 
-    const params = new URLSearchParams({
-      client_id: config.client_id,
-      redirect_uri: config.redirect_uri,
-      scope: config.scopes.join(' '),
-      response_type: 'code',
-      state,
-      access_type: 'offline',
-      prompt: 'consent',
-      ...options
-    });
+    let params: URLSearchParams;
+    
+    if (platform === 'tiktok') {
+      // TikTok requires different parameter names and PKCE
+      params = new URLSearchParams({
+        client_key: config.client_id, // TikTok uses 'client_key' instead of 'client_id'
+        redirect_uri: config.redirect_uri,
+        scope: config.scopes.join(' '),
+        response_type: 'code',
+        state,
+        ...options
+      });
+      
+      // TikTok requires PKCE (handled client-side for browser flows)
+      // For server-to-server flows, PKCE parameters would be added here
+      // The client is responsible for providing code_challenge and code_challenge_method
+    } else {
+      params = new URLSearchParams({
+        client_id: config.client_id,
+        redirect_uri: config.redirect_uri,
+        scope: config.scopes.join(' '),
+        response_type: 'code',
+        state,
+        access_type: 'offline',
+        prompt: 'consent',
+        ...options
+      });
+    }
 
     // Platform-specific parameters
     if (platform === 'twitter') {
