@@ -148,7 +148,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
       <div className="relative z-10">
         <div
-          className={`fixed inset-y-0 left-0 z-50 w-full md:w-64 theme-bg-trinary border-r border-white/10 transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          className={`fixed inset-y-0 left-0 z-50 w-full md:w-[20%] theme-bg-trinary border-r border-white/10 transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
             } transition-transform duration-300 ease-in-out`}
         >
           {/* Close button */}
