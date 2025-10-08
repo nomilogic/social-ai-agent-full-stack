@@ -61,7 +61,7 @@ export async function initiateTikTokOAuth(): Promise<{ token: string; user: any 
           if (event.data.state !== state) {
             console.error('State mismatch:', { expected: state, received: event.data.state });
             window.removeEventListener("message", messageListener);
-            popup.close();
+          //  popup.close();
             reject(new Error("Invalid OAuth state parameter"));
             return;
           }
@@ -73,7 +73,7 @@ export async function initiateTikTokOAuth(): Promise<{ token: string; user: any 
         } else if (event.data.type === "oauth_error") {
           console.error('TikTok OAuth error:', event.data.error);
           window.removeEventListener("message", messageListener);
-          popup.close();
+       //   popup.close();
           reject(new Error(event.data.error || "TikTok authentication failed"));
         }
       };

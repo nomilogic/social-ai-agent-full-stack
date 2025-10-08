@@ -102,16 +102,16 @@ export const initiateGoogleOAuth = (): Promise<{ token: string; user: any }> => 
         // Verify state in parent window
         if (!verifyOAuthState(event.data.state)) {
           window.removeEventListener('message', messageListener);
-          // popup.close();
+          popup.close();
           reject(new Error('Invalid OAuth state parameter'));
           return;
         }
         window.removeEventListener('message', messageListener);
-        // popup.close();
+        popup.close();
         resolve(event.data.result);
       } else if (event.data.type === 'oauth_error') {
         window.removeEventListener('message', messageListener);
-        // popup.close();
+        popup.close();
         reject(new Error(event.data.error || 'Google authentication failed'));
       }
     };
@@ -165,16 +165,16 @@ export const initiateFacebookOAuth = (): Promise<{ token: string; user: any }> =
         // Verify state in parent window
         if (!verifyOAuthState(event.data.state)) {
           window.removeEventListener('message', messageListener);
-          // popup.close();
+          popup.close();
           reject(new Error('Invalid OAuth state parameter'));
           return;
         }
         window.removeEventListener('message', messageListener);
-        // popup.close();
+        popup.close();
         resolve(event.data.result);
       } else if (event.data.type === 'oauth_error') {
         window.removeEventListener('message', messageListener);
-        // popup.close();
+        popup.close();
         reject(new Error(event.data.error || 'Facebook authentication failed'));
       }
     };
