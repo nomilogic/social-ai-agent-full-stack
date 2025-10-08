@@ -29,6 +29,9 @@ app.use((req, res, next) => {
   next()
 })
 
+//Static route for uploads
+app.use('/', express.static(path.join(__dirname, '../public/')));
+
 // CORS configuration
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
