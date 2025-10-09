@@ -85,15 +85,29 @@ export async function initiateTikTokOAuth(): Promise<{ token: string; user: any 
       
       console.log('✅ Popup opened successfully');
       
-      // Additional check: verify popup can access localStorage
+      // Additional check: verify popup can access localStorage and sync if needed
       try {
+        // Wait a moment for popup to fully load
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
         const testVerifier = popup.localStorage?.getItem("tiktok_code_verifier");
         console.log('🔍 Popup localStorage check:', {
           canAccessLocalStorage: !!popup.localStorage,
           hasCodeVerifier: !!testVerifier
         });
+        
+        // If popup doesn't have the verifier, try to sync it
+        if (popup.localStorage && !testVerifier) {
+          console.log('🔄 Syncing PKCE parameters to popup localStorage...');
+          popup.localStorage.setItem("tiktok_code_verifier", codeVerifier);
+          popup.localStorage.setItem("tiktok_oauth_state", state);
+          
+          // Verify sync worked
+          const syncedVerifier = popup.localStorage.getItem("tiktok_code_verifier");
+          console.log('📋 Sync result:', { syncedVerifier: !!syncedVerifier });
+        }
       } catch (e) {
-        console.warn('⚠️ Could not verify popup localStorage access:', e.message);
+        console.warn('⚠️ Could not verify or sync popup localStorage:', e.message);
       }
       
       const messageListener = (event: MessageEvent) => {
@@ -103,6 +117,34 @@ export async function initiateTikTokOAuth(): Promise<{ token: string; user: any 
           hasResult: !!event.data.result,
           error: event.data.error
         });
+        
+        // Handle PKCE requests from popup
+        if (event.data.type === "pkce_request" && event.data.provider === "tiktok") {
+          console.log('🔑 Popup requesting PKCE parameters, sending response...');
+          
+          // Get current PKCE parameters from localStorage
+          const currentVerifier = localStorage.getItem("tiktok_code_verifier");
+          const currentState = localStorage.getItem("tiktok_oauth_state");
+          
+          if (currentVerifier && currentState) {
+            // Send PKCE data to popup
+            popup.postMessage({
+              type: "pkce_response",
+              provider: "tiktok",
+              codeVerifier: currentVerifier,
+              state: currentState
+            }, "*");
+            console.log('✅ PKCE parameters sent to popup via postMessage');
+          } else {
+            console.error('❌ Cannot send PKCE parameters - not found in parent localStorage');
+            popup.postMessage({
+              type: "pkce_response",
+              provider: "tiktok",
+              error: "PKCE parameters not found in parent window"
+            }, "*");
+          }
+          return;
+        }
         
         if (event.data.type === "oauth_success" && event.data.provider === "tiktok") {
           if (event.data.state !== state) {

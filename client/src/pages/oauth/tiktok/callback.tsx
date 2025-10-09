@@ -37,21 +37,70 @@ export default function TikTokCallback() {
           codeVerifier: codeVerifier ? `Present (${codeVerifier.length} chars)` : 'MISSING'
         });
 
-        // If we're in a popup and localStorage is empty, try to get from opener
+        // If we're in a popup and localStorage is empty, try multiple strategies to get PKCE data
         if ((!storedState || !codeVerifier) && window.opener) {
           console.log('⏳ Attempting to get PKCE parameters from parent window...');
-          try {
-            // Wait a bit for localStorage sync
-            await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // Strategy 1: Wait and retry localStorage access (sometimes takes time to sync)
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            console.log(`📋 Attempt ${attempt}/3: Checking localStorage...`);
+            await new Promise(resolve => setTimeout(resolve, attempt * 200)); // Progressive delay
+            
             storedState = localStorage.getItem("tiktok_oauth_state");
             codeVerifier = localStorage.getItem("tiktok_code_verifier");
             
-            console.log('- After retry:', {
+            console.log(`- Attempt ${attempt} result:`, {
               storedState: storedState ? `Present (${storedState})` : 'MISSING',
               codeVerifier: codeVerifier ? `Present (${codeVerifier.length} chars)` : 'MISSING'
             });
-          } catch (e) {
-            console.warn('Could not access parent window localStorage:', e);
+            
+            if (storedState && codeVerifier) {
+              console.log('✅ PKCE parameters found after multiple attempts');
+              break;
+            }
+          }
+          
+          // Strategy 2: Try to request PKCE data from parent window via postMessage
+          if ((!storedState || !codeVerifier) && window.opener) {
+            console.log('📨 Requesting PKCE parameters from parent window via postMessage...');
+            
+            try {
+              // Send request to parent window
+              window.opener.postMessage({
+                type: "pkce_request",
+                provider: "tiktok"
+              }, "*");
+              
+              // Wait for response
+              const pkceData = await new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                  reject(new Error('Timeout waiting for PKCE data from parent'));
+                }, 2000);
+                
+                const messageHandler = (event: MessageEvent) => {
+                  if (event.data.type === "pkce_response" && event.data.provider === "tiktok") {
+                    clearTimeout(timeout);
+                    window.removeEventListener("message", messageHandler);
+                    resolve(event.data);
+                  }
+                };
+                
+                window.addEventListener("message", messageHandler);
+              });
+              
+              if (pkceData && typeof pkceData === 'object' && 'codeVerifier' in pkceData && 'state' in pkceData) {
+                codeVerifier = pkceData.codeVerifier;
+                storedState = pkceData.state;
+                
+                // Store in popup's localStorage for consistency
+                localStorage.setItem("tiktok_code_verifier", codeVerifier);
+                localStorage.setItem("tiktok_oauth_state", storedState);
+                
+                console.log('✅ PKCE parameters received from parent via postMessage');
+              }
+            } catch (e) {
+              console.warn('⚠️ Could not get PKCE data from parent via postMessage:', e);
+            }
           }
         }
 
@@ -125,7 +174,12 @@ export default function TikTokCallback() {
             state,
             result
           }, "*");
-          window.close();
+          
+          // Add delay to allow user to see success message
+          console.log('✅ TikTok OAuth successful, closing popup in 3 seconds...');
+          setTimeout(() => {
+            window.close();
+          }, 3000);
         } else {
           // If not in popup, navigate to content page
           navigate("/content");
@@ -172,7 +226,12 @@ export default function TikTokCallback() {
             provider: "tiktok",
             error: errorMessage
           }, "*");
-          window.close();
+          
+          // Add significant delay to allow user to see and debug error
+          console.log('❌ TikTok OAuth failed, keeping popup open for 10 seconds for debugging...');
+          setTimeout(() => {
+            window.close();
+          }, 10000);
         } else {
           navigate("/error");
         }
@@ -184,8 +243,27 @@ export default function TikTokCallback() {
 
   if (error) {
     return (
-      <div className="p-4 text-center">
-        <div className="text-red-600">{error}</div>
+      <div className="p-8 max-w-lg mx-auto">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <h2 className="text-lg font-semibold text-red-800 mb-3">TikTok OAuth Error</h2>
+          <div className="text-red-700 mb-4 whitespace-pre-wrap">{error}</div>
+          
+          {/* Show localStorage debugging info */}
+          <div className="bg-gray-100 p-4 rounded text-sm text-gray-700 mt-4">
+            <h3 className="font-semibold mb-2">Debug Information:</h3>
+            <div className="space-y-1">
+              <div>Current URL: {window.location.href}</div>
+              <div>Is Popup: {window.opener ? 'Yes' : 'No'}</div>
+              <div>TikTok Keys in localStorage: {Object.keys(localStorage).filter(k => k.includes('tiktok')).join(', ') || 'None'}</div>
+              <div>Code Verifier Present: {localStorage.getItem('tiktok_code_verifier') ? 'Yes' : 'No'}</div>
+              <div>OAuth State Present: {localStorage.getItem('tiktok_oauth_state') ? 'Yes' : 'No'}</div>
+            </div>
+          </div>
+          
+          <div className="mt-4 text-sm text-red-600">
+            {window.opener ? 'This popup will close automatically in 10 seconds.' : 'Click to return to the app.'}
+          </div>
+        </div>
       </div>
     );
   }
