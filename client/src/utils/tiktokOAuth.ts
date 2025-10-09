@@ -4,6 +4,12 @@ import { Platform } from "../types";
 export async function initiateTikTokOAuth(): Promise<{ token: string; user: any }> {
   return new Promise(async (resolve, reject) => {
     try {
+      console.log('🚀 Starting TikTok OAuth initialization...');
+      
+      // Clear any existing PKCE parameters to start fresh
+      localStorage.removeItem("tiktok_code_verifier");
+      localStorage.removeItem("tiktok_oauth_state");
+      
       // Generate secure state parameter (minimum 32 characters for security)
       const state = crypto.getRandomValues(new Uint8Array(16))
         .reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '');
@@ -12,16 +18,34 @@ export async function initiateTikTokOAuth(): Promise<{ token: string; user: any 
       const codeVerifier = generateCodeVerifier(128); // Use maximum length for better security
       const codeChallenge = await generateCodeChallenge(codeVerifier);
       
-      console.log('TikTok OAuth initialization:', {
+      console.log('🔐 Generated PKCE parameters:', {
         stateLength: state.length,
         verifierLength: codeVerifier.length,
         challengeLength: codeChallenge.length,
-        hasClientId: !!import.meta.env.VITE_TIKTOK_CLIENT_ID
+        hasClientId: !!import.meta.env.VITE_TIKTOK_CLIENT_ID,
+        verifierValid: /^[A-Za-z0-9\-._~]+$/.test(codeVerifier) && codeVerifier.length >= 43 && codeVerifier.length <= 128
       });
       
-      // Store PKCE parameters in localStorage
+      // Store PKCE parameters in localStorage BEFORE opening popup
+      console.log('💾 Storing PKCE parameters in localStorage...');
       localStorage.setItem("tiktok_code_verifier", codeVerifier);
       localStorage.setItem("tiktok_oauth_state", state);
+      
+      // Verify storage was successful
+      const storedVerifier = localStorage.getItem("tiktok_code_verifier");
+      const storedState = localStorage.getItem("tiktok_oauth_state");
+      
+      if (!storedVerifier || !storedState) {
+        console.error('❌ Failed to store PKCE parameters in localStorage');
+        throw new Error('Failed to store OAuth parameters - localStorage may be disabled');
+      }
+      
+      if (storedVerifier !== codeVerifier || storedState !== state) {
+        console.error('❌ PKCE parameter storage verification failed');
+        throw new Error('OAuth parameter storage verification failed');
+      }
+      
+      console.log('✅ PKCE parameters successfully stored and verified');
 
       const clientId = import.meta.env.VITE_TIKTOK_CLIENT_ID;
       if (!clientId) {
@@ -41,39 +65,76 @@ export async function initiateTikTokOAuth(): Promise<{ token: string; user: any 
       });
       
       const authUrl = `https://www.tiktok.com/v2/auth/authorize?${params.toString()}`;
-      console.log('Generated TikTok auth URL:', authUrl.substring(0, 100) + '...');
+      console.log('🔗 Generated TikTok auth URL:', authUrl.substring(0, 100) + '...');
 
+      // Add a small delay to ensure localStorage is fully synced
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      console.log('🚪 Opening popup window for TikTok OAuth...');
       const popup = window.open(
         authUrl,
         "tiktok_oauth",
-        "width=500,height=600,scrollbars=yes,resizable=yes"
+        "width=500,height=600,scrollbars=yes,resizable=yes,location=yes,status=yes"
       );
       
       if (!popup) {
+        console.error('❌ Popup was blocked');
         reject(new Error("Popup blocked. Please allow popups for this site."));
         return;
       }
       
+      console.log('✅ Popup opened successfully');
+      
+      // Additional check: verify popup can access localStorage
+      try {
+        const testVerifier = popup.localStorage?.getItem("tiktok_code_verifier");
+        console.log('🔍 Popup localStorage check:', {
+          canAccessLocalStorage: !!popup.localStorage,
+          hasCodeVerifier: !!testVerifier
+        });
+      } catch (e) {
+        console.warn('⚠️ Could not verify popup localStorage access:', e.message);
+      }
+      
       const messageListener = (event: MessageEvent) => {
-        console.log('Received OAuth message:', event.data);
+        console.log('📨 Received OAuth message:', {
+          type: event.data.type,
+          provider: event.data.provider,
+          hasResult: !!event.data.result,
+          error: event.data.error
+        });
         
         if (event.data.type === "oauth_success" && event.data.provider === "tiktok") {
           if (event.data.state !== state) {
-            console.error('State mismatch:', { expected: state, received: event.data.state });
+            console.error('❌ State mismatch in message listener:', { 
+              expected: state, 
+              received: event.data.state,
+              match: event.data.state === state
+            });
             window.removeEventListener("message", messageListener);
             popup.close();
             reject(new Error("Invalid OAuth state parameter"));
             return;
           }
           
-          console.log('TikTok OAuth success:', event.data.result);
+          console.log('✅ TikTok OAuth success:', event.data.result);
           window.removeEventListener("message", messageListener);
           popup.close();
+          
+          // Clean up localStorage after successful OAuth
+          localStorage.removeItem("tiktok_code_verifier");
+          localStorage.removeItem("tiktok_oauth_state");
+          
           resolve(event.data.result);
         } else if (event.data.type === "oauth_error") {
-          console.error('TikTok OAuth error:', event.data.error);
+          console.error('❌ TikTok OAuth error from popup:', event.data.error);
           window.removeEventListener("message", messageListener);
           popup.close();
+          
+          // Clean up localStorage after failed OAuth
+          localStorage.removeItem("tiktok_code_verifier");
+          localStorage.removeItem("tiktok_oauth_state");
+          
           reject(new Error(event.data.error || "TikTok authentication failed"));
         }
       };
@@ -82,14 +143,25 @@ export async function initiateTikTokOAuth(): Promise<{ token: string; user: any 
       
       const checkClosed = setInterval(() => {
         if (popup.closed) {
+          console.log('🚪 Popup window closed by user');
           clearInterval(checkClosed);
           window.removeEventListener("message", messageListener);
-          reject(new Error("Authentication cancelled"));
+          
+          // Clean up localStorage when popup is closed
+          localStorage.removeItem("tiktok_code_verifier");
+          localStorage.removeItem("tiktok_oauth_state");
+          
+          reject(new Error("Authentication cancelled by user"));
         }
       }, 1000);
       
     } catch (error) {
-      console.error('Error initializing TikTok OAuth:', error);
+      console.error('❌ Error initializing TikTok OAuth:', error);
+      
+      // Clean up localStorage on error
+      localStorage.removeItem("tiktok_code_verifier");
+      localStorage.removeItem("tiktok_oauth_state");
+      
       reject(error);
     }
   });

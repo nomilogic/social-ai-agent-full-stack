@@ -220,39 +220,107 @@ router.post('/complete-upload', async (req: Request, res: Response) => {
 
 // POST /api/tiktok/access-token - Handle TikTok OAuth callback
 router.post('/access-token', async (req: Request, res: Response) => {
-  console.log('Received TikTok OAuth callback with body:', req.body)
+  console.log('🔄 Received TikTok OAuth callback request');
+  console.log('Request body keys:', Object.keys(req.body));
+  console.log('Request headers:', {
+    'content-type': req.headers['content-type'],
+    'user-agent': req.headers['user-agent']?.substring(0, 50) + '...',
+    'origin': req.headers.origin
+  });
+  
   let body = req.body
   if (typeof body === 'string') {
     try {
       body = JSON.parse(body)
+      console.log('📋 Parsed JSON body successfully');
     } catch (e) {
+      console.error('❌ Failed to parse JSON body:', e.message);
       return res.status(400).json({ error: 'Invalid JSON body' })
     }
   }
   
   const { code, redirect_uri, user_id, code_verifier } = body
   
-  // Validate required parameters
+  console.log('🔍 OAuth parameters received:', {
+    hasCode: !!code,
+    codeLength: code?.length || 0,
+    hasRedirectUri: !!redirect_uri,
+    redirectUri: redirect_uri,
+    hasUserId: !!user_id,
+    userId: user_id,
+    hasCodeVerifier: !!code_verifier,
+    codeVerifierLength: code_verifier?.length || 0
+  });
+  
+  // Validate required parameters with detailed error messages
   if (!code || typeof code !== 'string') {
-    return res.status(400).json({ error: 'Missing or invalid authorization code' })
+    console.error('❌ Missing or invalid authorization code:', { code: typeof code, hasCode: !!code });
+    return res.status(400).json({ 
+      error: 'Missing or invalid authorization code',
+      details: 'The authorization code from TikTok is required for token exchange'
+    })
   }
+  
   if (!redirect_uri || typeof redirect_uri !== 'string') {
-    return res.status(400).json({ error: 'Missing or invalid redirect_uri' })
+    console.error('❌ Missing or invalid redirect_uri:', { redirect_uri, type: typeof redirect_uri });
+    return res.status(400).json({ 
+      error: 'Missing or invalid redirect_uri',
+      details: 'The redirect URI must match the one used in the authorization request'
+    })
   }
+  
   if (!code_verifier || typeof code_verifier !== 'string') {
-    return res.status(400).json({ error: 'Missing code_verifier for PKCE' })
+    console.error('❌ Missing code_verifier for PKCE:', { 
+      hasCodeVerifier: !!code_verifier, 
+      type: typeof code_verifier,
+      allKeys: Object.keys(body)
+    });
+    return res.status(400).json({ 
+      error: 'Missing code_verifier for PKCE',
+      details: 'The code_verifier parameter is required for PKCE security. This suggests the OAuth flow was not properly initialized.',
+      troubleshooting: {
+        possibleCauses: [
+          'PKCE parameters were not stored in localStorage before starting OAuth',
+          'localStorage was cleared during the OAuth process',
+          'Popup window could not access localStorage',
+          'OAuth flow was initiated incorrectly'
+        ],
+        solutions: [
+          'Ensure you are logged in to the app before connecting TikTok',
+          'Check that popups are allowed in your browser',
+          'Try refreshing the page and connecting again',
+          'Clear browser cache and localStorage, then try again'
+        ]
+      }
+    })
   }
   
   // Validate code_verifier length (43-128 characters per RFC 7636)
   if (code_verifier.length < 43 || code_verifier.length > 128) {
-    return res.status(400).json({ error: `Invalid code_verifier length: ${code_verifier.length}. Must be between 43-128 characters.` })
+    console.error('❌ Invalid code_verifier length:', { 
+      length: code_verifier.length, 
+      verifier: code_verifier.substring(0, 20) + '...' 
+    });
+    return res.status(400).json({ 
+      error: `Invalid code_verifier length: ${code_verifier.length}. Must be between 43-128 characters.`,
+      details: 'The code_verifier must comply with PKCE RFC 7636 specifications'
+    })
   }
   
   // Validate code_verifier characters (must be unreserved characters per RFC 7636)
   const validCodeVerifierPattern = /^[A-Za-z0-9\-._~]+$/;
   if (!validCodeVerifierPattern.test(code_verifier)) {
-    return res.status(400).json({ error: 'Invalid code_verifier format. Must contain only unreserved characters [A-Z] [a-z] [0-9] - . _ ~' })
+    console.error('❌ Invalid code_verifier format:', { 
+      verifier: code_verifier.substring(0, 50) + '...',
+      invalidChars: code_verifier.split('').filter(c => !validCodeVerifierPattern.test(c))
+    });
+    return res.status(400).json({ 
+      error: 'Invalid code_verifier format. Must contain only unreserved characters [A-Z] [a-z] [0-9] - . _ ~',
+      details: 'The code_verifier contains invalid characters that are not allowed by PKCE RFC 7636'
+    })
   }
+  
+  console.log('✅ Code verifier validation passed');
   
   // Get client credentials
   const clientKey = process.env.VITE_TIKTOK_CLIENT_ID || process.env.TIKTOK_CLIENT_ID || process.env.TIKTOK_CLIENT_KEY || ''
@@ -282,7 +350,9 @@ router.post('/access-token', async (req: Request, res: Response) => {
   })
   
   try {
-    console.log('Making TikTok token exchange request to:', 'https://open.tiktokapis.com/v2/oauth/token/')
+    console.log('🔄 Making TikTok token exchange request to:', 'https://open.tiktokapis.com/v2/oauth/token/');
+    console.log('⏱️ Request timeout: 30 seconds');
+    
     const response = await axios.post(
       'https://open.tiktokapis.com/v2/oauth/token/',
       params.toString(),
@@ -379,22 +449,54 @@ router.post('/access-token', async (req: Request, res: Response) => {
       code: error.code
     })
     
-    // Handle specific TikTok API errors
+    // Handle specific TikTok API errors with detailed troubleshooting
     if (error.response?.status === 400 && error.response?.data) {
       const errorData = error.response.data
+      console.error('❌ TikTok API returned 400 error:', errorData);
+      
       let errorMessage = 'TikTok OAuth error'
+      let troubleshooting = {};
       
       if (errorData.error === 'invalid_grant') {
-        errorMessage = 'Invalid authorization code or code_verifier. Please try logging in again.'
+        errorMessage = 'Invalid authorization code or code_verifier. Please try connecting again.'
+        troubleshooting = {
+          possibleCauses: [
+            'Authorization code has expired (10 minute limit)',
+            'Authorization code has already been used',
+            'code_verifier does not match the code_challenge',
+            'PKCE parameters were corrupted during storage'
+          ],
+          solutions: [
+            'Start a fresh OAuth flow from the beginning',
+            'Ensure you complete the OAuth process quickly',
+            'Check that localStorage is working properly',
+            'Verify your app is properly configured in TikTok Developer Portal'
+          ]
+        };
       } else if (errorData.error === 'invalid_request') {
         errorMessage = 'Invalid PKCE parameters. Please check your OAuth configuration.'
+        troubleshooting = {
+          possibleCauses: [
+            'Missing or malformed PKCE parameters',
+            'Incorrect redirect URI configuration',
+            'Invalid client credentials',
+            'OAuth scope issues'
+          ],
+          solutions: [
+            'Verify TikTok app configuration in Developer Portal',
+            'Check that redirect URI exactly matches registered URI',
+            'Ensure client ID and secret are correct',
+            'Verify app has proper scopes enabled'
+          ]
+        };
       } else if (errorData.error_description) {
         errorMessage = errorData.error_description
       }
       
       return res.status(400).json({
         error: errorMessage,
-        details: errorData
+        details: errorData,
+        troubleshooting
       })
     }
     
